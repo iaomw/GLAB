@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{051c66a6-7fe9-45ca-9625-9128292e1121}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+    <None Include="shaders\basic-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\phong-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\texture-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\basic-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\phong-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\texture-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\texture+phong-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\texture+phong-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\bump-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\bump-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\imageprocessing-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\imageprocessing-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\environmentmap-fragmentshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\environmentmap-vertexshader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\skycube.ps">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\skycube.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\fbo_test.ps">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\fbo_test.vs">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="helperFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myCamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myLights.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myFBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="default_constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myShaders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="errors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mySubObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myVAO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myVBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gFBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myLights.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myMaterial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myFBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myShaders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mySubObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myVAO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="myVBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gFBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="myproj.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

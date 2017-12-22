@@ -1,5 +1,7 @@
 # GLAB
-![alt text](./assets/CaptureW.png "Rendering result")
+
+![](/assets/CaptureW.PNG)
+
 This serves as my final project for **Computer Graphics** at **ESIEE Paris**.
 https://perso.esiee.fr/~mustafan/Teaching/ESIEE/IMC-5203B-17-actuel/
 

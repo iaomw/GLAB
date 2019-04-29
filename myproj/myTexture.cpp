@@ -90,7 +90,7 @@ void myTexture::readTexture_cubemap(std::vector<std::string>& filenames)
 		int size, width, height;
 		GLubyte *mytexture = stbi_load(filenames[f].c_str(), &width, &height, &size, 4);
 
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
 		delete[] mytexture;
 	}
 

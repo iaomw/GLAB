@@ -28,6 +28,5 @@ https://perso.esiee.fr/~mustafan/Teaching/ESIEE/IMC-5203B-17-actuel/
 - Subsurface Scattering
 
 ## To-fix
-- Skycube edges
 - Dynamic lighting
 - Dynamic environment mapping

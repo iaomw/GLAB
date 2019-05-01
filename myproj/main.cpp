@@ -183,8 +183,8 @@ int main(int argc, char *argv[])
 	SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO);
 
 	// Using OpenGL 3.1 core
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 
 	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	// Create window
-	window = SDL_CreateWindow("IN4I24", 
+	window = SDL_CreateWindow("GLAB", 
 				SDL_WINDOWPOS_CENTERED, 
 				SDL_WINDOWPOS_CENTERED,
 				DEFAULT_WINDOW_WIDTH, 
@@ -292,15 +292,6 @@ int main(int argc, char *argv[])
 	scene["lighting_plane"]->setTexture(gfbo->gEnv, mySubObject::gEnv);
 
 	obj = new myObject();
-	obj->readObjects("models/sphere.obj", false, false);
-	obj->computeTexturecoordinates_plane();
-	obj->createmyVAO();
-	obj->scale(1, 1, 1);
-	obj->translate(0, 0, 0);
-	obj->setTexture(cubeTex, mySubObject::CUBEMAP);
-	scene.addObjects(obj, "light_ball");
-
-	obj = new myObject();
 	obj->readObjects("models/plane.obj", true, false);
 	//obj->computeTexturecoordinates_plane();
 	obj->createmyVAO();
@@ -349,6 +340,15 @@ int main(int argc, char *argv[])
 	obj->setTexture(texRoughness, mySubObject::pRough);
 	obj->setTexture(cubeTex, mySubObject::CUBEMAP);
 
+	obj = new myObject();
+	obj->readObjects("models/sphere.obj", true, false);
+	obj->computeTexturecoordinates_sphere();
+	obj->createmyVAO();
+	obj->scale(1, 1, 1);
+	obj->translate(0, 0, 0);
+	obj->setTexture(texAlbedo, mySubObject::COLORMAP);
+	scene.addObjects(obj, "light_ball");
+
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 	myShaders shaders;
 
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
 	shaders.addShader(new myShader("shaders/geo_buffer.vs", "shaders/geo_buffer.ps"), "geo_buffer");
 	shaders.addShader(new myShader("shaders/pbr_buffer.vs", "shaders/pbr_buffer.ps"), "pbr_buffer");
 
-	shaders.addShader(new myShader("shaders/environmentmap-vertexshader.glsl", "shaders/environmentmap-fragmentshader.glsl"), "basicx");
+	shaders.addShader(new myShader("shaders/basic-vertexshader.glsl", "shaders/basic-fragmentshader.glsl"), "basicx");
 	
 	// display loop
 	myShader *curr_shader;
@@ -392,11 +392,6 @@ int main(int argc, char *argv[])
 
 		time_t t = time(0); struct tm * now = localtime(&t);
 
-		//for (unsigned int i = 0; i < scene.lights->lights.size(); i++)
-		//{
-			//scene.lights->lights[i]->position = glm::vec3(sin(t/200.0f));
-		//}
-
 		//Setting uniform variables for each shader
 		for (unsigned int i=0; i < shaders.size(); i++)
 		{
@@ -416,20 +411,7 @@ int main(int argc, char *argv[])
 
 		curr_shader = shaders["basicx"]; curr_shader->start();
 		scene["light_ball"]->setTexture(texAlbedo, mySubObject::COLORMAP);
-
-		for (auto pLight : scene.lights->lights) {
-
-			auto pos = pLight->position;
-			auto xxx = sin(t);
-			pos.x = (float)xxx;
-
-			pLight->setUniform(curr_shader, "lights");
-
-			scene["light_ball"]->translate(0, 0, 0);
-			scene["light_ball"]->scale(3, 3, 3);
-			scene["light_ball"]->translate(pos.x, pos.y, pos.z);
-			scene["light_ball"]->displayObjects(curr_shader, view_matrix);
-		}
+		scene["light_ball"]->displayObjects(curr_shader, view_matrix);
 
 		gfbo->clear();
 		gfbo->bind();
@@ -459,7 +441,7 @@ int main(int argc, char *argv[])
 			glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			curr_shader = shaders["pbr_buffer"]; curr_shader->start();
-			//scene["lighting_plane"]->setTexture(gfbo->gEnv, mySubObject::COLORMAP);
+			scene["lighting_plane"]->setTexture(gfbo->gEnv, mySubObject::COLORMAP);
 			scene["lighting_plane"]->displayObjects(curr_shader, view_matrix);
 		}lfbo->unbind();
 
@@ -467,24 +449,6 @@ int main(int argc, char *argv[])
 		curr_shader = shaders["lighting_plane"]; curr_shader->start();
 		//scene["lighting_plane"]->setTexture(gfbo->gEnv, mySubObject::COLORMAP);
 		scene["postproc_plane"]->displayObjects(curr_shader, view_matrix);
-
-		//curr_shader = shaders["lighting_plane"]; curr_shader->start();
-		
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, gfbo->gBuffer);
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-												   // blit to default framebuffer. Note that this may or may not work as the internal formats of both the FBO and default framebuffer have to match.
-												   // the internal formats are implementation defined. This works on all of my systems, but if it doesn't on yours you'll likely have to write to the 		
-												   // depth buffer in another shader stage (or somehow see to match the default framebuffer's internal format with the FBO's internal format).
-		//glBlitFramebuffer(0, 0, mainCam->window_width, mainCam->window_height, 
-							//0, 0, mainCam->window_width, mainCam->window_height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		/*-----------------------*/
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		//curr_shader = shaders["pbr_buffer"];
-		//curr_shader->start();
 
 		/*-----------------------*/
 

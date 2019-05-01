@@ -1,9 +1,8 @@
 #version 330 core
 
-uniform vec4 input_color;
 out vec4 output_color;
 
 void main (void)
 {   
-	output_color = input_color;
+	output_color = vec4(0.4f);
 }

@@ -144,15 +144,13 @@ static void checkOpenGLInfo(bool toprint = false)
 	for (size_t i = 0; i < string_params.size(); i++)
 	{
 		string res = (char *)glGetString(get<0>(string_params[i]));
-		if (!res.empty()) output << "\t" << get<1>(string_params[i]) << ": "<< res << endl;
+		if (!res.empty()) output << "" << get<1>(string_params[i]) << ": "<< res << endl;
 	}
 
-	{
-		stringstream res ((char*)glGetString(GL_EXTENSIONS));
-		string s;
-		output << "\tExtensions: \n";
-		while (res >> s)
-			output << "\t\t" << s << endl;
+	GLint n, i;
+	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
+	for (i = 0; i < n; i++) {
+		output << "\t\t" << glGetStringi(GL_EXTENSIONS, i) << endl;
 	}
 
 	vector<tuple<int, string>> int_params =

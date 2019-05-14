@@ -26,3 +26,11 @@ I may continue improving it for fun.
 ## To-fix
 - Dynamic lighting
 - Dynamic environment mapping
+
+## References
+[Learn OpenGL by Joey de Vries](https://learnopengl.com/)<br/>
+[A Guide to Modern OpenGL Functions](https://github.com/Fendroidus/Guide-to-Modern-OpenGL-Functions)
+<br/><br/>
+[FREE PBR](https://freepbr.com/)<br/>
+[HDRI Haven](https://hdrihaven.com/)<br/>
+[CCOTextures](https://cc0textures.com/)<br/>

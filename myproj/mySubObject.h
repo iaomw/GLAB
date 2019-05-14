@@ -31,7 +31,9 @@ public:
 						gAlbedo,
 						gNormal,
 						gEnv,
-						
+						gIrradiance, 
+						gPrefilter, 
+						BRDF_LUT,
 						Unknow };
 
 	std::map<TEXTURE_TYPE, myTexture *> textures;

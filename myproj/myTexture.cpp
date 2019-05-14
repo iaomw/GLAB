@@ -12,14 +12,22 @@ myTexture::myTexture()
 	texture_type = GL_TEXTURE_2D;
 }
 
+myTexture::myTexture(GLenum type)
+{
+	texture_id = 0;
+	texture_type = type;
+}
+
 myTexture::myTexture(std::string filename)
 {
+	texture_id = 0;
 	texture_type = GL_TEXTURE_2D;
 	readTexture_2D(filename);
 }
 
 myTexture::myTexture(std::vector<std::string> & filenames)
 {
+	texture_id = 0;
 	texture_type = GL_TEXTURE_CUBE_MAP;
 	readTexture_cubemap(filenames);
 }
@@ -33,47 +41,55 @@ myTexture::~myTexture()
 
 bool myTexture::readTexture_2D(std::string filename)
 {
-	int size;
+	int size; GLubyte* mytexture;
 
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
-
-	GLubyte *mytexture = stbi_load(filename.c_str(), &width, &height, &size, 4);
-
-	GLfloat anisoFilterLevel;
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisoFilterLevel);  
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisoFilterLevel);
+	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
+	mytexture = stbi_load(filename.c_str(), &width, &height, &size, 0);
 
 	if (size == 1) {
-		this->texFormat = GL_LUMINANCE; stbi_image_free(mytexture);
-		mytexture = stbi_load(filename.c_str(), &width, &height, &size, 1);
-		//glPixelStori(GL_UNPACK_ALIGNMENT, 2);
-		//glPixelStori(GL_UNPACK_SWAP, TRUE);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, static_cast<GLuint>(width), static_cast<GLuint>(height), 0, GL_RED, GL_UNSIGNED_BYTE, mytexture);
+
+		this->texFormat = GL_RED;
+		glTextureStorage2D(texture_id, 1, GL_R8, width, height);
+		glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RED, GL_UNSIGNED_BYTE, mytexture);
 	
 	} else {
 
 		if (size == 3) {
-			this->texFormat = GL_RGB; stbi_image_free(mytexture);
-			mytexture = stbi_load(filename.c_str(), &width, &height, &size, 3);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, static_cast<GLuint>(width), static_cast<GLuint>(height), 0, this->texFormat, GL_UNSIGNED_BYTE, mytexture);
+			this->texFormat = GL_RGB;
+			
+			if (filename.substr(filename.find_last_of(".") + 1) == "hdr") {
+				stbi_set_flip_vertically_on_load(true);
+				auto textureData = stbi_loadf(filename.c_str(), &width, &height, &size, 3);
+				glTextureStorage2D(texture_id, 1, GL_RGB16F, width, height);
+				glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RGB, GL_FLOAT, textureData);
+				stbi_set_flip_vertically_on_load(false);
+				stbi_image_free(textureData);
+			}
+			else {
+				glTextureStorage2D(texture_id, 1, GL_RGB16F, width, height);
+				glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, mytexture);
+			}
+	
 		} else if (size == 4) { 
 			this->texFormat = GL_RGBA; 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GLuint>(width), static_cast<GLuint>(height), 0, this->texFormat, GL_UNSIGNED_BYTE, mytexture);
+
+			glTextureStorage2D(texture_id, 1, GL_RGBA16F, width, height);
+			glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
 		}
 	}
 
-	glGenerateMipmap(GL_TEXTURE_2D);
+	GLfloat anisoFilterLevel;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisoFilterLevel);
+	glTextureParameteri(texture_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisoFilterLevel);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	
+	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	glGenerateTextureMipmap(texture_id);
 	stbi_image_free(mytexture);
-	//delete[] mytexture;
-	glBindTexture(GL_TEXTURE_2D, 0);
+	
 	return true;
 }
 
@@ -89,8 +105,7 @@ void myTexture::readTexture_cubemap(std::vector<std::string>& filenames)
 	{
 		int size, width, height;
 		GLubyte *mytexture = stbi_load(filenames[f].c_str(), &width, &height, &size, 4);
-
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
 		delete[] mytexture;
 	}
 
@@ -106,8 +121,6 @@ void myTexture::readTexture_cubemap(std::vector<std::string>& filenames)
 
 void myTexture::bind(myShader *shader, std::string name, GLuint texture_offset )
 {
-	glActiveTexture(GL_TEXTURE0 + texture_offset);
-	glBindTexture(texture_type, texture_id);
-
+	glBindTextureUnit(texture_offset, texture_id);
 	shader->setUniform(name, static_cast<int>(texture_offset));
 }

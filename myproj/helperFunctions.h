@@ -132,26 +132,26 @@ static void checkOpenGLInfo(bool toprint = false)
 	myassert(glViewport != 0);
 
 	stringstream output;
-	output << "Start OpenGL Information.\n";
+	output << endl <<"Start OpenGL Information.\n\n";
 
 	vector<tuple<int, string>> string_params =
 	{
-		make_tuple(GL_VENDOR, "Vendor"), 
+		make_tuple(GL_VENDOR, "Vendor"),
 		make_tuple(GL_RENDERER, "Renderer"),
 		make_tuple(GL_VERSION, "Version")
 	};
 
 	for (size_t i = 0; i < string_params.size(); i++)
 	{
-		string res = (char *)glGetString(get<0>(string_params[i]));
-		if (!res.empty()) output << "" << get<1>(string_params[i]) << ": "<< res << endl;
-	}
+		string res = (char*)glGetString(get<0>(string_params[i]));
+		if (!res.empty()) output << "\t" << get<1>(string_params[i]) << ": " << res << endl;
+	};  output << endl;
 
 	GLint n, i;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
 	for (i = 0; i < n; i++) {
-		output << "\t\t" << glGetStringi(GL_EXTENSIONS, i) << endl;
-	}
+		output << "\t" << glGetStringi(GL_EXTENSIONS, i) << endl;
+	}; output << endl;
 
 	vector<tuple<int, string>> int_params =
 	{
@@ -167,77 +167,11 @@ static void checkOpenGLInfo(bool toprint = false)
 
 	for (size_t i = 0; i < int_params.size(); i++)
 	{
-		int res; 
-		glGetIntegerv(get<0>(int_params[i]), &res);
-		output << "\t" << get<1>(int_params[i]) << ": " << res << endl;
-	}
+		GLint name;
+		glGetIntegerv(get<0>(int_params[i]), &name);
+		output << "\t" << get<1>(int_params[i]) << ": " << name << endl;
+	}; output << endl;
 
-	output << "End OpenGL Information.\n";
-
-
-	if (toprint) cout << output.str(); 
-
-
-	/*
-	// get renderer string
-	str = (char*)glGetString(GL_RENDERER);
-	if (str) this->renderer = str;                // check NULL return value
-	else return false;
-
-	// get version string
-	str = (char*)glGetString(GL_VERSION);
-	if (str) this->version = str;                 // check NULL return value
-	else return false;
-
-	// get all extensions as a string
-	str = (char*)glGetString(GL_EXTENSIONS);
-
-	// split extensions
-	if (str)
-	{
-		tok = strtok((char*)str, " ");
-		while (tok)
-		{
-			this->extensions.push_back(tok);    // put a extension into struct
-			tok = strtok(0, " ");               // next token
-		}
-	}
-	else
-	{
-		return false;
-	}
-
-	// sort extension by alphabetical order
-	std::sort(this->extensions.begin(), this->extensions.end());
-
-	// get number of color bits
-	glGetIntegerv(GL_RED_BITS, &this->redBits);
-	glGetIntegerv(GL_GREEN_BITS, &this->greenBits);
-	glGetIntegerv(GL_BLUE_BITS, &this->blueBits);
-	glGetIntegerv(GL_ALPHA_BITS, &this->alphaBits);
-
-	// get depth bits
-	glGetIntegerv(GL_DEPTH_BITS, &this->depthBits);
-
-	// get stecil bits
-	glGetIntegerv(GL_STENCIL_BITS, &this->stencilBits);
-
-	// get max number of lights allowed
-	glGetIntegerv(GL_MAX_LIGHTS, &this->maxLights);
-
-	// get max texture resolution
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &this->maxTextureSize);
-
-	// get max number of clipping planes
-	glGetIntegerv(GL_MAX_CLIP_PLANES, &this->maxClipPlanes);
-
-	// get max modelview and projection matrix stacks
-	glGetIntegerv(GL_MAX_MODELVIEW_STACK_DEPTH, &this->maxModelViewStacks);
-	glGetIntegerv(GL_MAX_PROJECTION_STACK_DEPTH, &this->maxProjectionStacks);
-	glGetIntegerv(GL_MAX_ATTRIB_STACK_DEPTH, &this->maxAttribStacks);
-
-	// get max texture stacks
-	glGetIntegerv(GL_MAX_TEXTURE_STACK_DEPTH, &this->maxTextureStacks);
-
-	*/
+	output << "End OpenGL Information.\n\n";
+	if (toprint) cout << output.str();
 }

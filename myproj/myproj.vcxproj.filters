@@ -67,12 +67,6 @@
     <None Include="shaders\skycube.vs">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="shaders\fbo_test.ps">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="shaders\fbo_test.vs">
-      <Filter>Shaders</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helperFunctions.h">
@@ -94,9 +88,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="myTexture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="myFBO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="default_constants.h">
@@ -126,7 +117,13 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gFBO.h">
+    <ClInclude Include="GeoFBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeFBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FBO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -152,9 +149,6 @@
     <ClCompile Include="myTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="myFBO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="myScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -173,7 +167,13 @@
     <ClCompile Include="myVBO.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gFBO.cpp">
+    <ClCompile Include="GeoFBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CubeFBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FBO.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -80,7 +80,9 @@ void mySubObject::displaySubObject(myVAO *vao, myShader *shader)
 		{gAlbedo, "gAlbedo"},
 		{gNormal, "gNormal"},
 		{gEnv, "gEnv"},
-
+		{gIrradiance, "gIrradiance"}, 
+		{gPrefilter, "gPrefilter"}, 
+		{BRDF_LUT, "BRDF_LUT"},
 		{Unknow, ""}
 	};
 

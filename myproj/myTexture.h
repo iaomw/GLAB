@@ -15,6 +15,7 @@ public:
 	int width, height;
 
 	myTexture();
+	myTexture(GLenum type);
 	myTexture(std::string filename);
 	myTexture(std::vector<std::string> & filenames);
 	~myTexture();

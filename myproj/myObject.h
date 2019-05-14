@@ -21,6 +21,8 @@ public:
 	void computeNormals();
 	void createmyVAO();
 
+	glm::mat3 normalMatrix(glm::mat4 view_matrix);
+
 	void displayObjects(myShader *, glm::mat4);
 	void displayObjects(myShader *shader, glm::mat4, std::string name);
 

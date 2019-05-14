@@ -1,21 +1,18 @@
-OneDrive link: https://1drv.ms/f/s!Am0-PWR9OmGqj_d6_mM2pnHYjjHOhg
-
 # GLAB
 
-![](/assets/CaptureW.PNG)
+![](/assets/Capture.JPG)
 
-This serves as my final project for **Computer Graphics** at **ESIEE Paris**.
-
-https://perso.esiee.fr/~mustafan/Teaching/ESIEE/IMC-5203B-17-actuel/
-
+This serves as my final project for **Computer Graphics** course **2017 Fall**.<br/>
+I may continue improving it for fun.
 
 ## Features
-- Direction light
+- Point lighting
 - Deferred rendering 
-- PBR work flow Metallic / Roughness
-- Disney BRDF
+- PBR metallic / roughness
 - Fresnel Schlick
-- Microfacet BRDF / GGX+Smith 
+- Microfacet / GGX+Smith 
+- Cook-Torrance BRDF 
+- Image-based lighting
 
 ## To-do
 - SSAO
@@ -24,8 +21,7 @@ https://perso.esiee.fr/~mustafan/Teaching/ESIEE/IMC-5203B-17-actuel/
 - Parallax mapping  
 - Deferred lighting
 - Volumetric lighting
-- Image-based lighting 
-- Subsurface Scattering
+- **Subsurface Scattering**
 
 ## To-fix
 - Dynamic lighting

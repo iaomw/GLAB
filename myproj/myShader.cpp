@@ -18,11 +18,11 @@ using namespace std;
 myShader::myShader(string file_vertexshader, string file_fragmentshader)
 {
 	text_to_id.clear();
-	clear();
+	//clear();
 
 	vertex_shader = _initShader(GL_VERTEX_SHADER, file_vertexshader);
 	fragment_shader = _initShader(GL_FRAGMENT_SHADER, file_fragmentshader);
-
+	
 	if (!_initProgram())
 		cout << "Error: shader not initialized properly.\n";
 }

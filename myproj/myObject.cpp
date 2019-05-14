@@ -293,12 +293,16 @@ void myObject::createmyVAO()
 	if (indices.size()) vao->storeIndices(indices);
 }
 
+glm::mat3 myObject::normalMatrix(glm::mat4 view_matrix) {
+	return glm::transpose(glm::inverse(glm::mat3(view_matrix) * glm::mat3(model_matrix)));
+}
+
 void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix)
 {
 	myassert(vao != nullptr);
 
 	shader->setUniform("mymodel_matrix", model_matrix);
-	shader->setUniform("mynormal_matrix", glm::transpose(glm::inverse(glm::mat3(view_matrix)*glm::mat3(model_matrix))));
+	shader->setUniform("mynormal_matrix", normalMatrix(view_matrix));
 	
 	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
 		it->second->displaySubObject(vao, shader);
@@ -313,7 +317,7 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, std::stri
 	}
 
 	shader->setUniform("mymodel_matrix", model_matrix);
-	shader->setUniform("mynormal_matrix", glm::transpose(glm::inverse(glm::mat3(view_matrix)*glm::mat3(model_matrix))));
+	shader->setUniform("mynormal_matrix", normalMatrix(view_matrix));
 
 	auto st = objects.equal_range(name);
 	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = st.first; it != st.second; ++it)

@@ -12,6 +12,7 @@ public:
 	GLenum texture_type;
 		
 	GLint texFormat;
+	GLenum internalformat;
 	int width, height;
 
 	myTexture();
@@ -19,10 +20,15 @@ public:
 	myTexture(std::string filename);
 	myTexture(std::vector<std::string> & filenames);
 	~myTexture();
-	
+
 	bool readTexture_2D(std::string filename);
+	bool readTexture_HDR(std::string filename);
 	void readTexture_cubemap(std::vector<std::string> & filenames);
 
+	
 	void bind(myShader *shader, std::string name, GLuint texture_offset = 0);
+
+private:
+	void configTexture(GLuint theTexture);
 };
 

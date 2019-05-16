@@ -5,9 +5,15 @@
 #include <GL/glew.h>
 #include <GL/GLU.h>
 
+#define GLM_SWIZZLE
+#include <glm/glm.hpp>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_main.h>
 #include <SDL2/SDL_opengl.h>
+
+#include <ctime>
+#include <iostream>
 
 #undef main
 
@@ -28,14 +34,9 @@
 #include "myLights.h"
 #include "myShaders.h"
 
-#include <iostream>
-#include <glm/glm.hpp>
-
 #include "FBO.h"
 #include "GeoFBO.h"
 #include "CubeFBO.h"
-
-#include <ctime>
 
 
 using namespace std;
@@ -250,10 +251,8 @@ int main(int argc, char *argv[])
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(message_callback, nullptr);
 
-	//Gamma correct
-	//glEnable(GL_FRAMEBUFFER_SRGB);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
+	glClearColor(0, 0, 0, 0);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
@@ -262,7 +261,6 @@ int main(int argc, char *argv[])
 	glFrontFace(GL_CCW);
 
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); 
@@ -279,8 +277,9 @@ int main(int argc, char *argv[])
 	
 	/**************************INITIALIZING LIGHTS ***************************/
 	scene.lights = new myLights();
-	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5)));
-	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.4, 0.6, 0.4)));
+	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
+	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.1, 0.7, 0.1), glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(1.0)));
+	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.1, 0.1, 0.7), glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(1.0)));
 
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
@@ -291,7 +290,7 @@ int main(int argc, char *argv[])
 	auto lFBO = new FBO();
 	lFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto eFBO = new FBO();
+	auto eFBO = new FBO(true);
 	eFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 	auto bFBO = new FBO();
@@ -313,7 +312,6 @@ int main(int argc, char *argv[])
 	shaders.addShader(new myShader("shaders/pbr_buffer.vs.glsl", "shaders/pbr_buffer.fs.glsl"), "pbr_buffer");
 
 	shaders.addShader(new myShader("shaders/basic.vs.glsl", "shaders/basic.fs.glsl"), "basicx");
-	//shaders.addShader(new myShader("shaders/texture.vs.glsl", "shaders/texture.fs.glsl"), "basicx");
 	shaders.addShader(new myShader("shaders/postprocess.vs.glsl", "shaders/postprocess.fs.glsl"), "postprocess");
 	shaders.addShader(new myShader("shaders/skycube.vs.glsl", "shaders/skycube.fs.glsl"), "shader_skycube");
 
@@ -329,15 +327,15 @@ int main(int argc, char *argv[])
 	obj->readObjects("models/skycube.obj", true, false);
 	obj->createmyVAO();
 	obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-	obj->translate(0, 0, 0);
-	obj->scale(1000.0f, 1000.0f, 1000.0f);
+	obj->scale(glm::vec3(2048));
 	scene.addObjects(obj, "skycube");
 
 	obj = new myObject();
 	obj->readObjects("models/skycube.obj", true, false);
 	obj->createmyVAO();
 
-	auto hdrTexture = new myTexture("textures/envirment/vulture_hide_4k.hdr");
+	auto hdrTexture = new myTexture();
+	hdrTexture->readTexture_HDR("textures/envirment/vulture_hide_4k.hdr");
 
 		// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
 		// ----------------------------------------------------------------------------------------------
@@ -468,61 +466,37 @@ int main(int argc, char *argv[])
 	obj->setTexture(eFBO->colortexture, mySubObject::gEnv);
 	scene.addObjects(obj, "ppe_canvas");
 
-	// rustediron
 	obj = new myObject();
 	obj->readObjects("models/shaderball.obj", true, false);
 	obj->createmyVAO();
-	obj->translate(-10, 0, 0);
-	scene.addObjects(obj, "rustediron");
+	scene.addObjects(obj, "shaderball");
 
-	myTexture* texAlbedo = new myTexture("textures/rustediron/albedo.png");
-	myTexture* texAO = new myTexture("textures/rustediron/ao.png");
-	myTexture* texMetallic = new myTexture("textures/rustediron/metalness.png");
-	myTexture* texNormal = new myTexture("textures/rustediron/normal.png");
-	myTexture* texRoughness = new myTexture("textures/rustediron/roughness.png");
-	/*
-	texAlbedo = new myTexture("textures/metal/Metal23_col.jpg.");
-	texAO = new myTexture("textures/metal/Metal23_disp.jpg");
-	texMetallic = new myTexture("textures/metal/Metal23_met.jpg");
-	texNormal = new myTexture("textures/metal/Metal23_nrm.jpg");
-	texRoughness = new myTexture("textures/metal/Metal23_rgh.jpg");
-	*/
-	obj->setTexture(texAlbedo, mySubObject::pAlbedo);
-	obj->setTexture(texAO, mySubObject::pAO);
-	obj->setTexture(texMetallic, mySubObject::pMetal);
-	obj->setTexture(texNormal, mySubObject::pNormal);
-	obj->setTexture(texRoughness, mySubObject::pRough);
+	auto texAlbedo_A = new myTexture("textures/rustediron/albedo.png");
+	auto texAO_A = new myTexture("textures/rustediron/ao.png");
+	auto texMetallic_A = new myTexture("textures/rustediron/metalness.png");
+	auto texNormal_A = new myTexture("textures/rustediron/normal.png");
+	auto texRoughness_A = new myTexture("textures/rustediron/roughness.png");
 
-	// aluminum
-	obj = new myObject();
-	obj->readObjects("models/shaderball.obj", true, false);
-	obj->createmyVAO();
-	obj->translate(+10, 0, 0);
-	scene.addObjects(obj, "aluminum");
+	auto texAlbedo_B = new myTexture("textures/aluminum/basecolor.png");
+	auto texAO_B = new myTexture("textures/aluminum/ao.png");
+	auto texMetallic_B = new myTexture("textures/aluminum/metallic.png");
+	auto texNormal_B = new myTexture("textures/aluminum/normal.png");
+	auto texRoughness_B = new myTexture("textures/aluminum/roughness.png");
 
-	texAlbedo = new myTexture("textures/aluminum/basecolor.png");
-	texAO = new myTexture("textures/aluminum/ao.png");
-	texMetallic = new myTexture("textures/aluminum/metallic.png");
-	texNormal = new myTexture("textures/aluminum/normal.png");
-	texRoughness = new myTexture("textures/aluminum/roughness.png");
+	auto texAlbedo_X = new myTexture("textures/blueburlap/worn-blue-burlap-albedo.png");
+	auto texAO_X = new myTexture("textures/blueburlap/worn-blue-burlap-ao.png");
+	auto texMetallic_X = new myTexture("textures/blueburlap/worn-blue-burlap-Metallic.png");
+	auto texNormal_X = new myTexture("textures/blueburlap/worn-blue-burlap-Normal-dx.png");
+	auto texRoughness_X = new myTexture("textures/blueburlap/worn-blue-burlap-Roughness.png");
 
-	obj->setTexture(texAlbedo, mySubObject::pAlbedo);
-	obj->setTexture(texAO, mySubObject::pAO);
-	obj->setTexture(texMetallic, mySubObject::pMetal);
-	obj->setTexture(texNormal, mySubObject::pNormal);
-	obj->setTexture(texRoughness, mySubObject::pRough);
-	
 	obj = new myObject();
 	obj->readObjects("models/sphere.obj", true, false);
-	obj->computeTexturecoordinates_sphere();
 	obj->createmyVAO();
-	obj->scale(1, 1, 1);
-	obj->translate(0, 30, 0);
-	obj->setTexture(texAlbedo, mySubObject::COLORMAP);
-	scene.addObjects(obj, "light_ball");
+	scene.addObjects(obj, "lightball");
 
 	// display loop
 	myShader *curr_shader;
+	float delta = M_PI/1000;
 
 	while (!quit)
 	{
@@ -547,7 +521,7 @@ int main(int argc, char *argv[])
 			if (lFBO) { delete lFBO; } lFBO = new FBO();
 			lFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-			if (eFBO) { delete eFBO; } eFBO = new FBO();
+			if (eFBO) { delete eFBO; } eFBO = new FBO(true);
 			eFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 			scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
@@ -578,33 +552,75 @@ int main(int argc, char *argv[])
 			curr_shader->start();
 			scene["skycube"]->displayObjects(curr_shader, view_matrix);
 			curr_shader->stop();
-			glGenerateTextureMipmap(eFBO->colortexture->texture_id);
+			//glGenerateTextureMipmap(eFBO->colortexture->texture_id);
+
+			curr_shader = shaders["basicx"]; 
+			curr_shader->start();
+			for (auto light : scene.lights->lights) {	
+				curr_shader->setUniform("color", light->color);
+				scene["lightball"]->translate(light->position);
+				scene["lightball"]->displayObjects(curr_shader, view_matrix);
+				scene["lightball"]->translate(-light->position);
+				
+				auto randX = (float)rand()/RAND_MAX;
+				auto randY = (float)rand()/RAND_MAX;
+				auto randZ = (float)rand()/RAND_MAX;
+				//https://gamedev.stackexchange.com/questions/115032/how-should-i-rotate-vertices-around-the-origin-on-the-cpu
+				glm::vec3 v3RotAxis(randX, randY, randZ); 
+				
+				glm::quat quatRot = glm::angleAxis(delta, v3RotAxis);
+				glm::mat4x4 matRot = glm::mat4_cast(quatRot);
+				glm::vec4 newpos = (matRot * glm::vec4(light->position, 1.0));
+				light->position = newpos.xyz();
+			}
+			curr_shader->stop();
 		}; eFBO->unbind();
 		
-		glDisable(GL_BLEND);
 		gFBO->clear();
 		gFBO->bind();
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			auto currentTime = SDL_GetTicks();
-			auto ratio = currentTime / 10000000.0;
-
 			curr_shader = shaders["geo_buffer"]; curr_shader->start();
 
-			scene["rustediron"]->translate(10, 0, 0);
-			scene["rustediron"]->rotate(0.0f, 1.0f, 0.0f, ratio);
-			scene["rustediron"]->translate(-10, 0, 0);
-			scene["rustediron"]->displayObjects(curr_shader, view_matrix);
+			obj = scene["shaderball"];
+			obj->rotate(0.0f, 1.0f, 0.0f, delta);
 
-			scene["aluminum"]->translate(-10, 0, 0);
-			scene["aluminum"]->rotate(0.0f, 1.0f, 0.0f, -ratio);
-			scene["aluminum"]->translate(10, 0, 0);
-			scene["aluminum"]->displayObjects(curr_shader, view_matrix);
+			obj->setTexture(texAlbedo_A, mySubObject::pAlbedo);
+			obj->setTexture(texAO_A, mySubObject::pAO);
+			obj->setTexture(texMetallic_A, mySubObject::pMetal);
+			obj->setTexture(texNormal_A, mySubObject::pNormal);
+			obj->setTexture(texRoughness_A, mySubObject::pRough);
+			
+			obj->translate(-10, 0, 0);
+			obj->displayObjects(curr_shader, view_matrix);
+			obj->translate(10, 0, 0);
+
+			obj->setTexture(texAlbedo_B, mySubObject::pAlbedo);
+			obj->setTexture(texAO_B, mySubObject::pAO);
+			obj->setTexture(texMetallic_B, mySubObject::pMetal);
+			obj->setTexture(texNormal_B, mySubObject::pNormal);
+			obj->setTexture(texRoughness_B, mySubObject::pRough);
+
+			obj->translate(10, 0, 0);
+			obj->displayObjects(curr_shader, view_matrix);
+			obj->translate(-10, 0, 0);
+
+			obj->setTexture(texAlbedo_X, mySubObject::pAlbedo);
+			obj->setTexture(texAO_X, mySubObject::pAO);
+			obj->setTexture(texMetallic_X, mySubObject::pMetal);
+			obj->setTexture(texNormal_X, mySubObject::pNormal);
+			obj->setTexture(texRoughness_X, mySubObject::pRough);
+
+			obj->translate(0, 10, -20);
+			obj->displayObjects(curr_shader, view_matrix);
+			obj->translate(0, -10, 20);
 
 			curr_shader->stop();
-			
 		};  gFBO->unbind();
-		glEnable(GL_BLEND);
+
+		glGenerateTextureMipmap(gFBO->gAlbedo->texture_id);
+		glGenerateTextureMipmap(gFBO->gNormal->texture_id);
+		glGenerateTextureMipmap(gFBO->gPosition->texture_id);
 
 		lFBO->bind(); {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -618,19 +634,14 @@ int main(int argc, char *argv[])
 		/*-----------------------*/
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		curr_shader = shaders["postprocess"]; curr_shader->start();
-		scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
-		scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
-		scene["ppe_canvas"]->displayObjects(curr_shader, view_matrix); curr_shader->stop();
 
-		PrintError();
-		
-		//glDisable(GL_TEXTURE_2D);
-		//curr_shader = shaders["basicx"]; curr_shader->start();
-		//auto light = scene.lights->lights[0];
-		//scene["light_ball"]->displayObjects(curr_shader, view_matrix);
-		//scene["light_ball"]->translate(0, 5, 0);
-		//scene["light_ball"]->displayObjects(curr_shader, view_matrix);
-		//glEnable(GL_TEXTURE_2D);
+		scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
+		scene["ppe_canvas"]->setTexture(gFBO->gPosition, mySubObject::gPosition);
+
+		scene["ppe_canvas"]->setTexture(eFBO->extratexture, mySubObject::gExtra);
+		scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
+
+		scene["ppe_canvas"]->displayObjects(curr_shader, view_matrix); curr_shader->stop();
 
 		PrintError();
 		/*-----------------------*/

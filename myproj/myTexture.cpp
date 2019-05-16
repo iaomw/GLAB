@@ -1,10 +1,14 @@
 #include "myTexture.h"
-#include "helperFunctions.h"
-#include "myShader.h"
 
+#include <map>
+#include <tuple>
 #include <stdint.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "STB/stb_image.h"
+
+#include "myShader.h"
+#include "helperFunctions.h"
 
 myTexture::myTexture()
 {
@@ -46,53 +50,60 @@ bool myTexture::readTexture_2D(std::string filename)
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
 	mytexture = stbi_load(filename.c_str(), &width, &height, &size, 0);
 
-	if (size == 1) {
+	std::map<int, std::tuple<GLint, GLenum>> map;
 
-		this->texFormat = GL_RED;
-		glTextureStorage2D(texture_id, 1, GL_R8, width, height);
-		glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RED, GL_UNSIGNED_BYTE, mytexture);
+	map[1] = std::make_tuple(GL_RED, GL_R16F);
+	map[3] = std::make_tuple(GL_RGB, GL_RGB16F);
+	map[4] = std::make_tuple(GL_RGBA, GL_RGBA16F);
+
+	std::tie(texFormat, internalformat) = map[size];
+
+	glTextureStorage2D(texture_id, 5, internalformat, width, height);
+	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, texFormat, GL_UNSIGNED_BYTE, mytexture);
 	
-	} else {
+	configTexture(texture_id);
 
-		if (size == 3) {
-			this->texFormat = GL_RGB;
-			
-			if (filename.substr(filename.find_last_of(".") + 1) == "hdr") {
-				stbi_set_flip_vertically_on_load(true);
-				auto textureData = stbi_loadf(filename.c_str(), &width, &height, &size, 3);
-				glTextureStorage2D(texture_id, 1, GL_RGB16F, width, height);
-				glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RGB, GL_FLOAT, textureData);
-				stbi_set_flip_vertically_on_load(false);
-				stbi_image_free(textureData);
-			}
-			else {
-				glTextureStorage2D(texture_id, 1, GL_RGB16F, width, height);
-				glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, mytexture);
-			}
-	
-		} else if (size == 4) { 
-			this->texFormat = GL_RGBA; 
-
-			glTextureStorage2D(texture_id, 1, GL_RGBA16F, width, height);
-			glTextureSubImage2D(texture_id, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
-		}
-	}
-
-	GLfloat anisoFilterLevel;
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisoFilterLevel);
-	glTextureParameteri(texture_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisoFilterLevel);
-
-	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	glGenerateTextureMipmap(texture_id);
 	stbi_image_free(mytexture);
-	
 	return true;
 }
 
+bool myTexture::readTexture_HDR(std::string filename) {
+
+	std::map<int, std::tuple<GLint, GLenum>> map;
+
+	map[1] = std::make_tuple(GL_RED, GL_R16F);
+	map[3] = std::make_tuple(GL_RGB, GL_RGB16F);
+	map[4] = std::make_tuple(GL_RGBA, GL_RGBA16F);
+
+	stbi_set_flip_vertically_on_load(true); int size;
+	auto textureData = stbi_loadf(filename.c_str(), &width, &height, &size, 3);
+	stbi_set_flip_vertically_on_load(false);
+
+	std::tie(texFormat, internalformat) = map[size];
+
+	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
+	glTextureStorage2D(texture_id, 1, internalformat, width, height);
+	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, texFormat, GL_FLOAT, textureData);
+
+	configTexture(texture_id);
+
+	stbi_image_free(textureData);
+	return true;
+}
+
+void  myTexture::configTexture(GLuint theTexture) {
+
+	GLfloat anisoFilterLevel;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisoFilterLevel);
+	glTextureParameteri(theTexture, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisoFilterLevel);
+
+	glTextureParameteri(theTexture, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(theTexture, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureParameteri(theTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(theTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	glGenerateTextureMipmap(theTexture);
+}
 
 void myTexture::readTexture_cubemap(std::vector<std::string>& filenames)
 {

@@ -8,6 +8,7 @@ uniform vec3 cam_position;
 uniform mat4 myview_matrix;
 uniform mat4 mymodel_matrix;
 uniform mat3 mynormal_matrix;
+uniform mat4 myprojection_matrix;
 
 in vec4 myvertex;
 in vec3 mynormal;
@@ -97,7 +98,9 @@ void main()
     float metalness = texture(gNormal, texCoords).a;
     float ao = texture(gPosition, texCoords).a;
 
-    vec3 V = normalize(cam_position - tPosition.rgb);
+    vec3 cam_vspace = (myview_matrix * vec4(cam_position, 1.0)).xyz; 
+
+    vec3 V = normalize(cam_vspace - tPosition.rgb);
     vec3 N = normalize(tNormal);
     vec3 R = reflect(-V, N);
 
@@ -118,14 +121,13 @@ void main()
     vec3 diffuse = vec3(0.0f);  
     vec3 specular = vec3(0.0f);
     
-    float c2p =  distance(cam_position, tPosition.rgb);
-
+    float c2p = distance((myview_matrix * vec4(cam_vspace, 1.0)).xyz, tPosition.xyz); // view space 
+    // Calculation in view space
     for (int i = 0; i < num_lights; i++) // treate them as point lights
     {
-        mat4 vmMatrix = mymodel_matrix * myview_matrix;
-        vec4 light_pos = vec4(lights[i].position, 1.0);
-        vec3 direction = (vmMatrix * light_pos).rgb;
-        vec3 L = normalize(-direction);
+        vec4 light_pos = myview_matrix * vec4(lights[i].position, 1.0); // world space to view space
+        vec3 direction = (light_pos-tPosition).rgb;
+        vec3 L = normalize(direction);
         vec3 H = normalize(L + V);
 
         vec3 lightColor = lights[i].color; 
@@ -142,7 +144,7 @@ void main()
         float G = SmithGeometryGGX(NdotL, NdotV, roughness);
 
         specular = (D * F * G) / (4f * NdotL * NdotV + 0.0001f);
-        color += (diffuse * kD + specular) * lightColor * remain * NdotL; 
+        color += (diffuse * kD + specular * kS) * lightColor * remain * NdotL; 
      }
 
     vec3 irradianceX = texture(gIrradiance, N).rgb;
@@ -154,7 +156,7 @@ void main()
     vec2 xBRDF  = texture(BRDF_LUT, vec2(NdotV, roughness)).rg;
     vec3 specularX = prefilteredColor * (F * xBRDF.x + xBRDF.y);
 
-    vec3 ambient = (kD * diffuseX + specularX) * ao;
+    vec3 ambient = (kD * diffuseX + kS * specularX) * ao;
 
     gColor.rgb = color + ambient;
     gColor.a = 1.0;

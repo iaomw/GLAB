@@ -34,6 +34,7 @@ public:
 						gIrradiance, 
 						gPrefilter, 
 						BRDF_LUT,
+						gExtra,
 						Unknow };
 
 	std::map<TEXTURE_TYPE, myTexture *> textures;

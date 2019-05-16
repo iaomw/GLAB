@@ -83,6 +83,7 @@ void mySubObject::displaySubObject(myVAO *vao, myShader *shader)
 		{gIrradiance, "gIrradiance"}, 
 		{gPrefilter, "gPrefilter"}, 
 		{BRDF_LUT, "BRDF_LUT"},
+		{gExtra, "gExtra"},
 		{Unknow, ""}
 	};
 

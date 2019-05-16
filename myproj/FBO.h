@@ -6,9 +6,10 @@ class FBO
 {
 public:
 	myTexture *colortexture;
+	myTexture *extratexture;
 	GLuint fboID, rboID;
 
-	FBO();
+	FBO(bool useExtra = false);
 	~FBO();
 
 	void initFBO(int width, int height);
@@ -20,6 +21,7 @@ public:
 	int getHeight();
 
 private:
+	bool needExtra;
 	int width, height;
 };
 

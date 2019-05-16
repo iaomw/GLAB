@@ -1,12 +1,11 @@
 # GLAB
 
-![](/assets/Capture.JPG)
+![](/assets/Capture.C.JPG)
 
 This serves as my final project for **Computer Graphics** course **2017 Fall**.<br/>
 I may continue improving it for fun.
 
 ## Features
-- Point lighting
 - Deferred rendering 
 - PBR metallic / roughness
 - Fresnel Schlick
@@ -15,7 +14,7 @@ I may continue improving it for fun.
 - Image-based lighting
 
 ## To-do
-- SSAO
+- **SSAO**
 - HDR / Bloom
 - Depth of field
 - Parallax mapping  
@@ -24,8 +23,8 @@ I may continue improving it for fun.
 - **Subsurface Scattering**
 
 ## To-fix
-- Dynamic lighting
 - Dynamic environment mapping
+- Error: 1280 Unknown error
 
 ## References
 [Learn OpenGL by Joey de Vries](https://learnopengl.com/)<br/>

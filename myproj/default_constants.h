@@ -9,8 +9,8 @@ const float DEFAULT_FOVY = 45.0f;
 const float DEFAULT_zNEAR = 1.0f;
 const float DEFAULT_zFAR = 2000.0f;
 
-const int DEFAULT_WINDOW_HEIGHT = 863;
-const int DEFAULT_WINDOW_WIDTH = 1646;
+const int DEFAULT_WINDOW_HEIGHT = 900;
+const int DEFAULT_WINDOW_WIDTH = 1600;
 
 const glm::vec4 DEFAULT_KD = glm::vec4(0, 1, 0, 0);
 const glm::vec4 DEFAULT_KS = glm::vec4(0, 0, 0, 0);

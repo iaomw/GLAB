@@ -1,21 +1,24 @@
-#include <fstream>
+
+#include <ctime>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <iostream>
 
+#include <glm/glm.hpp>
 #include <GL/glew.h>
 #include <GL/GLU.h>
 
-#define GLM_SWIZZLE
-#include <glm/glm.hpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_sdl.h>
+#include <imgui/imgui_impl_opengl3.h>
+#include <stdio.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_main.h>
 #include <SDL2/SDL_opengl.h>
-
-#include <ctime>
-#include <iostream>
-
 #undef main
+
 
 #pragma comment(lib, "Shcore.lib")
 #include <ShellScalingAPI.h>
@@ -37,7 +40,6 @@
 #include "FBO.h"
 #include "GeoFBO.h"
 #include "CubeFBO.h"
-
 
 using namespace std;
 
@@ -224,22 +226,23 @@ int main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
+	SDL_GL_SetSwapInterval(1);
+
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
-	
-	SDL_GL_SetSwapInterval(1);
 
 	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+	auto flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// Create window
 	window = SDL_CreateWindow("GLAB", 
 				SDL_WINDOWPOS_CENTERED, 
 				SDL_WINDOWPOS_CENTERED,
 				DEFAULT_WINDOW_WIDTH, 
-				DEFAULT_WINDOW_HEIGHT, 
-				SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-
+				DEFAULT_WINDOW_HEIGHT, flags);
+	//SDL_SetWindowBordered(window, SDL_FALSE);
+	auto render = SDL_GetRenderer(window);
 	// Create OpenGL context
 	glContext = SDL_GL_CreateContext(window);
 
@@ -251,6 +254,34 @@ int main(int argc, char *argv[])
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(message_callback, nullptr);
 
+	float scaledDPI, defaultDPI;
+	auto displayIndex = SDL_GetWindowDisplayIndex(window);
+	SDL_GetDisplayDPIRatio(displayIndex, &scaledDPI, &defaultDPI);
+	auto sacledRatio = scaledDPI / defaultDPI;
+
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsLight();
+		//ImGui::StyleColorsClassic();
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+		ImGui_ImplOpenGL3_Init("#version 330");
+
+		ImGui::GetIO().FontAllowUserScaling = true;
+		ImGui::GetIO().FontGlobalScale = sacledRatio;
+		ImGui::GetStyle().ScaleAllSizes(sacledRatio);
+		ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.7;
+
+		bool show_demo_window = false;
+		bool show_another_window = false;
 
 	glClearColor(0, 0, 0, 0);
 	glEnable(GL_DEPTH_TEST);
@@ -303,7 +334,7 @@ int main(int argc, char *argv[])
 	iFBO->initFBO(64, 64);
 
 	auto pFBO = new CubeFBO();
-	pFBO->initFBO(512, 512);
+	pFBO->initFBO(1024, 1024);
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 	myShaders shaders;
@@ -322,15 +353,7 @@ int main(int argc, char *argv[])
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
-	//enviornment mapped object
-	auto obj = new myObject();
-	obj->readObjects("models/skycube.obj", true, false);
-	obj->createmyVAO();
-	obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-	obj->scale(glm::vec3(2048));
-	scene.addObjects(obj, "skycube");
-
-	obj = new myObject();
+	auto obj = new myObject(); // for capture only
 	obj->readObjects("models/skycube.obj", true, false);
 	obj->createmyVAO();
 
@@ -371,12 +394,9 @@ int main(int argc, char *argv[])
 		captureShader->stop();
 		cFBO->unbind();
 
-		//scene["skycube"]->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-
 		iFBO->bind();
 		glViewport(0, 0, iFBO->getWidth(), iFBO->getHeight());
 		obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-		//glGenerateTextureMipmap(iFBO->envTexture->texture_id);
 		irradianceShader->start();
 		for (unsigned int i = 0; i < 6; ++i)
 		{
@@ -396,7 +416,6 @@ int main(int argc, char *argv[])
 		pFBO->bind();
 		glViewport(0, 0, pFBO->getWidth(), pFBO->getHeight());
 		obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-		glGenerateTextureMipmap(pFBO->envTexture->texture_id);
 		prefilterShader->start();
 		unsigned int maxMipLevels = 5;
 		for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
@@ -412,7 +431,6 @@ int main(int argc, char *argv[])
 			for (unsigned int i = 0; i < 6; ++i)
 			{
 				glNamedFramebufferTextureLayer(pFBO->fboID, GL_COLOR_ATTACHMENT0, pFBO->envTexture->texture_id, mip, i);
-				//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, pFBO->envTexture->texture_id, mip);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				prefilterShader->setUniform("myview_matrix", captureViews[i]);
@@ -428,18 +446,26 @@ int main(int argc, char *argv[])
 		prefilterShader->stop();
 		pFBO->unbind();
 
-		auto xx = new myObject();
-		xx->readObjects("models/plane.obj", true, false);
-		xx->createmyVAO();
+		obj = new myObject();
+		obj->readObjects("models/plane.obj", true, false);
+		obj->createmyVAO();
 
 		bFBO->bind();
 			brdfShader->start();
 				glViewport(0, 0, bFBO->getWidth(), bFBO->getHeight());
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				xx->displayObjects(brdfShader, captureViews[0]);
+				obj->displayObjects(brdfShader, captureViews[0]);
 			brdfShader->stop();
 			bFBO->bind();
 		bFBO->unbind();
+
+	//enviornment mapped object
+	obj = new myObject();
+	obj->readObjects("models/skycube.obj", true, false);
+	obj->createmyVAO();
+	obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
+	obj->scale(glm::vec3(2048));
+	scene.addObjects(obj, "skycube");
 
 	obj = new myObject();
 	obj->readObjects("models/plane.obj", true, false);
@@ -571,7 +597,7 @@ int main(int argc, char *argv[])
 				glm::quat quatRot = glm::angleAxis(delta, v3RotAxis);
 				glm::mat4x4 matRot = glm::mat4_cast(quatRot);
 				glm::vec4 newpos = (matRot * glm::vec4(light->position, 1.0));
-				light->position = newpos.xyz();
+				light->position = glm::vec3(newpos.x, newpos.y, newpos.z);
 			}
 			curr_shader->stop();
 		}; eFBO->unbind();
@@ -637,7 +663,6 @@ int main(int argc, char *argv[])
 
 		scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
 		scene["ppe_canvas"]->setTexture(gFBO->gPosition, mySubObject::gPosition);
-
 		scene["ppe_canvas"]->setTexture(eFBO->extratexture, mySubObject::gExtra);
 		scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
 
@@ -645,11 +670,70 @@ int main(int argc, char *argv[])
 
 		PrintError();
 		/*-----------------------*/
+
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(window);
+		ImGui::NewFrame(); //io.WantCaptureMouse = true;
+
+		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+		if (show_demo_window)
+			ImGui::ShowDemoWindow(&show_demo_window);
+
+		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+		{
+			static float f = 0.0f;
+			static int counter = 0;
+
+			ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
+			ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
+			ImGui::Text("Powered by ImGui");               // Display some text (you can use a format strings too)
+			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+			ImGui::Checkbox("Another Window", &show_another_window);
+			ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+			ImGui::ColorEdit3("clear color", (float*)& clear_color); // Edit 3 floats representing a color
+
+			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+				counter++;
+			ImGui::SameLine();
+			ImGui::Text("counter = %d", counter);
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
+		}
+
+		// 3. Show another simple window.
+		if (show_another_window)
+		{
+			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+			ImGui::Text("Hello from another window!");
+			if (ImGui::Button("Close Me"))
+				show_another_window = false;
+			ImGui::End();
+		}
+
+		// Rendering
+		ImGui::Render();
+		SDL_GL_MakeCurrent(window, glContext);
+		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		SDL_GL_SwapWindow(window); SDL_Event current_event;
 		while (SDL_PollEvent(&current_event) != 0) {
-			processEvents(current_event);
+			
+			if (ImGui::IsMouseHoveringAnyWindow()) {
+				ImGui_ImplSDL2_ProcessEvent(&current_event);
+			} else {
+				processEvents(current_event);
+			}
 		}
 	}
+
+	// Cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
 
 	// Freeing resources before exiting.
 	// Destroy window

@@ -45,7 +45,8 @@ void myObject::readMaterials(std::string mtlfilename, unordered_map<string, myMa
 {
 	ifstream mtlfin(mtlfilename);
 
-	if (!mtlfin.is_open())
+	//if (!mtlfin.is_open()) // very slow in some case
+	if(!mtlfin.good())
 	{
 		cout << "Error! Unable to open mtl file.\n";
 		return;

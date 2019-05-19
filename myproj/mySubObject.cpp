@@ -84,6 +84,7 @@ void mySubObject::displaySubObject(myVAO *vao, myShader *shader)
 		{gPrefilter, "gPrefilter"}, 
 		{BRDF_LUT, "BRDF_LUT"},
 		{gExtra, "gExtra"},
+		{gBloom, "gBloom"},
 		{Unknow, ""}
 	};
 

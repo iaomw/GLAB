@@ -35,6 +35,7 @@ public:
 						gPrefilter, 
 						BRDF_LUT,
 						gExtra,
+						gBloom,
 						Unknow };
 
 	std::map<TEXTURE_TYPE, myTexture *> textures;

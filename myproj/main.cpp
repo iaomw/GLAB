@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
 		ImGui::GetIO().FontAllowUserScaling = true;
 		ImGui::GetIO().FontGlobalScale = sacledRatio;
 		ImGui::GetStyle().ScaleAllSizes(sacledRatio);
-		ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.7;
+		ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.75;
 
 		bool show_demo_window = false;
 		bool show_another_window = false;
@@ -324,6 +324,11 @@ int main(int argc, char *argv[])
 	auto eFBO = new FBO(true);
 	eFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
+	auto blurFBO = new FBO();
+	blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	auto rulbFBO = new FBO();
+	rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+
 	auto bFBO = new FBO();
 	bFBO->initFBO(512, 512);
 
@@ -350,6 +355,8 @@ int main(int argc, char *argv[])
 	myShader *irradianceShader = new myShader("shaders/irradiance.vs.glsl", "shaders/irradiance.fs.glsl");
 	myShader *prefilterShader = new myShader("shaders/equirectangular.vs.glsl", "shaders/prefilter.fs.glsl");
 	myShader *brdfShader = new myShader("shaders/brdf.vs.glsl", "shaders/brdf.fs.glsl");
+	myShader *blurShader = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
+	shaders.addShader(blurShader, "blurShader");
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
@@ -446,19 +453,22 @@ int main(int argc, char *argv[])
 		prefilterShader->stop();
 		pFBO->unbind();
 
-		obj = new myObject();
-		obj->readObjects("models/plane.obj", true, false);
-		obj->createmyVAO();
+		auto canvas = new myObject();
+		canvas->readObjects("models/plane.obj", true, false);
+		canvas->createmyVAO();
 
 		bFBO->bind();
 			brdfShader->start();
 				glViewport(0, 0, bFBO->getWidth(), bFBO->getHeight());
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				obj->displayObjects(brdfShader, captureViews[0]);
+				canvas->displayObjects(brdfShader, captureViews[0]);
 			brdfShader->stop();
-			bFBO->bind();
 		bFBO->unbind();
 
+		canvas = new myObject();
+		canvas->readObjects("models/plane.obj", true, false);
+		canvas->createmyVAO();
+	
 	//enviornment mapped object
 	obj = new myObject();
 	obj->readObjects("models/skycube.obj", true, false);
@@ -550,6 +560,12 @@ int main(int argc, char *argv[])
 			if (eFBO) { delete eFBO; } eFBO = new FBO(true);
 			eFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
+			if (blurFBO) { delete blurFBO; } blurFBO = new FBO();
+			blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
+
+			if (rulbFBO) { delete rulbFBO; } rulbFBO = new FBO();
+			rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+
 			scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
 			scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
 		}
@@ -601,6 +617,34 @@ int main(int argc, char *argv[])
 			}
 			curr_shader->stop();
 		}; eFBO->unbind();
+
+		canvas->setTexture(eFBO->colortexture, mySubObject::gAlbedo);
+		canvas->setTexture(eFBO->extratexture, mySubObject::gPosition);
+
+		static int bloomRange = 8;
+		static int bloomStrength = 8;
+
+		int horizontal = 0;
+		int blurIndex = 0; int count = 0;
+		FBO* blurList[2] = { blurFBO, rulbFBO };
+
+		while (count < bloomStrength){
+			auto currentFBO = blurList[blurIndex];
+			currentFBO->clear();
+			currentFBO->bind();
+			blurShader->start();
+
+			blurShader->setUniform("range", (float)bloomRange);
+			blurShader->setUniform("horizontal", horizontal);
+			canvas->displayObjects(blurShader, captureViews[0]);
+			canvas->setTexture(currentFBO->colortexture, mySubObject::gAlbedo);
+			horizontal = !horizontal;
+
+			blurShader->stop();
+			currentFBO->unbind();
+			blurIndex = !blurIndex;
+			++count;
+		}; 
 		
 		gFBO->clear();
 		gFBO->bind();
@@ -656,15 +700,20 @@ int main(int argc, char *argv[])
 			curr_shader->stop();
 		}; lFBO->unbind();
 
+		static float exposure = 1.0f;
+
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		/*-----------------------*/
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		curr_shader = shaders["postprocess"]; curr_shader->start();
 
+		curr_shader->setUniform("exposure", exposure);
+
 		scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
 		scene["ppe_canvas"]->setTexture(gFBO->gPosition, mySubObject::gPosition);
 		scene["ppe_canvas"]->setTexture(eFBO->extratexture, mySubObject::gExtra);
 		scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
+		scene["ppe_canvas"]->setTexture(rulbFBO->colortexture, mySubObject::gBloom);
 
 		scene["ppe_canvas"]->displayObjects(curr_shader, view_matrix); curr_shader->stop();
 
@@ -682,17 +731,18 @@ int main(int argc, char *argv[])
 
 		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 		{
-			static float f = 0.0f;
 			static int counter = 0;
 
 			ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
 			ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
 			ImGui::Text("Powered by ImGui");               // Display some text (you can use a format strings too)
-			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-			ImGui::Checkbox("Another Window", &show_another_window);
-			ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			ImGui::ColorEdit3("clear color", (float*)& clear_color); // Edit 3 floats representing a color
+			//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+			//ImGui::Checkbox("Another Window", &show_another_window);
+			//ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+			//ImGui::ColorEdit3("clear color", (float*)& clear_color); // Edit 3 floats representing a color
+			ImGui::SliderFloat("Exposure", &exposure, 0.0f, 2.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+			ImGui::SliderInt("Bloom Range", &bloomRange, 2, 16);
+			ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
 
 			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
 				counter++;

@@ -21,6 +21,7 @@ void main (void)
 	vec3 cam_vspace = (myview_matrix * vec4(cam_position, 1.0)).xyz; 
 	vec3 V = normalize(cam_vspace - gExtra.xyz);
     vec3 N = normalize(mynormal_matrix * mynormal);
-    float NdotV = max(dot(N, V), 0.000001);
+    float NdotV = max(dot(N, V), 0.5);
 	gColor = vec4(color*NdotV, 1);
+	//gExtra.w = 1.0;
 }

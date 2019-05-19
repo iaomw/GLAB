@@ -70,7 +70,7 @@ void FBO::initFBO(int width, int height)
 
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		//std::cout << "Framebuffer not complete!" << std::endl;
+		std::cout << "FBO not complete!" << std::endl;
 	}
 	unbind();
 }

@@ -29,13 +29,12 @@ void CubeFBO::initFBO(int WIDTH, int HEIGHT)
 
 	envTexture->texFormat = GL_RGBA;
 	envTexture->width = width; envTexture->height = height;
-/*
+
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	*/
 
 	glTextureStorage2D(envTexture->texture_id, 5, GL_RGBA16F, WIDTH, HEIGHT);
 	glGenerateTextureMipmap(envTexture->texture_id);
@@ -49,7 +48,7 @@ void CubeFBO::initFBO(int WIDTH, int HEIGHT)
 
 	// Check if the framebuffer is complete before continuing
 	if (glCheckNamedFramebufferStatus(fboID, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "Framebuffer not complete !" << std::endl;
+		std::cout << "CubeFBO not complete !" << std::endl;
 	}
 }
 

@@ -85,7 +85,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 
 	// Check if the framebuffer is complete before continuing
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "Framebuffer not complete !" << std::endl;
+		std::cout << "GeoFBO not complete !" << std::endl;
 	}
 
 	unbind();

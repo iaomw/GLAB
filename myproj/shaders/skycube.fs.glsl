@@ -15,12 +15,9 @@ uniform samplerCube cubetex;
 
 void main()
 {    
-    gColor = texture(cubetex, texCoord);gColor.a = 0.0;
-    gExtra = myview_matrix * mymodel_matrix * myvertex; 
+     gColor = texture(cubetex, texCoord);gColor.a = 0.0;
+     gExtra = myview_matrix * mymodel_matrix * myvertex; 
 
-    //float brightness = dot(gColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    //if(brightness > 1.0)
-      //   gColor.w = 1.0;
-    //else    
-        // gColor.w = 0.0;
+     //float brightness = dot(gColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+     //gColor.w = (brightness>1.0)? 1.0:0.0;
 }

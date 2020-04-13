@@ -4,7 +4,7 @@
 
 This serves as my final project for **Computer Graphics** course **2017 Fall**.
 
-I will continue improving it for fun. In general, I am iOS developer. Woking on Windows/Visual Studio/C++ really slow me down, but worth trying. Meanwhile, it's possible migrating it to Mac/Linux, since there is no windows specific API in the dependency. But working on MacBook Pro means over heating and noisy fan, then more importantly a much weaker GPU in the aluminum unibody. XXX, Apple is deprecating OpenGL, I shall move to Metal API after finishing my to-do list.
+I will continue improving it for fun. But it's weird for me to continue the OpenGL project on Windows. Meanwhile, it's possible migrating it to Mac/Linux, since it's not using any Windows API. Considering CMake. 
 
 ## Features
 
@@ -25,12 +25,11 @@ I will continue improving it for fun. In general, I am iOS developer. Woking on 
 - Parallax mapping  
 - Volumetric lighting
 - Support HDR display
-- **Subsurface Scattering**
+- [**Separable Subsurface Scattering**](http://www.iryoku.com/separable-sss/)
 
 ## To-fix
-
-- Dynamic environment mapping
-- Error: 1280 Unknown error
+- 1282: INVALID_OPERATION
+- AMD GPU: Strange texture color after first run.
 
 ## References
 

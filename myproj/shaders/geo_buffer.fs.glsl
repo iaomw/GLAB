@@ -22,6 +22,11 @@ uniform sampler2D texMetal;
 uniform sampler2D texNormal;
 uniform sampler2D texRough;
 
+uniform float fovY;
+
+uniform float farZ;
+uniform float nearZ;
+
 // Calculation in view space
 vec3 detailedTexNormal(vec3 normal_vspace, vec3 tNormal, vec3 position)
 { 
@@ -38,10 +43,18 @@ vec3 detailedTexNormal(vec3 normal_vspace, vec3 tNormal, vec3 position)
     return normalize(TBN * tNormal);
 }
 
+float LinearizeDepth(float depth)
+{
+    float z = depth * 2.0f - 1.0f;
+    return (2.0f * nearZ * farZ) / (farZ + nearZ - z * (farZ - nearZ));
+}
+
 void main (void)
 {   
 	gPosition.rgb = vertex_viewspace.xyz;
 	gPosition.a = texture(texAO, texCoord.st).r;
+    //gPosition.z = LinearizeDepth(gl_FragCoord.z);
+
 	gAlbedo.rgb = pow(texture(texAlbedo, texCoord.st).rgb, vec3(2.2));
 	gAlbedo.a = texture(texRough, texCoord.st).r;
 

@@ -44,10 +44,12 @@ void CubeFBO::initFBO(int WIDTH, int HEIGHT)
 		//glTextureSubImage3D(fboID, 0, 0, 0, face, WIDTH, HEIGHT, 1, GL_RGBA16F, GL_FLOAT, nullptr);
 	}
 
-	//glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, envTexture->texture_id, 0);
+	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, envTexture->texture_id, 0);
 
 	// Check if the framebuffer is complete before continuing
-	if (glCheckNamedFramebufferStatus(fboID, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+	auto status = glCheckNamedFramebufferStatus(fboID, GL_FRAMEBUFFER);
+	//GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
 		std::cout << "CubeFBO not complete !" << std::endl;
 	}
 }

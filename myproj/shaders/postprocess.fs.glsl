@@ -18,7 +18,7 @@ void main()
     vec4 obj = texture(tex, texCoords).rgba;
     vec4 env = texture(gEnv, texCoords).rgba;
     vec3 pos = texture(gPosition, texCoords).rgb;
-    vec3 bloom =  texture(gBloom, texCoords).rgb;
+    vec3 bloom = texture(gBloom, texCoords).rgb;
 
     vec3 result;
     if (obj.a < 1.0) {
@@ -27,7 +27,7 @@ void main()
         float bz = texture(gExtra, texCoords).z; 
         result = pos.z > bz ? obj.rgb : (env.rgb+bloom);
     }
-
+ 
     // Exposure tonemapping
     result = vec3(1.0) - exp(-result * exposure);
      // HDR tonemapping

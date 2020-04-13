@@ -41,6 +41,8 @@
 #include "GeoFBO.h"
 #include "CubeFBO.h"
 
+#include "SSSS.h"
+
 using namespace std;
 
 // SDL variables
@@ -207,14 +209,27 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 	std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
 }
 
-void PrintError() {
-	GLenum err;
-	for (;;) {
-		err = glGetError();
-		if (err == GL_NO_ERROR) break;
-		printf("Error: %d %s\n", err, glewGetErrorString(err));
+GLenum glCheckError_(const char* file, int line)
+{
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << errorCode << ": " << error << " | " << file << " (" << line << ")" << std::endl;
 	}
+	return errorCode;
 }
+#define glCheckError() glCheckError_(__FILE__, __LINE__) 
 
 int main(int argc, char *argv[])
 {
@@ -253,6 +268,7 @@ int main(int argc, char *argv[])
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(message_callback, nullptr);
+	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 	float scaledDPI, defaultDPI;
 	auto displayIndex = SDL_GetWindowDisplayIndex(window);
@@ -282,7 +298,7 @@ int main(int argc, char *argv[])
 
 		bool show_demo_window = false;
 		bool show_another_window = false;
-
+	
 	glClearColor(0, 0, 0, 0);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -291,20 +307,19 @@ int main(int argc, char *argv[])
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-	glEnable(GL_BLEND);
+	//glEnable(GL_BLEND);
 
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); 
-	//glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	//glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-	//glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
-	//glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
 	checkOpenGLInfo(true);
 
 	mainCam = new myCamera(); mainCam->camera_eye = glm::vec3(0, 0, 32);
 	SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
+
 	
 	/**************************INITIALIZING LIGHTS ***************************/
 	scene.lights = new myLights();
@@ -315,14 +330,14 @@ int main(int argc, char *argv[])
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
 
-	auto gFBO = new GeoFBO();
-	gFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	auto geometryFBO = new GeoFBO();
+	geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto lFBO = new FBO();
-	lFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	auto lightingFBO = new FBO(true);
+	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto eFBO = new FBO(true);
-	eFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	auto environmentFBO = new FBO(true);
+	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 	auto blurFBO = new FBO();
 	blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
@@ -333,7 +348,7 @@ int main(int argc, char *argv[])
 	bFBO->initFBO(512, 512);
 
 	auto cFBO = new CubeFBO();
-	cFBO->initFBO(2048, 2048);
+	cFBO->initFBO(1024, 1024);
 
 	auto iFBO = new CubeFBO();
 	iFBO->initFBO(64, 64);
@@ -351,12 +366,19 @@ int main(int argc, char *argv[])
 	shaders.addShader(new myShader("shaders/postprocess.vs.glsl", "shaders/postprocess.fs.glsl"), "postprocess");
 	shaders.addShader(new myShader("shaders/skycube.vs.glsl", "shaders/skycube.fs.glsl"), "shader_skycube");
 
-	myShader *captureShader = new myShader("shaders/equirectangular.vs.glsl", "shaders/equirectangular.fs.glsl");
-	myShader *irradianceShader = new myShader("shaders/irradiance.vs.glsl", "shaders/irradiance.fs.glsl");
-	myShader *prefilterShader = new myShader("shaders/equirectangular.vs.glsl", "shaders/prefilter.fs.glsl");
-	myShader *brdfShader = new myShader("shaders/brdf.vs.glsl", "shaders/brdf.fs.glsl");
-	myShader *blurShader = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
-	shaders.addShader(blurShader, "blurShader");
+	myShader *shaderCapture = new myShader("shaders/equirectangular.vs.glsl", "shaders/equirectangular.fs.glsl");
+	myShader *shaderIrradiance = new myShader("shaders/irradiance.vs.glsl", "shaders/irradiance.fs.glsl");
+	myShader *shaderPrefilter = new myShader("shaders/equirectangular.vs.glsl", "shaders/prefilter.fs.glsl");
+	myShader *shaderBRDF = new myShader("shaders/brdf.vs.glsl", "shaders/brdf.fs.glsl");
+
+	myShader *shaderPhong = new myShader("shaders/texture+phong.vs.glsl", "shaders/texture+phong.fs.glsl");
+	shaders.addShader(shaderPhong, "shaderPhong");
+
+	myShader *shaderBlur = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
+	shaders.addShader(shaderBlur, "blurShader");
+
+	//myShader *shaderBlurSSSS = new myShader("shaders/blurSSSS.vs.glsl", "shaders/blurSSSS.fs.glsl");
+	//shaders.addShader(shaderBlurSSSS, "shaderBlurSSSS");
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
@@ -385,45 +407,45 @@ int main(int argc, char *argv[])
 		cFBO->bind();
 		glViewport(0, 0, cFBO->getWidth(), cFBO->getHeight());
 		obj->setTexture(hdrTexture, mySubObject::COLORMAP);
-		captureShader->start();
+		shaderCapture->start();
 		for (unsigned int i = 0; i < 6; ++i)
 		{
 			glNamedFramebufferTextureLayer(cFBO->fboID, GL_COLOR_ATTACHMENT0, cFBO->envTexture->texture_id, 0, i);
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			captureShader->setUniform("myview_matrix", captureViews[i]);
+			shaderCapture->setUniform("myview_matrix", captureViews[i]);
 			//captureShader->setUniform("cam_position", mainCam->camera_eye);
-			captureShader->setUniform("myprojection_matrix", captureProjection);
+			shaderCapture->setUniform("myprojection_matrix", captureProjection);
 			
-			obj->displayObjects(captureShader, captureViews[i]);
+			obj->displayObjects(shaderCapture, captureViews[i]);
 		}
 		glGenerateTextureMipmap(cFBO->envTexture->texture_id);
-		captureShader->stop();
+		shaderCapture->stop();
 		cFBO->unbind();
 
 		iFBO->bind();
 		glViewport(0, 0, iFBO->getWidth(), iFBO->getHeight());
 		obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-		irradianceShader->start();
+		shaderIrradiance->start();
 		for (unsigned int i = 0; i < 6; ++i)
 		{
 			glNamedFramebufferTextureLayer(iFBO->fboID, GL_COLOR_ATTACHMENT0, iFBO->envTexture->texture_id, 0, i);
 			
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			irradianceShader->setUniform("myview_matrix", captureViews[i]);
+			shaderIrradiance->setUniform("myview_matrix", captureViews[i]);
 			//captureShader->setUniform("cam_position", mainCam->camera_eye);
-			irradianceShader->setUniform("myprojection_matrix", captureProjection);
+			shaderIrradiance->setUniform("myprojection_matrix", captureProjection);
 			
-			obj->displayObjects(irradianceShader, captureViews[i]);
+			obj->displayObjects(shaderIrradiance, captureViews[i]);
 		}
 		glGenerateTextureMipmap(iFBO->envTexture->texture_id);
-		irradianceShader->stop();
+		shaderIrradiance->stop();
 		iFBO->unbind();
 
 		pFBO->bind();
 		glViewport(0, 0, pFBO->getWidth(), pFBO->getHeight());
 		obj->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
-		prefilterShader->start();
+		shaderPrefilter->start();
 		unsigned int maxMipLevels = 5;
 		for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
 		{
@@ -433,24 +455,26 @@ int main(int argc, char *argv[])
 			glViewport(0, 0, mipWidth, mipHeight);
 
 			float roughness = (float)mip / (float)(maxMipLevels - 1);
-			prefilterShader->setUniform("roughness", roughness);
+			shaderPrefilter->setUniform("roughness", roughness);
 
-			for (unsigned int i = 0; i < 6; ++i)
+			unsigned int i = 0;
+
+			for (; i < 6; ++i)
 			{
 				glNamedFramebufferTextureLayer(pFBO->fboID, GL_COLOR_ATTACHMENT0, pFBO->envTexture->texture_id, mip, i);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				prefilterShader->setUniform("myview_matrix", captureViews[i]);
+				shaderPrefilter->setUniform("myview_matrix", captureViews[i]);
 				//captureShader->setUniform("cam_position", mainCam->camera_eye);
-				prefilterShader->setUniform("myprojection_matrix", captureProjection);
+				shaderPrefilter->setUniform("myprojection_matrix", captureProjection);
 				
-				obj->displayObjects(prefilterShader, captureViews[i]);
+				obj->displayObjects(shaderPrefilter, captureViews[i]);
 			}
 			auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
 				std::cout << "Framebuffer not complete: " << fboStatus << std::endl;
 		}
-		prefilterShader->stop();
+		shaderPrefilter->stop();
 		pFBO->unbind();
 
 		auto canvas = new myObject();
@@ -458,11 +482,11 @@ int main(int argc, char *argv[])
 		canvas->createmyVAO();
 
 		bFBO->bind();
-			brdfShader->start();
+			shaderBRDF->start();
 				glViewport(0, 0, bFBO->getWidth(), bFBO->getHeight());
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				canvas->displayObjects(brdfShader, captureViews[0]);
-			brdfShader->stop();
+				canvas->displayObjects(shaderBRDF, captureViews[0]);
+			shaderBRDF->stop();
 		bFBO->unbind();
 
 		canvas = new myObject();
@@ -485,9 +509,9 @@ int main(int argc, char *argv[])
 	obj = new myObject();
 	obj->readObjects("models/plane.obj", true, false);
 	obj->createmyVAO();
-	obj->setTexture(gFBO->gPosition, mySubObject::gPosition);
-	obj->setTexture(gFBO->gAlbedo, mySubObject::gAlbedo);
-	obj->setTexture(gFBO->gNormal, mySubObject::gNormal);
+	obj->setTexture(geometryFBO->gPosition, mySubObject::gPosition);
+	obj->setTexture(geometryFBO->gAlbedo, mySubObject::gAlbedo);
+	obj->setTexture(geometryFBO->gNormal, mySubObject::gNormal);
 
 	obj->setTexture(iFBO->envTexture, mySubObject::gIrradiance);
 	obj->setTexture(pFBO->envTexture, mySubObject::gPrefilter);
@@ -498,8 +522,8 @@ int main(int argc, char *argv[])
 	obj = new myObject();
 	obj->readObjects("models/plane.obj", true, false);
 	obj->createmyVAO();
-	obj->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
-	obj->setTexture(eFBO->colortexture, mySubObject::gEnv);
+	obj->setTexture(lightingFBO->colortexture, mySubObject::COLORMAP);
+	obj->setTexture(environmentFBO->colortexture, mySubObject::gEnv);
 	scene.addObjects(obj, "ppe_canvas");
 
 	obj = new myObject();
@@ -534,6 +558,7 @@ int main(int argc, char *argv[])
 	myShader *curr_shader;
 	float delta = M_PI/1000;
 
+	glCheckError();
 	while (!quit)
 	{
 		if (windowsize_changed)
@@ -541,34 +566,37 @@ int main(int argc, char *argv[])
 			SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
 			windowsize_changed = false;
 
-			if (gFBO) { delete gFBO; } gFBO = new GeoFBO();
-			gFBO->initFBO(mainCam->window_width, mainCam->window_height);
+			if (geometryFBO) { delete geometryFBO; } geometryFBO = new GeoFBO();
+			geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 			auto object = scene["pbr_canvas"];
 
-			object->setTexture(gFBO->gPosition, mySubObject::gPosition);
-			object->setTexture(gFBO->gAlbedo, mySubObject::gAlbedo);
-			object->setTexture(gFBO->gNormal, mySubObject::gNormal);
+			object->setTexture(geometryFBO->gPosition, mySubObject::gPosition);
+			object->setTexture(geometryFBO->gAlbedo, mySubObject::gAlbedo);
+			object->setTexture(geometryFBO->gNormal, mySubObject::gNormal);
 
 			object->setTexture(iFBO->envTexture, mySubObject::gIrradiance);
 			object->setTexture(pFBO->envTexture, mySubObject::gPrefilter);
 			object->setTexture(bFBO->colortexture, mySubObject::BRDF_LUT);
 
-			if (lFBO) { delete lFBO; } lFBO = new FBO();
-			lFBO->initFBO(mainCam->window_width, mainCam->window_height);
+			if (lightingFBO) { delete lightingFBO; } lightingFBO = new FBO();
+			lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-			if (eFBO) { delete eFBO; } eFBO = new FBO(true);
-			eFBO->initFBO(mainCam->window_width, mainCam->window_height);
+			if (environmentFBO) { delete environmentFBO; } environmentFBO = new FBO(true);
+			environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 			if (blurFBO) { delete blurFBO; } blurFBO = new FBO();
 			blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
-
 			if (rulbFBO) { delete rulbFBO; } rulbFBO = new FBO();
 			rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-			scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
-			scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
+			scene["ppe_canvas"]->setTexture(lightingFBO->colortexture, mySubObject::COLORMAP);
+			scene["ppe_canvas"]->setTexture(environmentFBO->colortexture, mySubObject::gEnv);
+
+			glCheckError();
 		}
+
+		glCheckError();
 
 		//Computing transformation matrices.
 		glViewport(0, 0, mainCam->window_width, mainCam->window_height);
@@ -583,11 +611,17 @@ int main(int argc, char *argv[])
 			curr_shader->setUniform("myview_matrix", view_matrix);
 			curr_shader->setUniform("cam_position", mainCam->camera_eye);
 
+			curr_shader->setUniform("fovY", mainCam->fovy);
+			curr_shader->setUniform("farZ", mainCam->zFar);
+			curr_shader->setUniform("nearZ", mainCam->zNear);
+
 			scene.lights->setUniform(curr_shader, "lights");
 		}
 
-		eFBO->clear();
-		eFBO->bind(); {
+		glCheckError();
+
+		environmentFBO->clear();
+		environmentFBO->bind(); {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			scene["skycube"]->setTexture(cFBO->envTexture, mySubObject::CUBEMAP);
 			curr_shader = shaders["shader_skycube"];
@@ -616,10 +650,12 @@ int main(int argc, char *argv[])
 				light->position = glm::vec3(newpos.x, newpos.y, newpos.z);
 			}
 			curr_shader->stop();
-		}; eFBO->unbind();
+		}; environmentFBO->unbind();
 
-		canvas->setTexture(eFBO->colortexture, mySubObject::gAlbedo);
-		canvas->setTexture(eFBO->extratexture, mySubObject::gPosition);
+		glCheckError();
+
+		canvas->setTexture(environmentFBO->colortexture, mySubObject::gAlbedo);
+		canvas->setTexture(environmentFBO->extratexture, mySubObject::gPosition);
 
 		static int bloomRange = 8;
 		static int bloomStrength = 8;
@@ -632,22 +668,24 @@ int main(int argc, char *argv[])
 			auto currentFBO = blurList[blurIndex];
 			currentFBO->clear();
 			currentFBO->bind();
-			blurShader->start();
+			shaderBlur->start();
 
-			blurShader->setUniform("range", (float)bloomRange);
-			blurShader->setUniform("horizontal", horizontal);
-			canvas->displayObjects(blurShader, captureViews[0]);
+			shaderBlur->setUniform("range", (float)bloomRange);
+			shaderBlur->setUniform("horizontal", horizontal);
+			canvas->displayObjects(shaderBlur, captureViews[0]);
 			canvas->setTexture(currentFBO->colortexture, mySubObject::gAlbedo);
 			horizontal = !horizontal;
 
-			blurShader->stop();
+			shaderBlur->stop();
 			currentFBO->unbind();
 			blurIndex = !blurIndex;
 			++count;
 		}; 
+
+		glCheckError();
 		
-		gFBO->clear();
-		gFBO->bind();
+		geometryFBO->clear();
+		geometryFBO->bind();
 		{
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			curr_shader = shaders["geo_buffer"]; curr_shader->start();
@@ -686,19 +724,23 @@ int main(int argc, char *argv[])
 			obj->translate(0, -10, 20);
 
 			curr_shader->stop();
-		};  gFBO->unbind();
+		};  geometryFBO->unbind();
 
-		glGenerateTextureMipmap(gFBO->gAlbedo->texture_id);
-		glGenerateTextureMipmap(gFBO->gNormal->texture_id);
-		glGenerateTextureMipmap(gFBO->gPosition->texture_id);
+		glCheckError();
 
-		lFBO->bind(); {
+		glGenerateTextureMipmap(geometryFBO->gAlbedo->texture_id);
+		glGenerateTextureMipmap(geometryFBO->gNormal->texture_id);
+		glGenerateTextureMipmap(geometryFBO->gPosition->texture_id);
+
+		lightingFBO->bind(); {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			curr_shader = shaders["pbr_buffer"]; 
 			curr_shader->start();
 				scene["pbr_canvas"]->displayObjects(curr_shader, view_matrix);
 			curr_shader->stop();
-		}; lFBO->unbind();
+		}; lightingFBO->unbind();
+
+		glCheckError();
 
 		static float exposure = 1.0f;
 
@@ -706,24 +748,25 @@ int main(int argc, char *argv[])
 		/*-----------------------*/
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		curr_shader = shaders["postprocess"]; curr_shader->start();
-
 		curr_shader->setUniform("exposure", exposure);
 
-		scene["ppe_canvas"]->setTexture(lFBO->colortexture, mySubObject::COLORMAP);
-		scene["ppe_canvas"]->setTexture(gFBO->gPosition, mySubObject::gPosition);
-		scene["ppe_canvas"]->setTexture(eFBO->extratexture, mySubObject::gExtra);
-		scene["ppe_canvas"]->setTexture(eFBO->colortexture, mySubObject::gEnv);
+		//scene["ppe_canvas"]->setTexture(preFBO->colortexture, mySubObject::COLORMAP);
+		scene["ppe_canvas"]->setTexture(lightingFBO->colortexture, mySubObject::COLORMAP);
+		scene["ppe_canvas"]->setTexture(geometryFBO->gPosition, mySubObject::gPosition);
+		scene["ppe_canvas"]->setTexture(environmentFBO->extratexture, mySubObject::gExtra);
+		scene["ppe_canvas"]->setTexture(environmentFBO->colortexture, mySubObject::gEnv);
 		scene["ppe_canvas"]->setTexture(rulbFBO->colortexture, mySubObject::gBloom);
-
+		
 		scene["ppe_canvas"]->displayObjects(curr_shader, view_matrix); curr_shader->stop();
 
-		PrintError();
 		/*-----------------------*/
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(window);
 		ImGui::NewFrame(); //io.WantCaptureMouse = true;
+
+		glCheckError();
 
 		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
 		if (show_demo_window)
@@ -753,6 +796,8 @@ int main(int argc, char *argv[])
 			ImGui::End();
 		}
 
+		glCheckError();
+
 		// 3. Show another simple window.
 		if (show_another_window)
 		{
@@ -763,13 +808,19 @@ int main(int argc, char *argv[])
 			ImGui::End();
 		}
 
+		glCheckError();
+
 		// Rendering
 		ImGui::Render();
 		SDL_GL_MakeCurrent(window, glContext);
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-		SDL_GL_SwapWindow(window); SDL_Event current_event;
+		glCheckError();
+		SDL_GL_SwapWindow(window); 
+		SDL_Event current_event;
+		glCheckError();
+
 		while (SDL_PollEvent(&current_event) != 0) {
 			
 			if (ImGui::IsMouseHoveringAnyWindow()) {
@@ -778,9 +829,10 @@ int main(int argc, char *argv[])
 				processEvents(current_event);
 			}
 		}
+		glCheckError();
 	}
 
-	// Cleanup
+	// Cleanup ImGui
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();

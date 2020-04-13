@@ -133,9 +133,8 @@ static void checkOpenGLInfo(bool toprint = false)
 	myassert(glUniformMatrix4fv != 0);
 	myassert(glVertexAttribPointer != 0);
 	myassert(glViewport != 0);
-
 	stringstream output;
-	output << endl <<"Start OpenGL Information.\n\n";
+	output << endl << "Start OpenGL Information.\n\n";
 
 	vector<tuple<int, string>> string_params =
 	{
@@ -158,22 +157,15 @@ static void checkOpenGLInfo(bool toprint = false)
 
 	vector<tuple<int, string>> int_params =
 	{
-		make_tuple(GL_RED_BITS, "Red bits"),
-		make_tuple(GL_GREEN_BITS, "Green bits"),
-		make_tuple(GL_BLUE_BITS, "Blue bits"),
-		make_tuple(GL_ALPHA_BITS, "Alpha bits"),
-		make_tuple(GL_DEPTH_BITS, "Depth bits"),
-		make_tuple(GL_STENCIL_BITS, "Stencil bits"),
-		make_tuple(GL_MAX_TEXTURE_SIZE, "Max texture size"),
-		make_tuple(GL_MAX_CLIP_PLANES, "Max clip planes")
+		//make_tuple(GL_RED_BITS, "Red bits"),
+		//make_tuple(GL_GREEN_BITS, "Green bits"),
+		//make_tuple(GL_BLUE_BITS, "Blue bits"),
+		//make_tuple(GL_ALPHA_BITS, "Alpha bits"),
+		//make_tuple(GL_DEPTH_BITS, "Depth bits"),
+		//make_tuple(GL_STENCIL_BITS, "Stencil bits")
+		//make_tuple(GL_MAX_TEXTURE_SIZE, "Max texture size"),
+		//make_tuple(GL_MAX_CLIP_PLANES, "Max clip planes")
 	};
-
-	for (size_t i = 0; i < int_params.size(); i++)
-	{
-		GLint name;
-		glGetIntegerv(get<0>(int_params[i]), &name);
-		output << "\t" << get<1>(int_params[i]) << ": " << name << endl;
-	}; output << endl;
 
 	output << "End OpenGL Information.\n\n";
 	if (toprint) cout << output.str();

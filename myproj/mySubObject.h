@@ -36,6 +36,7 @@ public:
 						BRDF_LUT,
 						gExtra,
 						gBloom,
+						gSSSS,
 						Unknow };
 
 	std::map<TEXTURE_TYPE, myTexture *> textures;

@@ -1,6 +1,7 @@
 #version 330 core
 
 layout (location = 0) out vec4 gColor;
+layout (location = 1) out vec4 gExtra;
 
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
@@ -143,7 +144,7 @@ void main()
         float D = DistributionGGX(N, H, roughness);
         float G = SmithGeometryGGX(NdotL, NdotV, roughness);
 
-        specular = (D * F * G) / (4f * NdotL * NdotV + 0.0001f);
+        specular = (D * F * G) / (4.0f * NdotL * NdotV + 0.0001f);
         color += (diffuse * kD + specular * kS) * lightColor * remain * NdotL; 
      }
 
@@ -160,4 +161,6 @@ void main()
 
     gColor.rgb = color + ambient;
     gColor.a = 1.0;
+
+    gExtra = tPosition;
 }

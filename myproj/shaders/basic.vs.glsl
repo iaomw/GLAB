@@ -6,7 +6,7 @@ layout(location = 2) in vec2 texturecoordinate_modelspace;
 
 uniform mat4 myprojection_matrix;
 uniform mat4 myview_matrix;
-uniform mat4 mymodel_matrix;
+uniform mat4 mymodel_matrix; 
 
 out vec4 myvertex;
 out vec3 mynormal;

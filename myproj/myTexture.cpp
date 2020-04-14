@@ -130,8 +130,8 @@ void myTexture::readTexture_cubemap(std::vector<std::string>& filenames)
 }
 
 
-void myTexture::bind(myShader *shader, std::string name, GLuint texture_offset )
+void myTexture::bind(myShader *shader, std::string_view name, GLuint texture_offset )
 {
 	glBindTextureUnit(texture_offset, texture_id);
-	shader->setUniform(name, static_cast<int>(texture_offset));
+	shader->setUniform(std::string(name), static_cast<int>(texture_offset));
 }

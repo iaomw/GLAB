@@ -25,8 +25,7 @@ public:
 	bool readTexture_HDR(std::string filename);
 	void readTexture_cubemap(std::vector<std::string> & filenames);
 
-	
-	void bind(myShader *shader, std::string name, GLuint texture_offset = 0);
+	void bind(myShader *shader, std::string_view name, GLuint texture_offset = 0);
 
 private:
 	void configTexture(GLuint theTexture);

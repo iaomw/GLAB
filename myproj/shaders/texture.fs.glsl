@@ -1,16 +1,14 @@
 #version 330 core
 
 uniform mat4 myview_matrix;
-uniform mat3 mynormal_matrix;
 uniform mat4 mymodel_matrix;
+uniform mat3 mynormal_matrix;
 
 in vec4 myvertex;
 in vec3 mynormal;
 in vec2 mytexturecoordinate;
 
 out vec4 color;
-
-uniform sampler2D tex;
 
 uniform int totexture;
 
@@ -36,7 +34,7 @@ uniform struct Material
 void main (void)
 {   
     if (totexture == 1) 
-		color =  texture(tex, mytexturecoordinate.st);
+		color =  texture(colortex, mytexturecoordinate.st);
 	else if (totexture == 0)
 		color = material.kd;
 

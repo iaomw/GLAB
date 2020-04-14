@@ -18,7 +18,7 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - Image-based lighting
 
 ## To-do
-
+- C++ 11~17
 - **SSAO**
 - TAA / MSAA
 - Depth of field

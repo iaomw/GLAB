@@ -160,7 +160,9 @@ void main()
     vec3 ambient = (kD * diffuseX + kS * specularX) * ao;
 
     gColor.rgb = color + ambient;
+    //gColor.rgb = diffuseX;
+    //gColor.rgb = specularX;
     gColor.a = 1.0;
 
-    gExtra = tPosition;
+    //gExtra = tPosition;
 }

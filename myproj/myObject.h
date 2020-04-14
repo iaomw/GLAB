@@ -46,7 +46,7 @@ public:
 
 	void computeTangents();
 	
-	void setTexture(myTexture *, mySubObject::TEXTURE_TYPE);
+	void setTexture(myTexture *, TEXTURE_TYPE);
 	
 	myVAO *vao;
 	std::vector<glm::vec3> vertices;

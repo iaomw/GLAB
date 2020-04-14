@@ -109,7 +109,7 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 		{
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-			o->setTexture(curr_texture, mySubObject::COLORMAP);
+			o->setTexture(curr_texture, TEXTURE_TYPE::colortex);
 			objects.emplace(curr_name, o);
 
 			curr_start = curr_end;
@@ -145,7 +145,7 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 		{
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-			o->setTexture(curr_texture, mySubObject::COLORMAP);
+			o->setTexture(curr_texture, TEXTURE_TYPE::colortex);
 			objects.emplace(curr_name, o);
 
 			curr_start = curr_end;
@@ -221,7 +221,7 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 
 	curr_end = indices.size();
 	mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-	o->setTexture(curr_texture, mySubObject::COLORMAP);
+	o->setTexture(curr_texture, TEXTURE_TYPE::colortex);
 	objects.emplace(curr_name, o);
 
 	if (!individualvertices_per_face)
@@ -450,7 +450,7 @@ void myObject::computeTangents()
 }
 
 
-void myObject::setTexture(myTexture *tex, mySubObject::TEXTURE_TYPE type)
+void myObject::setTexture(myTexture *tex, TEXTURE_TYPE type)
 {
 	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
 		it->second->setTexture(tex, type);

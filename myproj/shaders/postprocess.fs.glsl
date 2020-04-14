@@ -4,18 +4,19 @@ layout (location = 0) out vec4 gColor;
 
 uniform float exposure;
 
-uniform sampler2D tex;
-uniform sampler2D gEnv;
+uniform sampler2D colortex;
+uniform sampler2D gPosition;
 
+uniform sampler2D gEnv;
 uniform sampler2D gExtra;
 uniform sampler2D gBloom;
-uniform sampler2D gPosition;
+
 
 in vec2 texCoords;
 
 void main()
 {   
-    vec4 obj = texture(tex, texCoords).rgba;
+    vec4 obj = texture(colortex, texCoords).rgba;
     vec4 env = texture(gEnv, texCoords).rgba;
     vec3 pos = texture(gPosition, texCoords).rgb;
     vec3 bloom = texture(gBloom, texCoords).rgb;

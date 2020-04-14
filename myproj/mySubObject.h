@@ -1,43 +1,38 @@
 #pragma once
 
 #include <vector>
-#include <glm/glm.hpp>
 #include <string>
-#include "myVAO.h"
-#include "myMaterial.h"
-#include "myTexture.h"
 #include <map>
 
+#include "magic_enum.hpp"
+#include <glm/glm.hpp>
+
+#include "myVAO.h"
+#include "myTexture.h"
+#include "myMaterial.h"
+
+
 class myShader;
+
+enum class TEXTURE_TYPE {
+
+	colortex, bumptex, cubetex,
+
+	texAO, texAlbedo, texMetal, texNormal, texRough,
+
+	gPosition, gAlbedo, gNormal, gEnv,
+
+	gIrradiance, gPrefilter, BRDF_LUT,
+
+	gExtra, gBloom, gSSSS, Unknow
+};
+
 
 class mySubObject
 {
 public:
 	size_t start, end;
 	myMaterial *material;
-
-	enum TEXTURE_TYPE { COLORMAP, 
-						BUMPMAP, 
-						CUBEMAP,
-
-						pAlbedo,
-						pAO,
-						pHeight,
-						pMetal,
-						pNormal,
-						pRough,
-
-						gPosition,
-						gAlbedo,
-						gNormal,
-						gEnv,
-						gIrradiance, 
-						gPrefilter, 
-						BRDF_LUT,
-						gExtra,
-						gBloom,
-						gSSSS,
-						Unknow };
 
 	std::map<TEXTURE_TYPE, myTexture *> textures;
 

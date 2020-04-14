@@ -2,7 +2,6 @@
 out vec4 FragColor;
 in vec3 WorldPos;
 
-//uniform sampler2D tex;
 uniform samplerCube cubetex;
 
 const float PI = 3.14159265359;

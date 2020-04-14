@@ -14,7 +14,7 @@ CubeFBO::~CubeFBO()
 	if (envTexture != nullptr) delete envTexture;
 }
 
-void CubeFBO::initFBO(int WIDTH, int HEIGHT)
+void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format)
 {
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
 
@@ -36,13 +36,13 @@ void CubeFBO::initFBO(int WIDTH, int HEIGHT)
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glTextureStorage2D(envTexture->texture_id, 5, GL_RGBA16F, WIDTH, HEIGHT);
-	glGenerateTextureMipmap(envTexture->texture_id);
+	glTextureStorage2D(envTexture->texture_id, 5, format, WIDTH, HEIGHT); //Safe GL_RGBA16
+	glGenerateTextureMipmap(envTexture->texture_id); // random garbage color when using GL_RGBA16F
 
-	for (size_t face = 0; face < 6; ++face)
+	/*for (size_t face = 0; face < 6; ++face)
 	{
-		//glTextureSubImage3D(fboID, 0, 0, 0, face, WIDTH, HEIGHT, 1, GL_RGBA16F, GL_FLOAT, nullptr);
-	}
+		glTextureSubImage3D(fboID, 0, 0, 0, face, WIDTH, HEIGHT, 1, GL_RGBA16F, GL_FLOAT, nullptr);
+	}*/
 
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, envTexture->texture_id, 0);
 

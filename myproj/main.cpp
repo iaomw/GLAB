@@ -41,7 +41,7 @@
 #include "GeoFBO.h"
 #include "CubeFBO.h"
 
-#include "SSSS.h"
+#include "SSSS.h" 
 
 using namespace std;
 
@@ -348,13 +348,13 @@ int main(int argc, char *argv[])
 	bFBO->initFBO(512, 512);
 
 	auto cFBO = new CubeFBO();
-	cFBO->initFBO(1024, 1024);
+	cFBO->initFBO(1024, 1024, GL_RGBA16F);
 
 	auto iFBO = new CubeFBO();
-	iFBO->initFBO(64, 64);
+	iFBO->initFBO( 256,  256, GL_RGBA16);
 
 	auto pFBO = new CubeFBO();
-	pFBO->initFBO(1024, 1024);
+	pFBO->initFBO(1024, 1024, GL_RGBA16);
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 	myShaders shaders;
@@ -809,16 +809,16 @@ int main(int argc, char *argv[])
 		}
 
 		glCheckError();
-
 		// Rendering
 		ImGui::Render();
 		SDL_GL_MakeCurrent(window, glContext);
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
 		glCheckError();
-		SDL_GL_SwapWindow(window); 
+		
 		SDL_Event current_event;
+		glCheckError();
+		SDL_GL_SwapWindow(window);
 		glCheckError();
 
 		while (SDL_PollEvent(&current_event) != 0) {
@@ -836,6 +836,7 @@ int main(int argc, char *argv[])
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
+	glCheckError();
 
 	// Freeing resources before exiting.
 	// Destroy window

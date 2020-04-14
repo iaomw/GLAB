@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include <GL/glew.h>
 #include "myTexture.h"
 
@@ -12,7 +11,7 @@ public:
 	CubeFBO();
 	~CubeFBO();
 
-	void initFBO(int WIDTH, int HEIGHT);
+	void initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format);
 	void bind() const;
 	void unbind() const;
 	void clear();

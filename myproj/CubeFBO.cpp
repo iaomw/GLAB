@@ -1,26 +1,22 @@
 #include "CubeFBO.h"
 #include <iostream>
 
-CubeFBO::CubeFBO()
+CubeFBO::CubeFBO(): FBO()
 {
 	envTexture = nullptr;
 }
 
 CubeFBO::~CubeFBO()
 {
-
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
-
 	if (envTexture != nullptr) delete envTexture;
 }
 
 void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format)
 {
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
-
-	width = WIDTH; height = HEIGHT;
-
 	glCreateFramebuffers(1, &fboID);
+	width = WIDTH; height = HEIGHT;
 
 	if (envTexture) delete envTexture;
 	envTexture = new myTexture(GL_TEXTURE_CUBE_MAP);
@@ -53,23 +49,3 @@ void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format)
 		std::cout << "CubeFBO not complete !" << std::endl;
 	}
 }
-
-void CubeFBO::bind() const
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-}
-
-void CubeFBO::unbind() const
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void CubeFBO::clear()
-{
-	bind();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	unbind();
-}
-
-int CubeFBO::getWidth() { return width; }
-int CubeFBO::getHeight() { return height; }

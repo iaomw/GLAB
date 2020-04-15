@@ -5,7 +5,8 @@ FBO::FBO(bool useExtra)
 {
 	needExtra = useExtra;
 
-	fboID = 0;
+	fboID = 0; rboID = 0;
+	width = 0; height = 0;
 	colortexture = nullptr;
 	extratexture = nullptr;
 }
@@ -61,6 +62,7 @@ void FBO::initFBO(int width, int height)
 		unsigned int attachments[1] = { GL_COLOR_ATTACHMENT0 };
 		glDrawBuffers(1, attachments);
 	}
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	if (rboID != 0) glDeleteRenderbuffers(1, &rboID);
 	glGenRenderbuffers(1, &rboID);
@@ -73,65 +75,4 @@ void FBO::initFBO(int width, int height)
 		std::cout << "FBO not complete!" << std::endl;
 	}
 	unbind();
-}
-
-/*
-void FBO::initFBO(int width, int height)
-{
-
-	this->width = width; 
-	this->height = height;
-
-	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
-	glCreateFramebuffers(1, &fboID);
-
-	if (colortexture) delete colortexture;
-	colortexture = new myTexture();
-
-	glCreateTextures(GL_TEXTURE_2D, 1, &(colortexture->texture_id));
-
-	glTextureParameteri(colortexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(colortexture->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(colortexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTextureParameteri(colortexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
-	
-	glTextureStorage2D(colortexture->texture_id, 1, GL_RGBA16F, width, height);
-	glGenerateTextureMipmap(colortexture->texture_id);
-
-	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, colortexture->texture_id, 0);
-
-	// Check if the framebuffer is complete before continuing
-	if (glCheckNamedFramebufferStatus(fboID, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "Framebuffer not complete !" << std::endl;
-	}
-}
-*/
-
-void FBO::bind() const
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboID);
-}
-
-void FBO::unbind() const
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-}
-
-void FBO::clear()
-{
-	bind();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	unbind();
-}
-
-int FBO::getWidth() 
-{
-	return width;
-}
-
-int FBO::getHeight()
-{
-	return height;
 }

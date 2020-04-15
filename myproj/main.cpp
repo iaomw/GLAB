@@ -57,14 +57,14 @@ bool crystalballorfirstperson_view = false;
 float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
 
 // Camera parameters.
-myCamera *mainCam;
+myCamera* mainCam;
 
 // All the meshes 
 myScene scene;
 
 //Triangle to draw to illustrate picking
 size_t picked_triangle_index = 0;
-myObject *picked_object = nullptr;
+myObject* picked_object = nullptr;
 
 // Process the event.  
 void processEvents(SDL_Event current_event)
@@ -116,7 +116,7 @@ void processEvents(SDL_Event current_event)
 		mouse_position[1] = current_event.button.y;
 		mouse_button_pressed = true;
 
-		const Uint8 *state = SDL_GetKeyboardState(nullptr);
+		const Uint8* state = SDL_GetKeyboardState(nullptr);
 		if (state[SDL_SCANCODE_LCTRL])
 		{
 			glm::vec3 ray = mainCam->constructRay(mouse_position[0], mouse_position[1]);
@@ -231,7 +231,7 @@ GLenum glCheckError_(const char* file, int line)
 }
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 	// Initialize video subsystem
 	SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO);
@@ -251,11 +251,11 @@ int main(int argc, char *argv[])
 	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	auto flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// Create window
-	window = SDL_CreateWindow("GLAB", 
-				SDL_WINDOWPOS_CENTERED, 
-				SDL_WINDOWPOS_CENTERED,
-				DEFAULT_WINDOW_WIDTH, 
-				DEFAULT_WINDOW_HEIGHT, flags);
+	window = SDL_CreateWindow("GLAB",
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		DEFAULT_WINDOW_WIDTH,
+		DEFAULT_WINDOW_HEIGHT, flags);
 	//SDL_SetWindowBordered(window, SDL_FALSE);
 	auto render = SDL_GetRenderer(window);
 	// Create OpenGL context
@@ -275,30 +275,30 @@ int main(int argc, char *argv[])
 	SDL_GetDisplayDPIRatio(displayIndex, &scaledDPI, &defaultDPI);
 	auto sacledRatio = scaledDPI / defaultDPI;
 
-		// Setup Dear ImGui context
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-		//ImGui::StyleColorsLight();
-		//ImGui::StyleColorsClassic();
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
+	//ImGui::StyleColorsClassic();
 
-		// Setup Platform/Renderer bindings
-		ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-		ImGui_ImplOpenGL3_Init("#version 330");
+	// Setup Platform/Renderer bindings
+	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+	ImGui_ImplOpenGL3_Init("#version 330");
 
-		ImGui::GetIO().FontAllowUserScaling = true;
-		ImGui::GetIO().FontGlobalScale = sacledRatio;
-		ImGui::GetStyle().ScaleAllSizes(sacledRatio);
-		ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.75;
+	ImGui::GetIO().FontAllowUserScaling = true;
+	ImGui::GetIO().FontGlobalScale = sacledRatio;
+	ImGui::GetStyle().ScaleAllSizes(sacledRatio);
+	ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.75;
 
-		bool show_demo_window = false;
-		bool show_another_window = false;
-	
+	bool show_demo_window = false;
+	bool show_another_window = false;
+
 	glClearColor(0, 0, 0, 0);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
 	//glEnable(GL_BLEND);
 
 	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); 
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 	mainCam = new myCamera(); mainCam->camera_eye = glm::vec3(0, 0, 32);
 	SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
 
-	
+
 	/**************************INITIALIZING LIGHTS ***************************/
 	scene.lights = new myLights();
 	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
@@ -351,7 +351,7 @@ int main(int argc, char *argv[])
 	cFBO->initFBO(1024, 1024, GL_RGBA16F);
 
 	auto iFBO = new CubeFBO();
-	iFBO->initFBO( 256,  256, GL_RGBA16);
+	iFBO->initFBO(256, 256, GL_RGBA16);
 
 	auto pFBO = new CubeFBO();
 	pFBO->initFBO(1024, 1024, GL_RGBA16);
@@ -366,12 +366,12 @@ int main(int argc, char *argv[])
 	shaders.addShader(new myShader("shaders/postprocess.vs.glsl", "shaders/postprocess.fs.glsl"), "postprocess");
 	shaders.addShader(new myShader("shaders/skycube.vs.glsl", "shaders/skycube.fs.glsl"), "shader_skycube");
 
-	myShader *shaderCapture = new myShader("shaders/equirectangular.vs.glsl", "shaders/equirectangular.fs.glsl");
-	myShader *shaderIrradiance = new myShader("shaders/irradiance.vs.glsl", "shaders/irradiance.fs.glsl");
-	myShader *shaderPrefilter = new myShader("shaders/equirectangular.vs.glsl", "shaders/prefilter.fs.glsl");
-	myShader *shaderBRDF = new myShader("shaders/brdf.vs.glsl", "shaders/brdf.fs.glsl");
+	myShader* shaderCapture = new myShader("shaders/equirectangular.vs.glsl", "shaders/equirectangular.fs.glsl");
+	myShader* shaderIrradiance = new myShader("shaders/irradiance.vs.glsl", "shaders/irradiance.fs.glsl");
+	myShader* shaderPrefilter = new myShader("shaders/equirectangular.vs.glsl", "shaders/prefilter.fs.glsl");
+	myShader* shaderBRDF = new myShader("shaders/brdf.vs.glsl", "shaders/brdf.fs.glsl");
 
-	myShader *shaderBlur = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
+	myShader* shaderBlur = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
 	shaders.addShader(shaderBlur, "blurShader");
 
 	//myShader *shaderBlurSSSS = new myShader("shaders/blurSSSS.vs.glsl", "shaders/blurSSSS.fs.glsl");
@@ -386,110 +386,36 @@ int main(int argc, char *argv[])
 	auto hdrTexture = new myTexture();
 	hdrTexture->readTexture_HDR("textures/envirment/vulture_hide_4k.hdr");
 
-		// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
-		// ----------------------------------------------------------------------------------------------
-		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-		glm::mat4 captureViews[] =
-		{
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-			glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-		};
+	// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
+	// ----------------------------------------------------------------------------------------------
+	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 captureViews[] =
+	{
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
 
-		// pbr: convert HDR equirectangular environment map to cubemap equivalent
-		// ----------------------------------------------------------------------
-		cFBO->bind();
-		glViewport(0, 0, cFBO->getWidth(), cFBO->getHeight());
-		obj->setTexture(hdrTexture, TEXTURE_TYPE::colortex);
-		shaderCapture->start();
-		for (unsigned int i = 0; i < 6; ++i)
-		{
-			glNamedFramebufferTextureLayer(cFBO->fboID, GL_COLOR_ATTACHMENT0, cFBO->envTexture->texture_id, 0, i);
+	// pbr: convert HDR equirectangular environment map to cubemap equivalent
+	// ----------------------------------------------------------------------
+	obj->setTexture(hdrTexture, TEXTURE_TYPE::colortex);
+	cFBO->render(shaderCapture, obj, captureViews, captureProjection);
 
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			shaderCapture->setUniform("myview_matrix", captureViews[i]);
-			//captureShader->setUniform("cam_position", mainCam->camera_eye);
-			shaderCapture->setUniform("myprojection_matrix", captureProjection);
-			
-			obj->displayObjects(shaderCapture, captureViews[i]);
-		}
-		glGenerateTextureMipmap(cFBO->envTexture->texture_id);
-		shaderCapture->stop();
-		cFBO->unbind();
+	obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
+	iFBO->render(shaderIrradiance, obj, captureViews, captureProjection);
 
-		iFBO->bind();
-		glViewport(0, 0, iFBO->getWidth(), iFBO->getHeight());
-		obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-		shaderIrradiance->start();
-		for (unsigned int i = 0; i < 6; ++i)
-		{
-			glNamedFramebufferTextureLayer(iFBO->fboID, GL_COLOR_ATTACHMENT0, iFBO->envTexture->texture_id, 0, i);
-			
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			shaderIrradiance->setUniform("myview_matrix", captureViews[i]);
-			//captureShader->setUniform("cam_position", mainCam->camera_eye);
-			shaderIrradiance->setUniform("myprojection_matrix", captureProjection);
-			
-			obj->displayObjects(shaderIrradiance, captureViews[i]);
-		}
-		glGenerateTextureMipmap(iFBO->envTexture->texture_id);
-		shaderIrradiance->stop();
-		iFBO->unbind();
+	obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
+	pFBO->render(shaderPrefilter, obj, captureViews, captureProjection, 5);
 
-		pFBO->bind();
-		glViewport(0, 0, pFBO->getWidth(), pFBO->getHeight());
-		obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-		shaderPrefilter->start();
-		unsigned int maxMipLevels = 5;
-		for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
-		{
-			// reisze framebuffer according to mip-level size.
-			unsigned int mipWidth = pFBO->getWidth() * std::pow(0.5, mip);
-			unsigned int mipHeight = pFBO->getHeight() * std::pow(0.5, mip);
-			glViewport(0, 0, mipWidth, mipHeight);
+	auto canvas = new myObject();
+	canvas->readObjects("models/plane.obj", true, false);
+	canvas->createmyVAO();
 
-			float roughness = (float)mip / (float)(maxMipLevels - 1);
-			shaderPrefilter->setUniform("roughness", roughness);
+	bFBO->render(shaderBRDF, canvas, captureViews[0]);
 
-			unsigned int i = 0;
-
-			for (; i < 6; ++i)
-			{
-				glNamedFramebufferTextureLayer(pFBO->fboID, GL_COLOR_ATTACHMENT0, pFBO->envTexture->texture_id, mip, i);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-				shaderPrefilter->setUniform("myview_matrix", captureViews[i]);
-				//captureShader->setUniform("cam_position", mainCam->camera_eye);
-				shaderPrefilter->setUniform("myprojection_matrix", captureProjection);
-				
-				obj->displayObjects(shaderPrefilter, captureViews[i]);
-			}
-			auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-			if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
-				std::cout << "Framebuffer not complete: " << fboStatus << std::endl;
-		}
-		shaderPrefilter->stop();
-		pFBO->unbind();
-
-		auto canvas = new myObject();
-		canvas->readObjects("models/plane.obj", true, false);
-		canvas->createmyVAO();
-
-		bFBO->bind();
-			shaderBRDF->start();
-				glViewport(0, 0, bFBO->getWidth(), bFBO->getHeight());
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				canvas->displayObjects(shaderBRDF, captureViews[0]);
-			shaderBRDF->stop();
-		bFBO->unbind();
-
-		canvas = new myObject();
-		canvas->readObjects("models/plane.obj", true, false);
-		canvas->createmyVAO();
-	
 	//enviornment mapped object
 	obj = new myObject();
 	obj->readObjects("models/skycube.obj", true, false);
@@ -546,14 +472,39 @@ int main(int argc, char *argv[])
 	auto texNormal_X = new myTexture("textures/blueburlap/worn-blue-burlap-Normal-dx.png");
 	auto texRoughness_X = new myTexture("textures/blueburlap/worn-blue-burlap-Roughness.png");
 
+	auto posTextureMap = PosTextureMap {
+
+			{ glm::vec3(-10, 0, 0), std::map<TEXTURE_TYPE, myTexture*> {
+				{ TEXTURE_TYPE::texAO, texAO_A },
+				{ TEXTURE_TYPE::texAlbedo, texAlbedo_A },
+				{ TEXTURE_TYPE::texMetal, texMetallic_A },
+				{ TEXTURE_TYPE::texNormal, texNormal_A },
+				{ TEXTURE_TYPE::texRough, texRoughness_A }
+			} },
+			{ glm::vec3(10, 0, 0), std::map<TEXTURE_TYPE, myTexture*> {
+				{ TEXTURE_TYPE::texAO, texAO_B },
+				{ TEXTURE_TYPE::texAlbedo, texAlbedo_B},
+				{ TEXTURE_TYPE::texMetal, texMetallic_B },
+				{ TEXTURE_TYPE::texNormal, texNormal_B },
+				{ TEXTURE_TYPE::texRough, texRoughness_B }
+			} },
+			{ glm::vec3(0, 10, -20), std::map<TEXTURE_TYPE, myTexture*> {
+				{ TEXTURE_TYPE::texAO, texAO_X },
+				{ TEXTURE_TYPE::texAlbedo, texAlbedo_X},
+				{ TEXTURE_TYPE::texMetal, texMetallic_X },
+				{ TEXTURE_TYPE::texNormal, texNormal_X },
+				{ TEXTURE_TYPE::texRough, texRoughness_X }
+			} }
+	};
+
 	obj = new myObject();
 	obj->readObjects("models/sphere.obj", true, false);
 	obj->createmyVAO();
 	scene.addObjects(obj, "lightball");
 
 	// display loop
-	myShader *curr_shader;
-	float delta = M_PI/1000;
+	myShader* curr_shader;
+	float delta = M_PI / 1000;
 
 	glCheckError();
 	while (!quit)
@@ -617,30 +568,31 @@ int main(int argc, char *argv[])
 
 		glCheckError();
 
+		
 		environmentFBO->clear();
-		environmentFBO->bind(); {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		environmentFBO->bind(); 
+		{
 			scene["skycube"]->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
 			curr_shader = shaders["shader_skycube"];
 			curr_shader->start();
 			scene["skycube"]->displayObjects(curr_shader, view_matrix);
 			curr_shader->stop();
-			//glGenerateTextureMipmap(eFBO->colortexture->texture_id);
+			//glGenerateTextureMipmap(environmentFBO->colortexture->texture_id);
 
-			curr_shader = shaders["basicx"]; 
+			curr_shader = shaders["basicx"];
 			curr_shader->start();
-			for (auto light : scene.lights->lights) {	
+			for (auto light : scene.lights->lights) {
 				curr_shader->setUniform("color", light->color);
 				scene["lightball"]->translate(light->position);
 				scene["lightball"]->displayObjects(curr_shader, view_matrix);
 				scene["lightball"]->translate(-light->position);
-				
-				auto randX = (float)rand()/RAND_MAX;
-				auto randY = (float)rand()/RAND_MAX;
-				auto randZ = (float)rand()/RAND_MAX;
+
+				auto randX = (float)rand() / RAND_MAX;
+				auto randY = (float)rand() / RAND_MAX;
+				auto randZ = (float)rand() / RAND_MAX;
 				//https://gamedev.stackexchange.com/questions/115032/how-should-i-rotate-vertices-around-the-origin-on-the-cpu
-				glm::vec3 v3RotAxis(randX, randY, randZ); 
-				
+				glm::vec3 v3RotAxis(randX, randY, randZ);
+
 				glm::quat quatRot = glm::angleAxis(delta, v3RotAxis);
 				glm::mat4x4 matRot = glm::mat4_cast(quatRot);
 				glm::vec4 newpos = (matRot * glm::vec4(light->position, 1.0));
@@ -661,82 +613,36 @@ int main(int argc, char *argv[])
 		int blurIndex = 0; int count = 0;
 		FBO* blurList[2] = { blurFBO, rulbFBO };
 
-		while (count < bloomStrength){
+		while (count < bloomStrength) {
 			auto currentFBO = blurList[blurIndex];
-			currentFBO->clear();
-			currentFBO->bind();
-			shaderBlur->start();
 
-			shaderBlur->setUniform("range", (float)bloomRange);
-			shaderBlur->setUniform("horizontal", horizontal);
-			canvas->displayObjects(shaderBlur, captureViews[0]);
+			auto lambda = std::function<void()>([&] {
+				shaderBlur->setUniform("range", (float)bloomRange);
+				shaderBlur->setUniform("horizontal", horizontal);
+				});
+
+			currentFBO->render(shaderBlur, canvas, captureViews[0], &lambda);
 			canvas->setTexture(currentFBO->colortexture, TEXTURE_TYPE::gAlbedo);
-			horizontal = !horizontal;
 
-			shaderBlur->stop();
-			currentFBO->unbind();
+			horizontal = !horizontal;
 			blurIndex = !blurIndex;
 			++count;
-		}; 
+		};
 
 		glCheckError();
-		
-		geometryFBO->clear();
-		geometryFBO->bind();
-		{
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			curr_shader = shaders["geo_buffer"]; curr_shader->start();
 
-			obj = scene["shaderball"];
-			obj->rotate(0.0f, 1.0f, 0.0f, delta);
-
-			obj->setTexture(texAlbedo_A, TEXTURE_TYPE::texAlbedo);
-			obj->setTexture(texAO_A, TEXTURE_TYPE::texAO);
-			obj->setTexture(texMetallic_A, TEXTURE_TYPE::texMetal);
-			obj->setTexture(texNormal_A, TEXTURE_TYPE::texNormal);
-			obj->setTexture(texRoughness_A, TEXTURE_TYPE::texRough);
-			
-			obj->translate(-10, 0, 0);
-			obj->displayObjects(curr_shader, view_matrix);
-			obj->translate(10, 0, 0);
-
-			obj->setTexture(texAlbedo_B, TEXTURE_TYPE::texAlbedo);
-			obj->setTexture(texAO_B, TEXTURE_TYPE::texAO);
-			obj->setTexture(texMetallic_B, TEXTURE_TYPE::texMetal);
-			obj->setTexture(texNormal_B, TEXTURE_TYPE::texNormal);
-			obj->setTexture(texRoughness_B, TEXTURE_TYPE::texRough);
-
-			obj->translate(10, 0, 0);
-			obj->displayObjects(curr_shader, view_matrix);
-			obj->translate(-10, 0, 0);
-
-			obj->setTexture(texAlbedo_X, TEXTURE_TYPE::texAlbedo);
-			obj->setTexture(texAO_X, TEXTURE_TYPE::texAO);
-			obj->setTexture(texMetallic_X, TEXTURE_TYPE::texMetal);
-			obj->setTexture(texNormal_X, TEXTURE_TYPE::texNormal);
-			obj->setTexture(texRoughness_X, TEXTURE_TYPE::texRough);
-
-			obj->translate(0, 10, -20);
-			obj->displayObjects(curr_shader, view_matrix);
-			obj->translate(0, -10, 20);
-
-			curr_shader->stop();
-		};  geometryFBO->unbind();
-
+		obj = scene["shaderball"];
+		curr_shader = shaders["geo_buffer"];
+		obj->rotate(0.0f, 1.0f, 0.0f, delta);
+		geometryFBO->loopRender(curr_shader, obj, view_matrix, posTextureMap);
 		glCheckError();
 
 		glGenerateTextureMipmap(geometryFBO->gAlbedo->texture_id);
 		glGenerateTextureMipmap(geometryFBO->gNormal->texture_id);
 		glGenerateTextureMipmap(geometryFBO->gPosition->texture_id);
 
-		lightingFBO->bind(); {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			curr_shader = shaders["pbr_buffer"]; 
-			curr_shader->start();
-				scene["pbr_canvas"]->displayObjects(curr_shader, view_matrix);
-			curr_shader->stop();
-		}; lightingFBO->unbind();
-
+		curr_shader = shaders["pbr_buffer"];
+		lightingFBO->render(curr_shader, scene["pbr_canvas"], view_matrix);
 		glCheckError();
 
 		static float exposure = 1.0f;
@@ -753,7 +659,7 @@ int main(int argc, char *argv[])
 		scene["ppe_canvas"]->setTexture(environmentFBO->extratexture, TEXTURE_TYPE::gExtra);
 		scene["ppe_canvas"]->setTexture(environmentFBO->colortexture, TEXTURE_TYPE::gEnv);
 		scene["ppe_canvas"]->setTexture(rulbFBO->colortexture, TEXTURE_TYPE::gBloom);
-		
+
 		scene["ppe_canvas"]->displayObjects(curr_shader, view_matrix); curr_shader->stop();
 
 		/*-----------------------*/
@@ -812,17 +718,18 @@ int main(int argc, char *argv[])
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glCheckError();
-		
+
 		SDL_Event current_event;
 		glCheckError();
 		SDL_GL_SwapWindow(window);
 		glCheckError();
 
 		while (SDL_PollEvent(&current_event) != 0) {
-			
+
 			if (ImGui::IsMouseHoveringAnyWindow()) {
 				ImGui_ImplSDL2_ProcessEvent(&current_event);
-			} else {
+			}
+			else {
 				processEvents(current_event);
 			}
 		}

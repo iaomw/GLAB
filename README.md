@@ -28,8 +28,7 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - [**Separable Subsurface Scattering**](http://www.iryoku.com/separable-sss/)
 
 ## To-fix
-- 1282: INVALID_OPERATION
-- AMD GPU: Strange texture color after first run.
+Light source should be brighter.
 
 ## References
 

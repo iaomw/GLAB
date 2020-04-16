@@ -1,6 +1,6 @@
 # GLAB
 
-![Preview image](/assets/Capture.D.JPG)
+![Preview image](/assets/Capture.E.JPG)
 
 This serves as my final project for **Computer Graphics** course **2017 Fall**.
 

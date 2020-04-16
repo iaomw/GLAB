@@ -1,5 +1,8 @@
 #version 440 core
 
+#define FLT_MAX 3.402823466e+38
+#define FLT_MIN 1.175494351e-38
+
 in vec2 TexCoords;
 
 uniform sampler2D gAlbedo;
@@ -19,7 +22,7 @@ void main()
 
     vec4 result;
     if (texture(gAlbedo, TexCoords).a >= 0.0) {
-        result.rgb = vec3(0.0);
+        result.rgba = vec4(0, 0, 0, -FLT_MAX);
     } else {
         result.rgb = 2 * texture(gAlbedo, TexCoords).rgb * weight[0];
         result.a = texture(gAlbedo, TexCoords).a;
@@ -29,19 +32,32 @@ void main()
     tex_offset *= dxdy;
 
     vec3 bloom = vec3(0.0);
-    float max_z = -result.a;
+    float max_z = result.a;
+    float current_z; bool test_z;
 
     for(int i = 1; i < 5; ++i)
     {   
         vec2 cood_offset = tex_offset * i;
-        bloom += (0.0<=texture(gAlbedo, TexCoords + cood_offset).a)? vec3(0.0):texture(gAlbedo, TexCoords + cood_offset).rgb * weight[i];
-        bloom += (0.0<=texture(gAlbedo, TexCoords - cood_offset).a)? vec3(0.0):texture(gAlbedo, TexCoords - cood_offset).rgb * weight[i];
+
+        current_z = texture(gAlbedo, TexCoords + cood_offset).a;
+        test_z = (current_z<0.0);
+
+        if (test_z) {
+            bloom += texture(gAlbedo, TexCoords + cood_offset).rgb * weight[i];
+            max_z = max(max_z, current_z);
+        }
        
-        max_z = max(max(max_z, -texture(gAlbedo, TexCoords + cood_offset).a), -texture(gAlbedo, TexCoords - cood_offset).a);
+        current_z = texture(gAlbedo, TexCoords - cood_offset).a;
+        test_z = (current_z<0.0);
+
+        if (test_z) {
+            bloom += texture(gAlbedo, TexCoords - cood_offset).rgb * weight[i];
+            max_z = max(max_z, current_z);
+        }
     }
 
     result.rgb += bloom;
     gColor.rgb = result.rgb;
 
-    gColor.a = (result.rgb==vec3(0.0))? 0.0 : -max_z; 
+    gColor.a = (vec3(0)==result.rgb)? 0.0 : max_z; 
 }

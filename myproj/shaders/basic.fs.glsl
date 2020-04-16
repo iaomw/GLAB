@@ -1,6 +1,7 @@
 #version 330 core
 
 uniform vec3 cam_position;
+
 uniform mat4 myview_matrix;
 uniform mat4 mymodel_matrix;
 uniform mat3 mynormal_matrix;
@@ -33,6 +34,6 @@ void main (void)
 	vec3 V = normalize(cam_vspace - gExtra.xyz);
     vec3 N = normalize(mynormal_matrix * mynormal);
     float NdotV = max(dot(N, V), 0.5);
-	gColor = vec4(pow(color*NdotV, vec3(1.0/2.2)), 1);
+	gColor = vec4(pow(color*NdotV, vec3(1.0/2.2)), gExtra.z);
 	gExtra.w = LinearizeDepth(gl_FragCoord.z);
 }

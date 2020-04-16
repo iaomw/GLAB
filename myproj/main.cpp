@@ -5,20 +5,19 @@
 #include <fstream>
 #include <iostream>
 
-#include <glm/glm.hpp>
+#include <stdio.h>
 #include <GL/glew.h>
 #include <GL/GLU.h>
+#include <glm/glm.hpp>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl.h>
 #include <imgui/imgui_impl_opengl3.h>
-#include <stdio.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_main.h>
 #include <SDL2/SDL_opengl.h>
 #undef main
-
 
 #pragma comment(lib, "Shcore.lib")
 #include <ShellScalingAPI.h>
@@ -51,6 +50,7 @@ SDL_GLContext glContext;
 
 int mouse_position[2];
 bool mouse_button_pressed = false;
+
 bool quit = false;
 bool windowsize_changed = true;
 bool crystalballorfirstperson_view = false;
@@ -335,7 +335,6 @@ int main(int argc, char* argv[])
 
 	auto lightingFBO = new FBO(true);
 	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
-
 	auto environmentFBO = new FBO(true);
 	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
@@ -568,17 +567,17 @@ int main(int argc, char* argv[])
 
 		glCheckError();
 
-		
+		scene["skycube"]->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
+		curr_shader = shaders["shader_skycube"];
+
 		environmentFBO->clear();
 		environmentFBO->bind(); 
 		{
-			scene["skycube"]->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-			curr_shader = shaders["shader_skycube"];
 			curr_shader->start();
 			scene["skycube"]->displayObjects(curr_shader, view_matrix);
-			curr_shader->stop();
 			//glGenerateTextureMipmap(environmentFBO->colortexture->texture_id);
-
+			curr_shader->stop();
+			
 			curr_shader = shaders["basicx"];
 			curr_shader->start();
 			for (auto light : scene.lights->lights) {
@@ -622,6 +621,7 @@ int main(int argc, char* argv[])
 				});
 
 			currentFBO->render(shaderBlur, canvas, captureViews[0], &lambda);
+			canvas->setTexture(currentFBO->colortexture, TEXTURE_TYPE::gAlbedo);
 			canvas->setTexture(currentFBO->colortexture, TEXTURE_TYPE::gAlbedo);
 
 			horizontal = !horizontal;

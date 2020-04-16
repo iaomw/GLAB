@@ -17,6 +17,8 @@ public:
 	GLuint fboID, rboID;
 	int width, height;
 
+	virtual ~RenderTarget() {}
+
 	void render(myShader* shader, myObject* object, glm::mat4 view_matrix, std::function<void()>* before=nullptr, std::function<void()>* after=nullptr) {
 
 		bind();

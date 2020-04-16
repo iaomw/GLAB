@@ -11,22 +11,22 @@ uniform sampler2D gEnv;
 uniform sampler2D gExtra;
 uniform sampler2D gBloom;
 
-
 in vec2 texCoords;
 
 void main()
 {   
-    vec4 obj = texture(colortex, texCoords).rgba;
     vec4 env = texture(gEnv, texCoords).rgba;
+    vec4 obj = texture(colortex, texCoords).rgba;
     vec3 pos = texture(gPosition, texCoords).rgb;
-    vec3 bloom = texture(gBloom, texCoords).rgb;
+    vec4 bloom = texture(gBloom, texCoords).rgba;
 
     vec3 result;
     if (obj.a < 1.0) {
-        result = env.rgb + bloom;
+        result = env.rgb + bloom.rgb;
     } else { // compare view space z position
         float bz = texture(gExtra, texCoords).z; 
-        result = pos.z > bz ? obj.rgb : (env.rgb+bloom);
+        result = (pos.z > bz) ? obj.rgb : env.rgb;
+        result += (bloom.a >= pos.z) ? bloom.rgb : vec3(0);
     }
  
     // Exposure tonemapping

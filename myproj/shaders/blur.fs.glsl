@@ -17,34 +17,31 @@ void main()
 {             
     vec2 tex_offset = range / textureSize(gAlbedo, 0); // gets size of single texel
 
-    vec3 result;
-    if (texture(gAlbedo, TexCoords).a < 1.0) {
-        result = vec3(0.0);
+    vec4 result;
+    if (texture(gAlbedo, TexCoords).a >= 0.0) {
+        result.rgb = vec3(0.0);
     } else {
-        result = texture(gAlbedo, TexCoords).rgb * weight[0];
+        result.rgb = 2 * texture(gAlbedo, TexCoords).rgb * weight[0];
+        result.a = texture(gAlbedo, TexCoords).a;
     }
 
+    vec2 dxdy = (horizontal>0)? vec2(1, 0) : vec2(0, 1);
+    tex_offset *= dxdy;
+
     vec3 bloom = vec3(0.0);
+    float max_z = -result.a;
 
-     if(horizontal > 0)
-     {
-         for(int i = 1; i < 5; ++i)
-         {
-            bloom += texture(gAlbedo, TexCoords + vec2(tex_offset.x * i, 0.0)).rgb * weight[i] * texture(gAlbedo, TexCoords + vec2(tex_offset.x * i, 0.0)).a;
-            bloom += texture(gAlbedo, TexCoords - vec2(tex_offset.x * i, 0.0)).rgb * weight[i] * texture(gAlbedo, TexCoords - vec2(tex_offset.x * i, 0.0)).a;
-         }
-     }
-     else
-     {
-         for(int i = 1; i < 5; ++i)
-         {
-            bloom += texture(gAlbedo, TexCoords + vec2(0.0, tex_offset.y * i)).rgb * weight[i] * texture(gAlbedo, TexCoords + vec2(0.0, tex_offset.y * i)).a;
-            bloom += texture(gAlbedo, TexCoords - vec2(0.0, tex_offset.y * i)).rgb * weight[i] * texture(gAlbedo, TexCoords - vec2(0.0, tex_offset.y * i)).a;
-         }
-     }
+    for(int i = 1; i < 5; ++i)
+    {   
+        vec2 cood_offset = tex_offset * i;
+        bloom += (0.0<=texture(gAlbedo, TexCoords + cood_offset).a)? vec3(0.0):texture(gAlbedo, TexCoords + cood_offset).rgb * weight[i];
+        bloom += (0.0<=texture(gAlbedo, TexCoords - cood_offset).a)? vec3(0.0):texture(gAlbedo, TexCoords - cood_offset).rgb * weight[i];
+       
+        max_z = max(max(max_z, -texture(gAlbedo, TexCoords + cood_offset).a), -texture(gAlbedo, TexCoords - cood_offset).a);
+    }
 
-    result += bloom;
-    gColor.rgb = result;
+    result.rgb += bloom;
+    gColor.rgb = result.rgb;
 
-    gColor.a = (result==vec3(0.0))? 0.0:1.0; 
+    gColor.a = (result.rgb==vec3(0.0))? 0.0 : -max_z; 
 }

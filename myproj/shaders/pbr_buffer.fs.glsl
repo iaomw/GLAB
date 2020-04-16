@@ -6,10 +6,13 @@ layout (location = 1) out vec4 gExtra;
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
 uniform vec3 cam_position;
+
 uniform mat4 myview_matrix;
 uniform mat4 mymodel_matrix;
 uniform mat3 mynormal_matrix;
 uniform mat4 myprojection_matrix;
+
+uniform mat4 inverse_view_matrix;
 
 in vec4 myvertex;
 in vec3 mynormal;
@@ -148,12 +151,15 @@ void main()
         color += (diffuse * kD + specular * kS) * lightColor * remain * NdotL; 
      }
 
-    vec3 irradianceX = texture(gIrradiance, N).rgb;
+    vec4 world_N = inverse_view_matrix * vec4(N, 0);
+    vec4 world_R = inverse_view_matrix * vec4(R, 0);
+
+    vec3 irradianceX = texture(gIrradiance, world_N.xyz).rgb;
     vec3 diffuseX = irradianceX * tAlbedo;
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(gPrefilter, R,  roughness * MAX_REFLECTION_LOD).rgb;    
+    vec3 prefilteredColor = textureLod(gPrefilter, world_R.xyz, roughness * MAX_REFLECTION_LOD).rgb;    
     vec2 xBRDF  = texture(BRDF_LUT, vec2(NdotV, roughness)).rg;
     vec3 specularX = prefilteredColor * (F * xBRDF.x + xBRDF.y);
 

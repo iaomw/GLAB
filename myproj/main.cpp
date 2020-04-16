@@ -555,6 +555,7 @@ int main(int argc, char* argv[])
 		{
 			curr_shader = shaders[i]; curr_shader->start();
 			curr_shader->setUniform("myprojection_matrix", projection_matrix);
+			curr_shader->setUniform("inverse_view_matrix", glm::inverse(view_matrix));
 			curr_shader->setUniform("myview_matrix", view_matrix);
 			curr_shader->setUniform("cam_position", mainCam->camera_eye);
 

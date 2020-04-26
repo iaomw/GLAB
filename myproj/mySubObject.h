@@ -14,7 +14,7 @@
 
 class myShader;
 
-enum class TEXTURE_TYPE {
+enum class Texture_Type {
 
 	colortex, bumptex, cubetex,
 
@@ -34,7 +34,7 @@ public:
 	size_t start, end;
 	myMaterial *material;
 
-	std::map<TEXTURE_TYPE, myTexture *> textures;
+	std::map<Texture_Type, myTexture *> textures;
 
 	std::string name;
 
@@ -43,7 +43,7 @@ public:
 	
 	~mySubObject();
 
-	void setTexture(myTexture *t, TEXTURE_TYPE);
+	void setTexture(myTexture *t, Texture_Type);
 
 	void displaySubObject(myVAO *vao, myShader *);
 	void displayNormals(myVAO *vao, myShader *);

@@ -17,8 +17,8 @@ public:
 
 	myTexture();
 	myTexture(GLenum type);
-	myTexture(std::string filename);
-	myTexture(std::vector<std::string> & filenames);
+	myTexture(const std::string& filename);
+	myTexture(std::vector<std::string>& filenames);
 	~myTexture();
 
 	bool readTexture_2D(std::string filename);

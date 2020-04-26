@@ -1,7 +1,7 @@
 #version 330 core
 
 layout (location = 0) out vec4 gColor;
-layout (location = 1) out vec4 gExtra;
+//layout (location = 1) out vec4 gExtra;
 
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
@@ -48,7 +48,7 @@ float Fd90(float NoL, float roughness)
     return (2.0f * NoL * roughness) + 0.4f;
 }
 
-float KDisneyTerm(float NoL, float NoV, float roughness)
+float kDisneyTerm(float NoL, float NoV, float roughness)
 {
     return (1.0f + Fd90(NoL, roughness) * pow(1.0f - NoL, 5.0f)) * (1.0f + Fd90(NoV, roughness) * pow(1.0f - NoV, 5.0f));
 }
@@ -93,7 +93,10 @@ void main()
 {             
     // retrieve data from gbuffer
     vec4 tPosition = texture(gPosition, texCoords);
-    if (tPosition == vec4(0.0)) { discard; }
+    if (0 == tPosition.z && 1.0 == tPosition.a) { 
+        gColor.a = 1.0;
+        return; //discard; 
+    }
 
     vec3 tAlbedo = texture(gAlbedo, texCoords).rgb;
     vec3 tNormal = texture(gNormal, texCoords).rgb;
@@ -142,7 +145,7 @@ void main()
         // Light source dependent BRDF term(s)
         float NdotL = saturate(dot(N, L));
         diffuse = tAlbedo / PI; // Lambertian
-        float kDisney = KDisneyTerm(NdotL, NdotV, roughness);
+        float kDisney = kDisneyTerm(NdotL, NdotV, roughness);
         diffuse = diffuse * kDisney;
         float D = DistributionGGX(N, H, roughness);
         float G = SmithGeometryGGX(NdotL, NdotV, roughness);
@@ -168,7 +171,6 @@ void main()
     gColor.rgb = color + ambient;
     //gColor.rgb = diffuseX;
     //gColor.rgb = specularX;
-    gColor.a = 1.0;
-
+    gColor.a = tPosition.z;
     //gExtra = tPosition;
 }

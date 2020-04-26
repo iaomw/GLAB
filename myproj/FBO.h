@@ -1,12 +1,10 @@
 #pragma once
 #include <functional>
-
 #include <GL/glew.h>
 
 #include "myObject.h"
 #include "myShader.h"
 #include "myTexture.h"
-
 
 class RenderTarget {
 
@@ -17,9 +15,10 @@ public:
 	GLuint fboID, rboID;
 	int width, height;
 
-	virtual ~RenderTarget() {}
+	//virtual ~RenderTarget() {}
 
-	void render(myShader* shader, myObject* object, glm::mat4 view_matrix, std::function<void()>* before=nullptr, std::function<void()>* after=nullptr) {
+	void render(myShader* shader, myObject* object, glm::mat4 view_matrix, 
+		std::function<void()>* before=nullptr, std::function<void()>* after=nullptr) {
 
 		bind();
 		shader->start();
@@ -66,12 +65,14 @@ class FBO: public RenderTarget
 {
 public:
 
-	FBO(bool useExtra = false);
+	FBO(bool extra = false, bool mipmap = false);
 	virtual ~FBO();
+	virtual void reset();
 
 	void initFBO(int width, int height);
 
 private:
 	bool needExtra;
+	bool needMipmap;
 };
 

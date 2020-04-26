@@ -19,7 +19,7 @@ vec2 SampleSphericalMap(vec3 v)
 void main()
 {		
     vec2 uv = SampleSphericalMap(normalize(WorldPos));
-    vec3 color = texture(colortex, uv).rgb;
+    vec3 color = pow(texture(colortex, uv).rgb, vec3(1.0));
 
     gColor = vec4(color, 1.0);
     gExtra = vec4(color, 1.0);

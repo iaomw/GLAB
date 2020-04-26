@@ -6,8 +6,8 @@
 SSSS::SSSS(int sampleNumber)
 {
 	sampleCount = sampleNumber;
-	falloff = glm::fvec3(0.4);
-	strength = glm::fvec4(0.6);
+	falloff = glm::vec3(0.4);
+	strength = glm::vec4(0.6);
 
 	falloff = glm::vec3(1.0f, 0.37f, 0.3f);
 	strength = glm::vec3(0.48f, 0.41f, 0.28f);
@@ -21,13 +21,13 @@ void SSSS::setSampleCount(int count) {
 	calculateKernel();
 }
 
-glm::fvec3 SSSS::gaussian(float variance, float r) {
+glm::vec3 SSSS::gaussian(float variance, float r) {
 	/**
 	 * We use a falloff to modulate the shape of the profile. Big falloffs
 	 * spreads the shape making it wider, while small falloffs make it
 	 * narrower.
 	 */
-	glm::fvec3 g;
+	glm::vec3 g;
 	for (int i = 0; i < 3; i++) {
 		float rr = r / (0.001f + falloff[i]);
 		g[i] = exp((-(rr * rr)) / (2.0f * variance)) / (2.0f * 3.14f * variance);
@@ -35,7 +35,7 @@ glm::fvec3 SSSS::gaussian(float variance, float r) {
 	return g;
 }
 
-glm::fvec3 SSSS::profile(float r) {
+glm::vec3 SSSS::profile(float r) {
 	/**
 	*We used the red channel of the original skin profile defined in
 	* [d'Eon07] for all three channels. We noticed it can be used for green
@@ -72,22 +72,22 @@ void SSSS::calculateKernel() {
 		float w0 = i > 0 ? abs(kernel[i].w - kernel[i - 1].w) : 0.0f;
 		float w1 = i < (sampleCount - 1) ? abs(kernel[i].w - kernel[i + 1].w) : 0.0f;
 		float area = (w0 + w1) / 2.0f;
-		glm::fvec3 t = area * profile(kernel[i].w);
+		glm::vec3 t = area * profile(kernel[i].w);
 		kernel[i].x = t.x;
 		kernel[i].y = t.y;
 		kernel[i].z = t.z;
 	}
 
 	// We want the offset 0.0 to come first:
-	glm::fvec4 t = kernel[sampleCount / 2];
+	glm::vec4 t = kernel[sampleCount / 2];
 	for (int i = sampleCount / 2; i > 0; i--)
 		kernel[i] = kernel[i - 1];
 	kernel[0] = t;
 
 	// Calculate the sum of the weights, we will need to normalize them below:
-	glm::fvec3 sum = glm::fvec3(0.0f);
+	glm::vec3 sum = glm::vec3(0.0f);
 	for (int i = 0; i < sampleCount; i++) {
-		sum += glm::fvec3(kernel[i]);
+		sum += glm::vec3(kernel[i]);
 	}
 	// Normalize the weights:
 	for (int i = 0; i < sampleCount; i++) {

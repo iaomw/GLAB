@@ -23,9 +23,9 @@ uniform sampler2D texNormal;
 uniform sampler2D texRough;
 
 uniform float fovY;
-
 uniform float farZ;
 uniform float nearZ;
+uniform float gamma;
 
 // Calculation in view space
 vec3 detailedTexNormal(vec3 normal_vspace, vec3 tNormal, vec3 position)
@@ -55,7 +55,7 @@ void main (void)
 	gPosition.a = texture(texAO, texCoord.st).r;
     //gPosition.z = LinearizeDepth(gl_FragCoord.z);
 
-	gAlbedo.rgb = pow(texture(texAlbedo, texCoord.st).rgb, vec3(2.2));
+	gAlbedo.rgb = pow(texture(texAlbedo, texCoord.st).rgb, vec3(gamma));
 	gAlbedo.a = texture(texRough, texCoord.st).r;
 
 	vec3 tNormal = normalize(texture(texNormal, texCoord.st).rgb * 2.0f - 1.0f);

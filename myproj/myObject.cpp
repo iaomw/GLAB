@@ -9,8 +9,11 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp> 
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/intersect.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
 #include "helperFunctions.h"
 #include "errors.h"
 
@@ -36,9 +39,12 @@ void myObject::clear()
 		delete it->second;
 	objects.clear();
 
-	vector<glm::vec3> empty; vertices.swap(empty);
-	normals.swap(empty);
-	vector<glm::ivec3> empty2; indices.swap(empty2);
+	vector<glm::vec3> empty_f; 
+	vertices.swap(empty_f);
+	vertex_normals.swap(empty_f);
+
+	vector<glm::ivec3> empty_i; 
+	indices.swap(empty_i);
 }
 
 void myObject::readMaterials(std::string mtlfilename, unordered_map<string, myMaterial *> & materials, unordered_map<string, myTexture *> & textures)
@@ -79,7 +85,7 @@ void myObject::readMaterials(std::string mtlfilename, unordered_map<string, myMa
 	mtlfin.close();
 }
 
-bool myObject::readObjects(std::string filename, bool individualvertices_per_face, bool tonormalize)
+bool myObject::readObjects(std::string filename, bool allow_duplication, bool tonormalize)
 {
 	clear();
 
@@ -98,9 +104,15 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 	unordered_map<string, myTexture *> textures;
 
 	vector<glm::vec3> tmp_vertices;
-	vector<glm::vec2> tmp_texturecoordinates;
 	vector<glm::vec3> tmp_normals;
+	vector<glm::vec2> tmp_texturecoordinates;
 
+	std::unordered_map<glm::vec3, uint32_t> cached;
+
+	unsigned int vertex_idx_a, texture_idx_a, normal_idx_a;
+	unsigned int vertex_idx_b, texture_idx_b, normal_idx_b;
+	unsigned int vertex_idx_c, texture_idx_c, normal_idx_c;
+	
 	while (getline(fin, s))
 	{
 		stringstream myline(s);
@@ -109,7 +121,7 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 		{
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-			o->setTexture(curr_texture, TEXTURE_TYPE::colortex);
+			o->setTexture(curr_texture, Texture_Type::colortex);
 			objects.emplace(curr_name, o);
 
 			curr_start = curr_end;
@@ -139,13 +151,13 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 			size_t prefix = filename.find_last_of("/");
 			if (prefix != string::npos)
 				mtlfilename = (filename.substr(0, prefix)).c_str() + string("/") + mtlfilename;
-			readMaterials(mtlfilename, materials, textures);
+			//readMaterials(mtlfilename, materials, textures);
 		}
 		else if (t == "usemtl")
 		{
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-			o->setTexture(curr_texture, TEXTURE_TYPE::colortex);
+			o->setTexture(curr_texture, Texture_Type::colortex);
 			objects.emplace(curr_name, o);
 
 			curr_start = curr_end;
@@ -165,54 +177,88 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 		else if (t == "s") {}
 		else if (t == "f")
 		{
-			unsigned int vertex_index1, vertex_index2, vertex_index3;
-			unsigned int texture_index1, texture_index2, texture_index3;
-			unsigned int normal_index1, normal_index2, normal_index3;
-
 			myline >> t; 
-			parseObjFace(t, vertex_index1, texture_index1, normal_index1);
+			parseObjFace(t, vertex_idx_a, texture_idx_a, normal_idx_a);
 	
 			myline >> t; 
-			parseObjFace(t, vertex_index2, texture_index2, normal_index2);
+			parseObjFace(t, vertex_idx_b, texture_idx_b, normal_idx_b);
 
 			while (myline >> t)
 			{
-				parseObjFace(t, vertex_index3, texture_index3, normal_index3);
+				parseObjFace(t, vertex_idx_c, texture_idx_c, normal_idx_c);
 
-				if (individualvertices_per_face) 
-				{
-					vertices.push_back(tmp_vertices[vertex_index1]);
-					if (texture_index1 < tmp_texturecoordinates.size())
-						texturecoordinates.push_back(tmp_texturecoordinates[texture_index1]);
-					else texturecoordinates.push_back(glm::vec2(0, 0));
-					if (normal_index1 < tmp_normals.size())
-						normals.push_back(tmp_normals[normal_index1]);
-					else normals.push_back(glm::vec3(0, 0, 0));
+				if (allow_duplication) 
+				{	// duplicate
+					vertices.push_back(tmp_vertices[vertex_idx_a]);
 
-					vertices.push_back(tmp_vertices[vertex_index2]);
-					if (texture_index2 < tmp_texturecoordinates.size())
-						texturecoordinates.push_back(tmp_texturecoordinates[texture_index2]);
+					if (texture_idx_a < tmp_texturecoordinates.size())
+						texturecoordinates.push_back(tmp_texturecoordinates[texture_idx_a]);
 					else texturecoordinates.push_back(glm::vec2(0, 0));
-					if (normal_index2 < tmp_normals.size())
-						normals.push_back(tmp_normals[normal_index2]);
-					else normals.push_back(glm::vec3(0, 0, 0));
 
-					vertices.push_back(tmp_vertices[vertex_index3]);
-					if (texture_index3 < tmp_texturecoordinates.size())
-						texturecoordinates.push_back(tmp_texturecoordinates[texture_index3]);
+					if (normal_idx_a < tmp_normals.size())
+						vertex_normals.push_back(tmp_normals[normal_idx_a]);
+					else vertex_normals.push_back(glm::vec3(0, 0, 0));
+
+					vertices.push_back(tmp_vertices[vertex_idx_b]);
+
+					if (texture_idx_b < tmp_texturecoordinates.size())
+						texturecoordinates.push_back(tmp_texturecoordinates[texture_idx_b]);
 					else texturecoordinates.push_back(glm::vec2(0, 0));
-					if (normal_index3 < tmp_normals.size())
-						normals.push_back(tmp_normals[normal_index3]);
-					else normals.push_back(glm::vec3(0, 0, 0));
+
+					if (normal_idx_b < tmp_normals.size())
+						vertex_normals.push_back(tmp_normals[normal_idx_b]);
+					else vertex_normals.push_back(glm::vec3(0, 0, 0));
+
+					vertices.push_back(tmp_vertices[vertex_idx_c]);
+
+					if (texture_idx_c < tmp_texturecoordinates.size())
+						texturecoordinates.push_back(tmp_texturecoordinates[texture_idx_c]);
+					else texturecoordinates.push_back(glm::vec2(0, 0));
+
+					if (normal_idx_c < tmp_normals.size())
+						vertex_normals.push_back(tmp_normals[normal_idx_c]);
+					else vertex_normals.push_back(glm::vec3(0, 0, 0));
 
 					indices.push_back(glm::ivec3(vertices.size() - 3, vertices.size() - 2, vertices.size() - 1));
 				}
-				else
-					indices.push_back(glm::ivec3(vertex_index1, vertex_index2, vertex_index3));
+				else {
 
-				vertex_index2 = vertex_index3;
-				texture_index2 = texture_index3;
-				normal_index2 = normal_index3;
+					auto cacheCheck = [&](uint32_t v_idx, uint32_t t_idx, uint32_t n_idx) -> uint32_t { // ignore normal
+
+						auto tmp_v = tmp_vertices[v_idx];
+
+						if (cached.count(tmp_v) == 0) {
+							cached[tmp_v] = vertices.size();
+							vertices.push_back(tmp_v);
+
+							if (tmp_texturecoordinates.size() > 0 && t_idx < (tmp_texturecoordinates.size() - 1)) {
+								auto tmp_t = tmp_texturecoordinates[t_idx];
+								texturecoordinates.push_back(tmp_t);
+							}
+
+							if (tmp_normals.size() > 0 && n_idx < (tmp_normals.size()-1)) {
+								auto tmp_n = tmp_normals[t_idx];
+								vertex_normals.push_back(tmp_n);
+							}
+
+							return vertices.size() - 1;
+						}
+						else {
+							auto index_v = cached[tmp_v];
+							return index_v;
+						}
+					};
+
+					auto cached_a = cacheCheck(vertex_idx_a, texture_idx_a, normal_idx_a);
+					auto cached_b = cacheCheck(vertex_idx_b, texture_idx_b, normal_idx_b);
+					auto cached_c = cacheCheck(vertex_idx_c, texture_idx_c, normal_idx_c);
+
+					indices.push_back(glm::ivec3(cached_a, cached_b, cached_c));
+				}
+
+				vertex_idx_b = vertex_idx_c;
+				normal_idx_b = normal_idx_c;
+				texture_idx_b = texture_idx_c;
 			}
 		}
 		s.clear();
@@ -221,12 +267,10 @@ bool myObject::readObjects(std::string filename, bool individualvertices_per_fac
 
 	curr_end = indices.size();
 	mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-	o->setTexture(curr_texture, TEXTURE_TYPE::colortex);
+	o->setTexture(curr_texture, Texture_Type::colortex);
 	objects.emplace(curr_name, o);
 
-	if (!individualvertices_per_face)
-	{
-		vertices = tmp_vertices;
+	if (tmp_normals.size() == 0) {
 		computeNormals();
 	}
 
@@ -270,15 +314,28 @@ void myObject::normalize()
 
 void myObject::computeNormals()
 {
-	normals.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
+
+	face_normals.assign(indices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 	for (unsigned int i = 0; i < indices.size(); i++)
 	{
 		glm::vec3 face_normal = glm::cross(vertices[indices[i][1]] - vertices[indices[i][0]], vertices[indices[i][2]] - vertices[indices[i][1]]);
-		normals[indices[i][0]] += face_normal;
-		normals[indices[i][1]] += face_normal;
-		normals[indices[i][2]] += face_normal;
+		face_normals[i] += face_normal;
+	} 
+
+	std::vector<uint32_t> count; count.assign(vertices.size(), 0);
+
+	vertex_normals.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
+	for (unsigned int i = 0; i < indices.size(); i++)
+	{
+		glm::vec3 face_normal = glm::cross(vertices[indices[i][1]] - vertices[indices[i][0]], vertices[indices[i][2]] - vertices[indices[i][1]]);
+		vertex_normals[indices[i][0]] += face_normal; count[indices[i][0]] += 1;
+		vertex_normals[indices[i][1]] += face_normal; count[indices[i][1]] += 1;
+		vertex_normals[indices[i][2]] += face_normal; count[indices[i][2]] += 1;
 	}
-	for (unsigned int i = 0; i < vertices.size(); i++)  normals[i] = glm::normalize(normals[i]);
+	for (unsigned int i = 0; i < vertices.size(); i++) {
+		vertex_normals[i] = glm::normalize(vertex_normals[i]);
+		//vertex_normals[i] /= count[i];
+	}
 }
 
 void myObject::createmyVAO()
@@ -287,7 +344,7 @@ void myObject::createmyVAO()
 	vao = new myVAO();
 
 	if (vertices.size()) vao->storePositions(vertices, 0);
-	if (normals.size()) vao->storeNormals(normals, 1);
+	if (vertex_normals.size()) vao->storeNormals(vertex_normals, 1);
 	if (texturecoordinates.size()) vao->storeTexturecoordinates(texturecoordinates, 2);
 	if (tangents.size()) vao->storeTangents(tangents, 3);
 
@@ -450,10 +507,17 @@ void myObject::computeTangents()
 }
 
 
-void myObject::setTexture(myTexture *tex, TEXTURE_TYPE type)
+void myObject::setTexture(myTexture *tex, Texture_Type type)
 {
 	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
 		it->second->setTexture(tex, type);
+}
+
+void myObject::cleanTexture() {
+
+	for (auto& sub : objects) {
+		sub.second->textures.clear();
+	}
 }
 
 

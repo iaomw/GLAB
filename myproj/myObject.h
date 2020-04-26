@@ -46,12 +46,18 @@ public:
 
 	void computeTangents();
 	
-	void setTexture(myTexture *, TEXTURE_TYPE);
+	void setTexture(myTexture *, Texture_Type);
+	void cleanTexture();
 	
 	myVAO *vao;
-	std::vector<glm::vec3> vertices;
+
 	std::vector<glm::ivec3> indices;
-	std::vector<glm::vec3> normals;
+	std::vector<glm::vec3> vertices;
+
+	std::vector<glm::vec3> face_normals;
+	std::vector<glm::vec3> vertex_normals;
+	
+
 	std::vector<glm::vec2> texturecoordinates;
 	std::vector<glm::vec3> tangents;
 

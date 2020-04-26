@@ -1,19 +1,29 @@
 #include "GeoFBO.h"
 #include <iostream>
 
-GeoFBO::GeoFBO() //: FBO()
+GeoFBO::GeoFBO(): FBO()
 {
+	fboID = 0; rboID = 0;
+	width = 0; height = 0;
+
 	gPosition = nullptr;
-	gNormal = nullptr;
 	gAlbedo = nullptr;
+	gNormal = nullptr;
 }
 
 
 GeoFBO::~GeoFBO()
 {
-	if (gPosition != nullptr) delete gPosition;
-	if (gNormal != nullptr) delete gNormal;
-	if (gAlbedo != nullptr) delete gAlbedo;
+	reset();
+}
+
+void GeoFBO::reset() {
+	if (gPosition != nullptr) delete gPosition; gPosition = nullptr;
+	if (gAlbedo != nullptr) delete gAlbedo; gAlbedo = nullptr;
+	if (gNormal != nullptr) delete gNormal; gNormal = nullptr;
+
+	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
+	if (rboID != 0) glDeleteFramebuffers(1, &rboID);
 }
 
 void GeoFBO::initFBO(int WIDTH, int HEIGHT)

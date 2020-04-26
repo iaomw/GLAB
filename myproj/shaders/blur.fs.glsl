@@ -1,35 +1,43 @@
 #version 440 core
 
-#define FLT_MAX 3.402823466e+38
-#define FLT_MIN 1.175494351e-38
+const float pos_infinity = uintBitsToFloat(0x7F800000);
+const float neg_infinity = uintBitsToFloat(0xFF800000);
 
 in vec2 TexCoords;
 
 uniform sampler2D gAlbedo;
-uniform sampler2D gPosition;
+//uniform sampler2D gPosition;
 
 layout (location = 0) out vec4 gColor;
 //layout (location = 1) out vec4 gExtra;
 
+uniform float fovY;
+uniform float farZ;
+uniform float nearZ;
+
 uniform float range;
-uniform int horizontal;
+uniform vec2 direction;
 
 uniform float weight[5] = float[] (0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
 
 void main()
-{             
-    vec2 tex_offset = range / textureSize(gAlbedo, 0); // gets size of single texel
+{          
 
     vec4 result;
-    if (texture(gAlbedo, TexCoords).a >= 0.0) {
-        result.rgba = vec4(0, 0, 0, -FLT_MAX);
+    float depth = texture(gAlbedo, TexCoords).a;
+    if (1.0 == depth) { // background
+        result.rgba = vec4(0, 0, 0, neg_infinity);
+        depth = neg_infinity;
     } else {
         result.rgb = 2 * texture(gAlbedo, TexCoords).rgb * weight[0];
         result.a = texture(gAlbedo, TexCoords).a;
     }
 
-    vec2 dxdy = (horizontal>0)? vec2(1, 0) : vec2(0, 1);
-    tex_offset *= dxdy;
+    float distanceToCamera = 0.5 * 1.0 / tan(0.5 * fovY);
+    float scale = distanceToCamera / abs(depth);
+
+    vec2 tex_offset = range / textureSize(gAlbedo, 0); // gets size of texel
+    tex_offset *= direction;
 
     vec3 bloom = vec3(0.0);
     float max_z = result.a;
@@ -59,5 +67,5 @@ void main()
     result.rgb += bloom;
     gColor.rgb = result.rgb;
 
-    gColor.a = (vec3(0)==result.rgb)? 0.0 : max_z; 
+    gColor.a = (max_z > neg_infinity)? max_z : 1.0; 
 }

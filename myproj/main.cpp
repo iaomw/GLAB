@@ -181,6 +181,7 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
 		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
 		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+		default: return "UNKNOW";
 		}
 	}();
 
@@ -194,6 +195,7 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
 		case GL_DEBUG_TYPE_MARKER: return "MARKER";
 		case GL_DEBUG_TYPE_OTHER: return "OTHER";
+		default: return "UNKNOW";
 		}
 	}();
 
@@ -203,6 +205,7 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 		case GL_DEBUG_SEVERITY_LOW: return "LOW";
 		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
 		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+		default: return "UNKNOW";
 		}
 	}();
 
@@ -230,6 +233,10 @@ GLenum glCheckError_(const char* file, int line)
 	return errorCode;
 }
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
+
+enum class RenderPipeline {
+	PBR, SSSS
+};
 
 int main(int argc, char* argv[])
 {
@@ -299,17 +306,14 @@ int main(int argc, char* argv[])
 	bool show_demo_window = false;
 	bool show_another_window = false;
 
-	glClearColor(0, 0, 0, 0);
+	glClearColor(0, 0, 0, 1.0);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-	//glEnable(GL_BLEND);
-
-	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);   
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
@@ -320,7 +324,8 @@ int main(int argc, char* argv[])
 	mainCam = new myCamera(); mainCam->camera_eye = glm::vec3(0, 0, 32);
 	SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
 
-
+	mainCam->zFar = 5000; mainCam->zNear = 0.5; mainCam->fovy = 45;
+	 
 	/**************************INITIALIZING LIGHTS ***************************/
 	scene.lights = new myLights();
 	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
@@ -333,9 +338,9 @@ int main(int argc, char* argv[])
 	auto geometryFBO = new GeoFBO();
 	geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto lightingFBO = new FBO(true);
+	auto lightingFBO = new FBO(false, false);
 	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
-	auto environmentFBO = new FBO(true);
+	auto environmentFBO = new FBO(false, true);
 	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 	auto blurFBO = new FBO();
@@ -349,11 +354,11 @@ int main(int argc, char* argv[])
 	auto cFBO = new CubeFBO();
 	cFBO->initFBO(1024, 1024, GL_RGBA16F);
 
-	auto iFBO = new CubeFBO();
-	iFBO->initFBO(256, 256, GL_RGBA16);
-
 	auto pFBO = new CubeFBO();
-	pFBO->initFBO(1024, 1024, GL_RGBA16);
+	pFBO->initFBO(1024, 1024, GL_RGBA16F);
+
+	auto iFBO = new CubeFBO();
+	iFBO->initFBO(256, 256, GL_RGBA16F);
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 	myShaders shaders;
@@ -373,14 +378,11 @@ int main(int argc, char* argv[])
 	myShader* shaderBlur = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
 	shaders.addShader(shaderBlur, "blurShader");
 
-	//myShader *shaderBlurSSSS = new myShader("shaders/blurSSSS.vs.glsl", "shaders/blurSSSS.fs.glsl");
-	//shaders.addShader(shaderBlurSSSS, "shaderBlurSSSS");
-
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
-	auto obj = new myObject(); // for capture only
-	obj->readObjects("models/skycube.obj", true, false);
-	obj->createmyVAO();
+	auto cube = new myObject(); // for capture only
+	cube->readObjects("models/skycube.obj", true, false);
+	cube->createmyVAO();
 
 	auto hdrTexture = new myTexture();
 	hdrTexture->readTexture_HDR("textures/envirment/vulture_hide_4k.hdr");
@@ -400,14 +402,14 @@ int main(int argc, char* argv[])
 
 	// pbr: convert HDR equirectangular environment map to cubemap equivalent
 	// ----------------------------------------------------------------------
-	obj->setTexture(hdrTexture, TEXTURE_TYPE::colortex);
-	cFBO->render(shaderCapture, obj, captureViews, captureProjection);
+	cube->setTexture(hdrTexture, Texture_Type::colortex);
+	cFBO->render(shaderCapture, cube, captureViews, captureProjection);
 
-	obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-	iFBO->render(shaderIrradiance, obj, captureViews, captureProjection);
+	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+	iFBO->render(shaderIrradiance, cube, captureViews, captureProjection);
 
-	obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-	pFBO->render(shaderPrefilter, obj, captureViews, captureProjection, 5);
+	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+	pFBO->render(shaderPrefilter, cube, captureViews, captureProjection, 5);
 
 	auto canvas = new myObject();
 	canvas->readObjects("models/plane.obj", true, false);
@@ -416,42 +418,28 @@ int main(int argc, char* argv[])
 	bFBO->render(shaderBRDF, canvas, captureViews[0]);
 
 	//enviornment mapped object
-	obj = new myObject();
-	obj->readObjects("models/skycube.obj", true, false);
-	obj->createmyVAO();
-	obj->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-	obj->scale(glm::vec3(2048));
-	scene.addObjects(obj, "skycube");
+	auto skycube = new myObject();
+	skycube->readObjects("models/skycube.obj", true, false);
+	skycube->createmyVAO();
+	skycube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+	skycube->scale(glm::vec3(2048));
+	scene.addObjects(skycube, "skycube");
 
-	obj = new myObject();
-	obj->readObjects("models/plane.obj", true, false);
-	obj->createmyVAO();
-	scene.addObjects(obj, "env_canvas");
+	auto env_canvas = new myObject();
+	env_canvas->readObjects("models/plane.obj", true, false);
+	env_canvas->createmyVAO();
 
-	obj = new myObject();
-	obj->readObjects("models/plane.obj", true, false);
-	obj->createmyVAO();
-	obj->setTexture(geometryFBO->gPosition, TEXTURE_TYPE::gPosition);
-	obj->setTexture(geometryFBO->gAlbedo, TEXTURE_TYPE::gAlbedo);
-	obj->setTexture(geometryFBO->gNormal, TEXTURE_TYPE::gNormal);
+	auto pbr_canvas = new myObject();
+	pbr_canvas->readObjects("models/plane.obj", true, false);
+	pbr_canvas->createmyVAO();
 
-	obj->setTexture(iFBO->envTexture, TEXTURE_TYPE::gIrradiance);
-	obj->setTexture(pFBO->envTexture, TEXTURE_TYPE::gPrefilter);
-	obj->setTexture(bFBO->colortexture, TEXTURE_TYPE::BRDF_LUT);
+	auto final_canvas = new myObject();
+	final_canvas->readObjects("models/plane.obj", true, false);
+	final_canvas->createmyVAO();
 
-	scene.addObjects(obj, "pbr_canvas");
-
-	obj = new myObject();
-	obj->readObjects("models/plane.obj", true, false);
-	obj->createmyVAO();
-	obj->setTexture(lightingFBO->colortexture, TEXTURE_TYPE::colortex);
-	obj->setTexture(environmentFBO->colortexture, TEXTURE_TYPE::gEnv);
-	scene.addObjects(obj, "ppe_canvas");
-
-	obj = new myObject();
-	obj->readObjects("models/shaderball.obj", true, false);
-	obj->createmyVAO();
-	scene.addObjects(obj, "shaderball");
+	auto shaderball = new myObject();
+	shaderball->readObjects("models/shaderball.obj", true, false);
+	shaderball->createmyVAO();
 
 	auto texAlbedo_A = new myTexture("textures/rustediron/albedo.png");
 	auto texAO_A = new myTexture("textures/rustediron/ao.png");
@@ -464,128 +452,194 @@ int main(int argc, char* argv[])
 	auto texMetallic_B = new myTexture("textures/aluminum/metallic.png");
 	auto texNormal_B = new myTexture("textures/aluminum/normal.png");
 	auto texRoughness_B = new myTexture("textures/aluminum/roughness.png");
+	glCheckError();
 
-	auto texAlbedo_X = new myTexture("textures/blueburlap/worn-blue-burlap-albedo.png");
-	auto texAO_X = new myTexture("textures/blueburlap/worn-blue-burlap-ao.png");
-	auto texMetallic_X = new myTexture("textures/blueburlap/worn-blue-burlap-Metallic.png");
-	auto texNormal_X = new myTexture("textures/blueburlap/worn-blue-burlap-Normal-dx.png");
-	auto texRoughness_X = new myTexture("textures/blueburlap/worn-blue-burlap-Roughness.png");
+	auto texAlbedo_X = new myTexture("textures/coatedball/albedo.png"); 
+	auto texAO_X = new myTexture("textures/coatedball/ao.png");
+	auto texMetallic_X = new myTexture("textures/coatedball/metalness.png"); 
+	auto texNormal_X = new myTexture("textures/coatedball/normal.png"); 
+	auto texRoughness_X = new myTexture("textures/coatedball/roughness.png");
+	glCheckError();
 
 	auto posTextureMap = PosTextureMap {
 
-			{ glm::vec3(-10, 0, 0), std::map<TEXTURE_TYPE, myTexture*> {
-				{ TEXTURE_TYPE::texAO, texAO_A },
-				{ TEXTURE_TYPE::texAlbedo, texAlbedo_A },
-				{ TEXTURE_TYPE::texMetal, texMetallic_A },
-				{ TEXTURE_TYPE::texNormal, texNormal_A },
-				{ TEXTURE_TYPE::texRough, texRoughness_A }
+			{ glm::vec3(-10, 0, 0), std::map<Texture_Type, myTexture*> {
+				{ Texture_Type::texAO, texAO_A },
+				{ Texture_Type::texAlbedo, texAlbedo_A },
+				{ Texture_Type::texMetal, texMetallic_A },
+				{ Texture_Type::texNormal, texNormal_A },
+				{ Texture_Type::texRough, texRoughness_A }
 			} },
-			{ glm::vec3(10, 0, 0), std::map<TEXTURE_TYPE, myTexture*> {
-				{ TEXTURE_TYPE::texAO, texAO_B },
-				{ TEXTURE_TYPE::texAlbedo, texAlbedo_B},
-				{ TEXTURE_TYPE::texMetal, texMetallic_B },
-				{ TEXTURE_TYPE::texNormal, texNormal_B },
-				{ TEXTURE_TYPE::texRough, texRoughness_B }
+			{ glm::vec3(10, 0, 0), std::map<Texture_Type, myTexture*> {
+				{ Texture_Type::texAO, texAO_B },
+				{ Texture_Type::texAlbedo, texAlbedo_B},
+				{ Texture_Type::texMetal, texMetallic_B },
+				{ Texture_Type::texNormal, texNormal_B },
+				{ Texture_Type::texRough, texRoughness_B }
 			} },
-			{ glm::vec3(0, 10, -20), std::map<TEXTURE_TYPE, myTexture*> {
-				{ TEXTURE_TYPE::texAO, texAO_X },
-				{ TEXTURE_TYPE::texAlbedo, texAlbedo_X},
-				{ TEXTURE_TYPE::texMetal, texMetallic_X },
-				{ TEXTURE_TYPE::texNormal, texNormal_X },
-				{ TEXTURE_TYPE::texRough, texRoughness_X }
+			{ glm::vec3(0, 10, -20), std::map<Texture_Type, myTexture*> {
+				{ Texture_Type::texAO, texAO_X },
+				{ Texture_Type::texAlbedo, texAlbedo_X},
+				{ Texture_Type::texMetal, texMetallic_X },
+				{ Texture_Type::texNormal, texNormal_X },
+				{ Texture_Type::texRough, texRoughness_X }
 			} }
 	};
 
-	obj = new myObject();
-	obj->readObjects("models/sphere.obj", true, false);
-	obj->createmyVAO();
-	scene.addObjects(obj, "lightball");
+	auto lightball = new myObject();
+	lightball->readObjects("models/sphere.obj", true, false);
+	lightball->createmyVAO();
+	glCheckError();
+
+	// SSSS: set up SSSS
+	auto headObject = new myObject();
+	headObject->readObjects("lpshead/head.obj", false, false);
+	glCheckError();
+	headObject->scale(64, 64, 64);
+	headObject->translate(0, 5, 0);
+	headObject->createmyVAO();
+	glCheckError();
+	
+	auto skinTexture = new myTexture("lpshead/albedo.png");
+	headObject->setTexture(skinTexture, Texture_Type::texAlbedo);
+	glCheckError();
+
+	auto skinNormal = new myTexture("lpshead/normal.png");
+	headObject->setTexture(skinNormal, Texture_Type::texNormal);
+	glCheckError();
+
+	auto ssssPhongShader = new myShader("shaders/ssss.phong.vs.glsl", "shaders/ssss.phong.fs.glsl");
+	auto ssssBlurShader = new myShader("shaders/ssss.blur.vs.glsl", "shaders/ssss.blur.fs.glsl");
+	glCheckError();
+
+	shaders.addShader(ssssPhongShader, "ssssPhongShader");
+	shaders.addShader(ssssBlurShader,  "ssssBlurShader");
+	glCheckError();
+
+	auto ssssLightFBO = new FBO(true);
+	ssssLightFBO->initFBO(mainCam->window_width, mainCam->window_height);
+
+	auto ssssBlurFBO = new FBO(false);
+	ssssBlurFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	auto ssssRulbFBO = new FBO(false);
+	ssssRulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+
+	auto ssss_canvas = new myObject();
+	ssss_canvas->readObjects("models/plane.obj", true, false);
+	ssss_canvas->createmyVAO();
+	glCheckError();
 
 	// display loop
 	myShader* curr_shader;
-	float delta = M_PI / 1000;
+	float delta = (float)M_PI / 1000.0f;
+
+	float gamma = 2.2f;
+	float exposure = 1.0f;
+	float background = 1.0f;
+
+	float ssss_kD = 0.1f;
+	float ssss_kS = 0.1f;
+	float texture_coefficient = 1.0f;
+	float depthTestCoefficient = 0.1f;
+
+	float ssssWidth = 0.0117500005f;
+	float ssssStrength = 1.0;
+
+	std::function<void(int, int)> pbr_pipeline_init = [&](int WIDTH, int HEIGHT) {
+
+		geometryFBO->initFBO(WIDTH, HEIGHT);
+		lightingFBO->initFBO(WIDTH, HEIGHT);
+
+		pbr_canvas->setTexture(geometryFBO->gPosition, Texture_Type::gPosition);
+		pbr_canvas->setTexture(geometryFBO->gAlbedo, Texture_Type::gAlbedo);
+		pbr_canvas->setTexture(geometryFBO->gNormal, Texture_Type::gNormal);
+
+		pbr_canvas->setTexture(iFBO->envTexture, Texture_Type::gIrradiance);
+		pbr_canvas->setTexture(pFBO->envTexture, Texture_Type::gPrefilter);
+		pbr_canvas->setTexture(bFBO->colortexture, Texture_Type::BRDF_LUT);
+	};
+
+	std::function<void(int, int)> ssss_pipeline_init = [&](int WIDTH, int HEIGHT) {
+
+		ssssLightFBO->initFBO(WIDTH, HEIGHT);
+		ssssBlurFBO->initFBO(WIDTH, HEIGHT);
+		ssssRulbFBO->initFBO(WIDTH, HEIGHT);
+	};
+
+	auto current_pipeline = RenderPipeline::SSSS;
+	current_pipeline = RenderPipeline::PBR;
+
+	std::function<void(int, int)>* pipeline_init;
+	pipeline_init = &ssss_pipeline_init;
+	pipeline_init = &pbr_pipeline_init;
+	
+	bool pipeline_changed = true;
+
+	FBO* FBOs[] = { environmentFBO, blurFBO, rulbFBO, geometryFBO, lightingFBO, ssssLightFBO, ssssBlurFBO, ssssRulbFBO };
 
 	glCheckError();
 	while (!quit)
 	{
-		if (windowsize_changed)
+		if (windowsize_changed || pipeline_changed)
 		{
 			SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
-			windowsize_changed = false;
+			windowsize_changed = false; pipeline_changed = false;
 
-			if (geometryFBO) { delete geometryFBO; } geometryFBO = new GeoFBO();
-			geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
+			for (auto& fbo : FBOs) { fbo->reset(); }
 
-			auto object = scene["pbr_canvas"];
-
-			object->setTexture(geometryFBO->gPosition, TEXTURE_TYPE::gPosition);
-			object->setTexture(geometryFBO->gAlbedo, TEXTURE_TYPE::gAlbedo);
-			object->setTexture(geometryFBO->gNormal, TEXTURE_TYPE::gNormal);
-
-			object->setTexture(iFBO->envTexture, TEXTURE_TYPE::gIrradiance);
-			object->setTexture(pFBO->envTexture, TEXTURE_TYPE::gPrefilter);
-			object->setTexture(bFBO->colortexture, TEXTURE_TYPE::BRDF_LUT);
-
-			if (lightingFBO) { delete lightingFBO; } lightingFBO = new FBO();
-			lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
-
-			if (environmentFBO) { delete environmentFBO; } environmentFBO = new FBO(true);
 			environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
-
-			if (blurFBO) { delete blurFBO; } blurFBO = new FBO();
+		
 			blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
-			if (rulbFBO) { delete rulbFBO; } rulbFBO = new FBO();
 			rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-			scene["ppe_canvas"]->setTexture(lightingFBO->colortexture, TEXTURE_TYPE::colortex);
-			scene["ppe_canvas"]->setTexture(environmentFBO->colortexture, TEXTURE_TYPE::gEnv);
+			(*pipeline_init)(mainCam->window_width, mainCam->window_height);
 
 			glCheckError();
 		}
-
-		glCheckError();
 
 		//Computing transformation matrices.
 		glViewport(0, 0, mainCam->window_width, mainCam->window_height);
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
+		glm::mat4 inverse_view_matrix = glm::inverse(view_matrix);
 
 		//Setting uniform variables for each shader
 		for (unsigned int i = 0; i < shaders.size(); i++)
 		{
 			curr_shader = shaders[i]; curr_shader->start();
 			curr_shader->setUniform("myprojection_matrix", projection_matrix);
-			curr_shader->setUniform("inverse_view_matrix", glm::inverse(view_matrix));
-			curr_shader->setUniform("myview_matrix", view_matrix);
 			curr_shader->setUniform("cam_position", mainCam->camera_eye);
 
+			curr_shader->setUniform("inverse_view_matrix", inverse_view_matrix);
+			curr_shader->setUniform("myview_matrix", view_matrix);
+			
 			curr_shader->setUniform("fovY", mainCam->fovy);
 			curr_shader->setUniform("farZ", mainCam->zFar);
 			curr_shader->setUniform("nearZ", mainCam->zNear);
 
+			curr_shader->setUniform("gamma", gamma);
+			curr_shader->setUniform("exposure", exposure);
+
 			scene.lights->setUniform(curr_shader, "lights");
+			curr_shader->stop();
 		}
 
-		glCheckError();
-
-		scene["skycube"]->setTexture(cFBO->envTexture, TEXTURE_TYPE::cubetex);
-		curr_shader = shaders["shader_skycube"];
-
+		scene["skycube"]->setTexture(cFBO->envTexture, Texture_Type::cubetex);
 		environmentFBO->clear();
 		environmentFBO->bind(); 
 		{
-			curr_shader->start();
+			curr_shader = shaders["shader_skycube"];
+			curr_shader->start();		
 			scene["skycube"]->displayObjects(curr_shader, view_matrix);
-			//glGenerateTextureMipmap(environmentFBO->colortexture->texture_id);
 			curr_shader->stop();
-			
+
 			curr_shader = shaders["basicx"];
 			curr_shader->start();
 			for (auto light : scene.lights->lights) {
 				curr_shader->setUniform("color", light->color);
-				scene["lightball"]->translate(light->position);
-				scene["lightball"]->displayObjects(curr_shader, view_matrix);
-				scene["lightball"]->translate(-light->position);
+				lightball->translate(light->position);
+				lightball->displayObjects(curr_shader, view_matrix);
+				lightball->translate(-light->position);
 
 				auto randX = (float)rand() / RAND_MAX;
 				auto randY = (float)rand() / RAND_MAX;
@@ -595,73 +649,122 @@ int main(int argc, char* argv[])
 
 				glm::quat quatRot = glm::angleAxis(delta, v3RotAxis);
 				glm::mat4x4 matRot = glm::mat4_cast(quatRot);
-				glm::vec4 newpos = (matRot * glm::vec4(light->position, 1.0));
+				glm::vec4 newpos = (matRot*glm::vec4(light->position, 1.0));
 				light->position = glm::vec3(newpos.x, newpos.y, newpos.z);
-			}
+			} 
 			curr_shader->stop();
-		}; environmentFBO->unbind();
-
-		glCheckError();
-
-		canvas->setTexture(environmentFBO->colortexture, TEXTURE_TYPE::gAlbedo);
-		canvas->setTexture(environmentFBO->extratexture, TEXTURE_TYPE::gPosition);
+		}; environmentFBO->unbind(); glCheckError();
+		glGenerateTextureMipmap(environmentFBO->colortexture->texture_id);
+		canvas->setTexture(environmentFBO->colortexture, Texture_Type::gAlbedo);
 
 		static int bloomRange = 8;
 		static int bloomStrength = 8;
 
-		int horizontal = 0;
 		int blurIndex = 0; int count = 0;
-		FBO* blurList[2] = { blurFBO, rulbFBO };
+		static FBO* blurList[2] = { blurFBO, rulbFBO };
 
 		while (count < bloomStrength) {
 			auto currentFBO = blurList[blurIndex];
 
+			glm::vec2 direction = (blurIndex == 0) ? glm::vec2(1, 0) : glm::vec2(0, 1);
+
 			auto lambda = std::function<void()>([&] {
+				shaderBlur->setUniform("direction", direction);
 				shaderBlur->setUniform("range", (float)bloomRange);
-				shaderBlur->setUniform("horizontal", horizontal);
+			});
+
+			currentFBO->render(shaderBlur, canvas, captureViews[0], &lambda);	
+			canvas->setTexture(currentFBO->colortexture, Texture_Type::gAlbedo);
+			++count; blurIndex = !blurIndex;
+
+		}; glCheckError();
+
+		if (RenderPipeline::PBR == current_pipeline) {
+
+			curr_shader = shaders["geo_buffer"];
+			shaderball->rotate(0.0f, 1.0f, 0.0f, delta);
+			geometryFBO->loopRender(curr_shader, shaderball, view_matrix, posTextureMap);
+			glCheckError();
+
+			glGenerateTextureMipmap(geometryFBO->gPosition->texture_id);
+			glGenerateTextureMipmap(geometryFBO->gAlbedo->texture_id);
+			glGenerateTextureMipmap(geometryFBO->gNormal->texture_id);
+			
+			pbr_canvas->setTexture(geometryFBO->gPosition, Texture_Type::gPosition);
+			pbr_canvas->setTexture(geometryFBO->gAlbedo, Texture_Type::gAlbedo);
+			pbr_canvas->setTexture(geometryFBO->gNormal, Texture_Type::gNormal);
+
+			pbr_canvas->setTexture(iFBO->envTexture, Texture_Type::gIrradiance);
+			pbr_canvas->setTexture(pFBO->envTexture, Texture_Type::gPrefilter);
+			pbr_canvas->setTexture(bFBO->colortexture, Texture_Type::BRDF_LUT);
+
+			lightingFBO->render(shaders["pbr_buffer"], pbr_canvas, view_matrix);
+			glCheckError();
+
+		} else if (RenderPipeline::SSSS == current_pipeline) {
+
+				auto lambda = std::function<void()>([&] {
+
+					ssssPhongShader->setUniform("kD", ssss_kD);
+					ssssPhongShader->setUniform("kS", ssss_kS);
+
+					ssssPhongShader->setUniform("texture_coefficient", texture_coefficient);
 				});
 
-			currentFBO->render(shaderBlur, canvas, captureViews[0], &lambda);
-			canvas->setTexture(currentFBO->colortexture, TEXTURE_TYPE::gAlbedo);
-			canvas->setTexture(currentFBO->colortexture, TEXTURE_TYPE::gAlbedo);
+				ssssLightFBO->render(ssssPhongShader, headObject, view_matrix, &lambda);
+				glCheckError();
 
-			horizontal = !horizontal;
-			blurIndex = !blurIndex;
-			++count;
-		};
+				ssss_canvas->setTexture(ssssLightFBO->colortexture, Texture_Type::gAlbedo);
+				ssss_canvas->setTexture(ssssLightFBO->extratexture, Texture_Type::gExtra);
 
-		glCheckError();
+				lambda = std::function<void()>([&] {
 
-		obj = scene["shaderball"];
-		curr_shader = shaders["geo_buffer"];
-		obj->rotate(0.0f, 1.0f, 0.0f, delta);
-		geometryFBO->loopRender(curr_shader, obj, view_matrix, posTextureMap);
-		glCheckError();
+					ssssBlurShader->setUniform("direction", glm::vec2(1, 0));
 
-		glGenerateTextureMipmap(geometryFBO->gAlbedo->texture_id);
-		glGenerateTextureMipmap(geometryFBO->gNormal->texture_id);
-		glGenerateTextureMipmap(geometryFBO->gPosition->texture_id);
+					ssssBlurShader->setUniform("ssssWidth", ssssWidth);
+					ssssBlurShader->setUniform("ssssStrength", ssssStrength);
+					ssssBlurShader->setUniform("depthTestCoefficient", depthTestCoefficient);
 
-		curr_shader = shaders["pbr_buffer"];
-		lightingFBO->render(curr_shader, scene["pbr_canvas"], view_matrix);
-		glCheckError();
+					ssssBlurShader->setUniform("kernel", kernelSSSS);
+					ssssBlurShader->setUniform("kernelSize", (int)kernelSSSS.size());
+					});
 
-		static float exposure = 1.0f;
+				ssssBlurFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
+				glCheckError();
+
+				ssss_canvas->setTexture(ssssBlurFBO->colortexture, Texture_Type::gAlbedo);
+				ssss_canvas->setTexture(ssssLightFBO->extratexture, Texture_Type::gExtra);
+
+				lambda = std::function<void()>([&] {
+					ssssBlurShader->setUniform("direction", glm::vec2(0, 1));
+				});
+
+				ssssRulbFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
+				glCheckError();
+		}
+
+		if (RenderPipeline::PBR == current_pipeline) {
+
+			final_canvas->setTexture(lightingFBO->colortexture, Texture_Type::colortex);
+			//scene["ppe_canvas"]->setTexture(rulbFBO->colortexture, Texture_Type::gExtra);
+
+		} else if (RenderPipeline::SSSS == current_pipeline) {
+
+			final_canvas->setTexture(ssssRulbFBO->colortexture, Texture_Type::colortex);
+			final_canvas->setTexture(ssssLightFBO->extratexture, Texture_Type::gExtra);
+		}
+
+		final_canvas->setTexture(environmentFBO->colortexture, Texture_Type::gEnv);
+		final_canvas->setTexture(rulbFBO->colortexture, Texture_Type::gBloom);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		/*-----------------------*/
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		curr_shader = shaders["postprocess"]; curr_shader->start();
-		curr_shader->setUniform("exposure", exposure);
-
-		//scene["ppe_canvas"]->setTexture(preFBO->colortexture, mySubObject::COLORMAP);
-		scene["ppe_canvas"]->setTexture(lightingFBO->colortexture, TEXTURE_TYPE::colortex);
-		scene["ppe_canvas"]->setTexture(geometryFBO->gPosition, TEXTURE_TYPE::gPosition);
-		scene["ppe_canvas"]->setTexture(environmentFBO->extratexture, TEXTURE_TYPE::gExtra);
-		scene["ppe_canvas"]->setTexture(environmentFBO->colortexture, TEXTURE_TYPE::gEnv);
-		scene["ppe_canvas"]->setTexture(rulbFBO->colortexture, TEXTURE_TYPE::gBloom);
-
-		scene["ppe_canvas"]->displayObjects(curr_shader, view_matrix); curr_shader->stop();
+		curr_shader = shaders["postprocess"];
+		curr_shader->start();
+		curr_shader->setUniform("background", background);
+		final_canvas->displayObjects(curr_shader, view_matrix);
+		curr_shader->stop(); //scene["ppe_canvas"]->cleanTexture();
+		glCheckError();
 
 		/*-----------------------*/
 
@@ -670,35 +773,78 @@ int main(int argc, char* argv[])
 		ImGui_ImplSDL2_NewFrame(window);
 		ImGui::NewFrame(); //io.WantCaptureMouse = true;
 
-		glCheckError();
+			// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+			if (show_demo_window)
+				ImGui::ShowDemoWindow(&show_demo_window);
 
-		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-		if (show_demo_window)
-			ImGui::ShowDemoWindow(&show_demo_window);
-
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-		{
+			// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 			static int counter = 0;
 
 			ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
 			ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
-			ImGui::Text("Powered by ImGui");               // Display some text (you can use a format strings too)
+			            // Display some text (you can use a format strings too)
 			//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 			//ImGui::Checkbox("Another Window", &show_another_window);
-			//ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-			//ImGui::ColorEdit3("clear color", (float*)& clear_color); // Edit 3 floats representing a color
-			ImGui::SliderFloat("Exposure", &exposure, 0.0f, 2.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+			//static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+			//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+			ImGui::Text("General");
+			ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
+			ImGui::SliderFloat("Exposure", &exposure, 0.2f, 2.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+			ImGui::SliderFloat("Background", &background, 0.0f, 1.0f);
+
+			ImGui::Text("Bloom light source");
 			ImGui::SliderInt("Bloom Range", &bloomRange, 2, 16);
 			ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
 
-			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				counter++;
-			ImGui::SameLine();
-			ImGui::Text("counter = %d", counter);
+			ImGui::Text("Render pipeline");
+			static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+			if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+			{
+				if (ImGui::BeginTabItem("PBR"))
+				{
+					if (current_pipeline != RenderPipeline::PBR) {
+						current_pipeline = RenderPipeline::PBR;
+						pipeline_init = &pbr_pipeline_init;
+						pipeline_changed = true;
+					}
+
+					ImGui::Text("Nothing here");
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem("SSSS"))
+				{
+					if (current_pipeline != RenderPipeline::SSSS) {
+						current_pipeline = RenderPipeline::SSSS;
+						pipeline_init = &ssss_pipeline_init;
+						pipeline_changed = true;
+					}
+
+					ImGui::Text("Light pass for SSSS");
+					ImGui::SliderFloat("Texture Coefficient", &texture_coefficient, 0.0f, 1.0f);
+					ImGui::SliderFloat("kD", &ssss_kD, 0.0f, 1.0f);
+					ImGui::SliderFloat("kS", &ssss_kS, 0.0f, 1.0f);
+
+					ImGui::Text("Blur pass for SSSS");
+					ImGui::SliderFloat("SSSS Width", &ssssWidth, 0.0f, 2.0f);
+					ImGui::SliderFloat("SSSS Strength", &ssssStrength, 0.0f, 1.0f);
+					ImGui::SliderFloat("Depth Test Coefficient", &depthTestCoefficient, 0.01f, 2.0f);
+
+					ImGui::EndTabItem();
+				}
+				if (ImGui::BeginTabItem("Other"))
+				{
+					if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
+						counter++;
+					ImGui::SameLine();
+					ImGui::Text("counter = %d", counter);
+					ImGui::EndTabItem();
+				}
+				ImGui::EndTabBar();
+			}
 
 			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
-		}
 
 		glCheckError();
 

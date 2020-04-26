@@ -28,7 +28,7 @@ mySubObject::mySubObject(myMaterial *m, size_t s, size_t e, string n = "noname")
 
 mySubObject::mySubObject(size_t s, size_t e, string n) : mySubObject(nullptr, s, e, n) { }
 
-void mySubObject::setTexture(myTexture* t, TEXTURE_TYPE type)
+void mySubObject::setTexture(myTexture* t, Texture_Type type)
 {
 	textures[type] = t;
 }

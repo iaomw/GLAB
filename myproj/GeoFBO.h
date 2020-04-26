@@ -17,7 +17,7 @@ struct KeyFuncs
 	}
 };
 
-typedef std::unordered_map<glm::vec3, std::map<TEXTURE_TYPE, myTexture*>, KeyFuncs, KeyFuncs> PosTextureMap;
+typedef std::unordered_map<glm::vec3, std::map<Texture_Type, myTexture*>, KeyFuncs, KeyFuncs> PosTextureMap;
 
 class GeoFBO: public FBO
 {
@@ -30,6 +30,8 @@ public:
 	GeoFBO();
 	~GeoFBO();
 
+	virtual void reset();
+
 	void loopRender(myShader* shader, myObject* object, glm::mat4 view_matrix, PosTextureMap& textureMap) {
 
 		bind();
@@ -39,11 +41,11 @@ public:
 		
 		for (auto& [trans, texMap] : textureMap) {
 			
-			object->setTexture(texMap[TEXTURE_TYPE::texAlbedo], TEXTURE_TYPE::texAlbedo);
-			object->setTexture(texMap[TEXTURE_TYPE::texAO], TEXTURE_TYPE::texAO);
-			object->setTexture(texMap[TEXTURE_TYPE::texMetal], TEXTURE_TYPE::texMetal);
-			object->setTexture(texMap[TEXTURE_TYPE::texNormal], TEXTURE_TYPE::texNormal);
-			object->setTexture(texMap[TEXTURE_TYPE::texRough], TEXTURE_TYPE::texRough);
+			object->setTexture(texMap[Texture_Type::texAlbedo], Texture_Type::texAlbedo);
+			object->setTexture(texMap[Texture_Type::texAO], Texture_Type::texAO);
+			object->setTexture(texMap[Texture_Type::texMetal], Texture_Type::texMetal);
+			object->setTexture(texMap[Texture_Type::texNormal], Texture_Type::texNormal);
+			object->setTexture(texMap[Texture_Type::texRough], Texture_Type::texRough);
 
 			object->translate(trans.x, trans.y, trans.z);
 			object->displayObjects(shader, view_matrix);

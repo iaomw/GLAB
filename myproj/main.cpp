@@ -1,5 +1,8 @@
 
 #include <ctime>
+#include <thread>
+#include <chrono> 
+
 #include <string>
 #include <vector>
 #include <fstream>
@@ -24,8 +27,8 @@
 #include <windows.h>
 #include <comdef.h>
 
-#include "helperFunctions.h"
-#include "default_constants.h"
+#include "helperFunctions.h";
+#include "default_constants.h";
 
 #include "myShader.h"
 #include "myCamera.h"
@@ -52,6 +55,7 @@ int mouse_position[2];
 bool mouse_button_pressed = false;
 
 bool quit = false;
+bool render_paused = false;
 bool windowsize_changed = true;
 bool crystalballorfirstperson_view = false;
 float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
@@ -93,7 +97,9 @@ void processEvents(SDL_Event current_event)
 			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE);
 		if (current_event.key.keysym.sym == SDLK_v)
 			crystalballorfirstperson_view = !crystalballorfirstperson_view;
-		else if (current_event.key.keysym.sym == SDLK_o)
+		if (current_event.key.keysym.sym == SDLK_SPACE)
+			render_paused = !render_paused;
+		if (current_event.key.keysym.sym == SDLK_o)
 		{
 			//nfdchar_t *outPath = NULL;
 			//nfdresult_t result = NFD_OpenDialog("obj", NULL, &outPath);
@@ -248,8 +254,6 @@ int main(int argc, char* argv[])
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-	SDL_GL_SetSwapInterval(1);
-
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
@@ -265,11 +269,11 @@ int main(int argc, char* argv[])
 		DEFAULT_WINDOW_HEIGHT, flags);
 	//SDL_SetWindowBordered(window, SDL_FALSE);
 	auto render = SDL_GetRenderer(window);
-	// Create OpenGL context
 	glContext = SDL_GL_CreateContext(window);
+	glewInit(); SDL_GL_MakeCurrent(window, glContext);
 
-	// Initialize glew
-	glewInit();
+	auto vsync = SDL_GL_SetSwapInterval(1);
+	auto errot = SDL_GetError();
 
 	// During init, enable debug output
 	glEnable(GL_DEBUG_OUTPUT);
@@ -537,6 +541,9 @@ int main(int argc, char* argv[])
 	float exposure = 1.0f;
 	float background = 1.0f;
 
+	static int bloomRange = 8;
+	static int bloomStrength = 8;
+
 	float ssss_kD = 0.1f;
 	float ssss_kS = 0.1f;
 	float texture_coefficient = 1.0f;
@@ -577,9 +584,128 @@ int main(int argc, char* argv[])
 
 	FBO* FBOs[] = { environmentFBO, blurFBO, rulbFBO, geometryFBO, lightingFBO, ssssLightFBO, ssssBlurFBO, ssssRulbFBO };
 
+	std::function<void(bool)> ui_pipeline_work = [&](bool paused) {
+
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(window);
+		ImGui::NewFrame(); //io.WantCaptureMouse = true;
+
+			// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+		if (show_demo_window)
+			ImGui::ShowDemoWindow(&show_demo_window);
+
+		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+		static int counter = 0;
+		ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
+		ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
+		// Display some text (you can use a format strings too)
+		//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		//ImGui::Checkbox("Another Window", &show_another_window);
+		//static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+		ImGui::Text("General");
+		ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
+		ImGui::SliderFloat("Exposure", &exposure, 0.2f, 2.0f);
+		ImGui::SliderFloat("Background", &background, 0.0f, 1.0f);
+
+		ImGui::Text("Bloom light source");
+		ImGui::SliderInt("Bloom Range", &bloomRange, 2, 16);
+		ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
+
+		ImGui::Text("Render pipeline");
+		static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+		if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+		{
+			if (ImGui::BeginTabItem("PBR"))
+			{
+				if (current_pipeline != RenderPipeline::PBR) {
+					current_pipeline = RenderPipeline::PBR;
+					pipeline_init = &pbr_pipeline_init;
+					pipeline_changed = true;
+				}
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("SSSS"))
+			{
+				if (current_pipeline != RenderPipeline::SSSS) {
+					current_pipeline = RenderPipeline::SSSS;
+					pipeline_init = &ssss_pipeline_init;
+					pipeline_changed = true;
+				}
+
+				ImGui::Text("Light pass for SSSS");
+				ImGui::SliderFloat("Texture Coefficient", &texture_coefficient, 0.0f, 1.0f);
+				ImGui::SliderFloat("kD", &ssss_kD, 0.0f, 1.0f);
+				ImGui::SliderFloat("kS", &ssss_kS, 0.0f, 1.0f);
+
+				ImGui::Text("Blur pass for SSSS");
+				ImGui::SliderFloat("SSSS Width", &ssssWidth, 0.0f, 2.0f);
+				ImGui::SliderFloat("SSSS Strength", &ssssStrength, 0.0f, 1.0f);
+				ImGui::SliderFloat("Depth Test Coefficient", &depthTestCoefficient, 0.01f, 2.0f);
+
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("Other"))
+			{
+				if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
+					counter++;
+				ImGui::SameLine();
+				ImGui::Text("counter = %d", counter);
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
+		}
+
+		ImGui::Text("Press space button to %s\n", paused ? "resume":"pause");
+		ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+
+		glCheckError();
+
+		// 3. Show another simple window.
+		if (show_another_window)
+		{
+			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+			ImGui::Text("Hello from another window!");
+			if (ImGui::Button("Close Me"))
+				show_another_window = false;
+			ImGui::End();
+		}
+
+		glCheckError();
+		// Rendering
+		ImGui::Render();
+		SDL_GL_MakeCurrent(window, glContext);
+		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		glCheckError();
+
+		SDL_Event current_event;
+		SDL_GL_SwapWindow(window);
+		glCheckError();
+
+		while (SDL_PollEvent(&current_event) != 0) {
+
+			if (ImGui::IsMouseHoveringAnyWindow()) {
+				ImGui_ImplSDL2_ProcessEvent(&current_event);
+			}
+			else {
+				processEvents(current_event);
+			}
+		}
+		glCheckError();
+	};
+
 	glCheckError();
 	while (!quit)
 	{
+		if (render_paused) { 
+			ui_pipeline_work(true);
+			continue; 
+		}
+
 		if (windowsize_changed || pipeline_changed)
 		{
 			SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
@@ -656,9 +782,6 @@ int main(int argc, char* argv[])
 		}; environmentFBO->unbind(); glCheckError();
 		glGenerateTextureMipmap(environmentFBO->colortexture->texture_id);
 		canvas->setTexture(environmentFBO->colortexture, Texture_Type::gAlbedo);
-
-		static int bloomRange = 8;
-		static int bloomStrength = 8;
 
 		int blurIndex = 0; int count = 0;
 		static FBO* blurList[2] = { blurFBO, rulbFBO };
@@ -767,119 +890,7 @@ int main(int argc, char* argv[])
 		glCheckError();
 
 		/*-----------------------*/
-
-		// Start the Dear ImGui frame
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(window);
-		ImGui::NewFrame(); //io.WantCaptureMouse = true;
-
-			// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-			if (show_demo_window)
-				ImGui::ShowDemoWindow(&show_demo_window);
-
-			// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-			static int counter = 0;
-
-			ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
-			ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
-			            // Display some text (you can use a format strings too)
-			//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-			//ImGui::Checkbox("Another Window", &show_another_window);
-			//static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-			//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-			ImGui::Text("General");
-			ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
-			ImGui::SliderFloat("Exposure", &exposure, 0.2f, 2.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-			ImGui::SliderFloat("Background", &background, 0.0f, 1.0f);
-
-			ImGui::Text("Bloom light source");
-			ImGui::SliderInt("Bloom Range", &bloomRange, 2, 16);
-			ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
-
-			ImGui::Text("Render pipeline");
-			static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-			if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
-			{
-				if (ImGui::BeginTabItem("PBR"))
-				{
-					if (current_pipeline != RenderPipeline::PBR) {
-						current_pipeline = RenderPipeline::PBR;
-						pipeline_init = &pbr_pipeline_init;
-						pipeline_changed = true;
-					}
-
-					ImGui::Text("Nothing here");
-					ImGui::EndTabItem();
-				}
-				if (ImGui::BeginTabItem("SSSS"))
-				{
-					if (current_pipeline != RenderPipeline::SSSS) {
-						current_pipeline = RenderPipeline::SSSS;
-						pipeline_init = &ssss_pipeline_init;
-						pipeline_changed = true;
-					}
-
-					ImGui::Text("Light pass for SSSS");
-					ImGui::SliderFloat("Texture Coefficient", &texture_coefficient, 0.0f, 1.0f);
-					ImGui::SliderFloat("kD", &ssss_kD, 0.0f, 1.0f);
-					ImGui::SliderFloat("kS", &ssss_kS, 0.0f, 1.0f);
-
-					ImGui::Text("Blur pass for SSSS");
-					ImGui::SliderFloat("SSSS Width", &ssssWidth, 0.0f, 2.0f);
-					ImGui::SliderFloat("SSSS Strength", &ssssStrength, 0.0f, 1.0f);
-					ImGui::SliderFloat("Depth Test Coefficient", &depthTestCoefficient, 0.01f, 2.0f);
-
-					ImGui::EndTabItem();
-				}
-				if (ImGui::BeginTabItem("Other"))
-				{
-					if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
-						counter++;
-					ImGui::SameLine();
-					ImGui::Text("counter = %d", counter);
-					ImGui::EndTabItem();
-				}
-				ImGui::EndTabBar();
-			}
-
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::End();
-
-		glCheckError();
-
-		// 3. Show another simple window.
-		if (show_another_window)
-		{
-			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-			ImGui::Text("Hello from another window!");
-			if (ImGui::Button("Close Me"))
-				show_another_window = false;
-			ImGui::End();
-		}
-
-		glCheckError();
-		// Rendering
-		ImGui::Render();
-		SDL_GL_MakeCurrent(window, glContext);
-		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		glCheckError();
-
-		SDL_Event current_event;
-		glCheckError();
-		SDL_GL_SwapWindow(window);
-		glCheckError();
-
-		while (SDL_PollEvent(&current_event) != 0) {
-
-			if (ImGui::IsMouseHoveringAnyWindow()) {
-				ImGui_ImplSDL2_ProcessEvent(&current_event);
-			}
-			else {
-				processEvents(current_event);
-			}
-		}
+		ui_pipeline_work(false);
 		glCheckError();
 	}
 

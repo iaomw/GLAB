@@ -23,7 +23,7 @@ void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format)
 
 	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &(envTexture->texture_id));
 
-	envTexture->texFormat = GL_RGBA;
+	envTexture->textureFormat = GL_RGBA;
 	envTexture->width = width; envTexture->height = height;
 
 	glTextureParameteri(envTexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

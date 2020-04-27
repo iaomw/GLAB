@@ -11,9 +11,9 @@ public:
 	GLuint texture_id;
 	GLenum texture_type;
 		
-	GLint texFormat;
-	GLenum internalformat;
-	int width, height;
+	GLint textureFormat;
+	GLenum internalFormat;
+	int width=0, height=0;
 
 	myTexture();
 	myTexture(GLenum type);
@@ -21,9 +21,9 @@ public:
 	myTexture(std::vector<std::string>& filenames);
 	~myTexture();
 
-	bool readTexture_2D(std::string filename);
-	bool readTexture_HDR(std::string filename);
-	void readTexture_cubemap(std::vector<std::string> & filenames);
+	bool readTexture2D(const std::string& filename);
+	bool readTextureHDR(const std::string& filename);
+	void readTextureCube(const std::vector<std::string>& filenames);
 
 	void bind(myShader *shader, std::string_view name, GLuint texture_offset = 0);
 

@@ -1,23 +1,12 @@
 #pragma once
 #include <GL/glew.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 
 #include "FBO.h"
 #include "myTexture.h"
 
-struct KeyFuncs
-{
-	size_t operator()(const glm::vec3& k)const
-	{
-		return std::hash<int>()(k.x) ^ std::hash<int>()(k.y);
-	}
-
-	bool operator()(const glm::vec3& a, const glm::vec3& b)const
-	{
-		return a.x == b.x && a.y == b.y && a.z == b.z;
-	}
-};
-
-typedef std::unordered_map<glm::vec3, std::map<Texture_Type, myTexture*>, KeyFuncs, KeyFuncs> PosTextureMap;
+typedef std::unordered_map<glm::vec3, std::map<Texture_Type, myTexture*>> PosTextureMap;
 
 class GeoFBO: public FBO
 {

@@ -11,8 +11,8 @@ public:
 	myShaders();
 	~myShaders();
 
-	void addShader(myShader *, std::string name);
-	myShader * & operator[](const std::string name);
+	void addShader(myShader *, const std::string& name);
+	myShader * & operator[](const std::string& name);
 	myShader * & operator[](const unsigned int index);
 
 	size_t size() const;

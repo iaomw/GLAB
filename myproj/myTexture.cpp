@@ -26,14 +26,14 @@ myTexture::myTexture(const std::string& filename)
 {
 	texture_id = 0;
 	texture_type = GL_TEXTURE_2D;
-	readTexture_2D(filename);
+	readTexture2D(filename);
 }
 
 myTexture::myTexture(std::vector<std::string>& filenames)
 {
 	texture_id = 0;
 	texture_type = GL_TEXTURE_CUBE_MAP;
-	readTexture_cubemap(filenames);
+	readTextureCube(filenames);
 }
 
 
@@ -43,7 +43,7 @@ myTexture::~myTexture()
 }
 
 
-bool myTexture::readTexture_2D(std::string filename)
+bool myTexture::readTexture2D(const std::string& filename)
 {
 	int size; GLubyte* mytexture;
 
@@ -57,10 +57,10 @@ bool myTexture::readTexture_2D(std::string filename)
 	map[3] = std::make_tuple(GL_RGB, GL_RGB16F);
 	map[4] = std::make_tuple(GL_RGBA, GL_RGBA16F);
 
-	std::tie(texFormat, internalformat) = map[size];
+	std::tie(textureFormat, internalFormat) = map[size];
 
-	glTextureStorage2D(texture_id, 5, internalformat, width, height);
-	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, texFormat, GL_UNSIGNED_BYTE, mytexture);
+	glTextureStorage2D(texture_id, 5, internalFormat, width, height);
+	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_UNSIGNED_BYTE, mytexture);
 	
 	configTexture(texture_id);
 
@@ -68,7 +68,7 @@ bool myTexture::readTexture_2D(std::string filename)
 	return true;
 }
 
-bool myTexture::readTexture_HDR(std::string filename) {
+bool myTexture::readTextureHDR(const std::string& filename) {
 
 	std::map<int, std::tuple<GLint, GLenum>> map;
 
@@ -80,11 +80,11 @@ bool myTexture::readTexture_HDR(std::string filename) {
 	auto textureData = stbi_loadf(filename.c_str(), &width, &height, &size, 0);
 	stbi_set_flip_vertically_on_load(false);
 
-	std::tie(texFormat, internalformat) = map[size];
+	std::tie(textureFormat, internalFormat) = map[size];
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
-	glTextureStorage2D(texture_id, 1, internalformat, width, height);
-	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, texFormat, GL_FLOAT, textureData);
+	glTextureStorage2D(texture_id, 1, internalFormat, width, height);
+	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_FLOAT, textureData);
 
 	configTexture(texture_id);
 
@@ -106,28 +106,28 @@ void  myTexture::configTexture(GLuint theTexture) {
 	glGenerateTextureMipmap(theTexture);
 }
 
-void myTexture::readTexture_cubemap(std::vector<std::string>& filenames)
+void myTexture::readTextureCube(const std::vector<std::string>& filenames)
 {
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &texture_id);
 
-	enum Face { LEFT, RIGHT, TOP, BOTTOM, FRONT, BACK };
+	//enum Face { LEFT, RIGHT, TOP, BOTTOM, FRONT, BACK };
 
-	for (Face f : {LEFT, RIGHT, TOP, BOTTOM, FRONT, BACK})
+	for (auto f : {0, 1, 2, 3, 4, 5})
 	{
 		int size, width, height;
 		GLubyte *mytexture = stbi_load(filenames[f].c_str(), &width, &height, &size, 4);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
+		//glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
+		glTextureSubImage3D(texture_id, 0, 0, 0, f,
+			width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
+		
 		delete[] mytexture;
 	}
 
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 

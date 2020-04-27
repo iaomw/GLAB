@@ -20,8 +20,8 @@ public:
 
 	std::map<std::string, GLint> text_to_id;
 
-	myShader(std::string file_vertexshader, std::string file_fragmentshader);
-	myShader(std::string file_vertexshader, std::string file_geometryshader, std::string file_fragmentshader);
+	myShader(const std::string& file_vertexshader, const std::string& file_fragmentshader);
+	myShader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader);
 
 	~myShader();
 
@@ -29,21 +29,21 @@ public:
 	void start() const;
 	void stop() const;
 
-	GLint getUniformLocation(std::string name);
+	GLint getUniformLocation(const std::string& name);
 
-	void setUniform(std::string name, glm::mat3&);
-	void setUniform(std::string name, glm::mat4&);
-	void setUniform(std::string name, int);
-	void setUniform(std::string name, float);
-	void setUniform(std::string name, glm::vec2);
-	void setUniform(std::string name, glm::vec3);
-	void setUniform(std::string name, glm::vec4);
-	void setUniform(std::string name, std::vector<glm::vec3>& input_array);
-	void setUniform(std::string name, std::vector<glm::fvec4>& input_array);
+	void setUniform(const std::string& name, int);
+	void setUniform(const std::string& name, float);
+	void setUniform(const std::string& name, glm::mat3&);
+	void setUniform(const std::string& name, glm::mat4&);
+	void setUniform(const std::string& name, glm::vec2);
+	void setUniform(const std::string& name, glm::vec3);
+	void setUniform(const std::string& name, glm::vec4);
+	void setUniform(const std::string& name, std::vector<glm::vec3>& input_array);
+	void setUniform(const std::string& name, std::vector<glm::fvec4>& input_array);
 	
 
 private:
-	GLuint _initShader(GLenum type, std::string filename);
+	GLuint _initShader(GLenum type, const std::string& filename);
 	bool _initProgram();
 	void _programErrors(const GLint program);
 	void _shaderErrors(const GLint shader);

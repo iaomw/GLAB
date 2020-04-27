@@ -3,7 +3,7 @@
 
 GeoFBO::GeoFBO(): FBO()
 {
-	fboID = 0; rboID = 0;
+	fboID = 0;
 	width = 0; height = 0;
 
 	gPosition = nullptr;
@@ -21,9 +21,7 @@ void GeoFBO::reset() {
 	if (gPosition != nullptr) delete gPosition; gPosition = nullptr;
 	if (gAlbedo != nullptr) delete gAlbedo; gAlbedo = nullptr;
 	if (gNormal != nullptr) delete gNormal; gNormal = nullptr;
-
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
-	if (rboID != 0) glDeleteFramebuffers(1, &rboID);
 }
 
 void GeoFBO::initFBO(int WIDTH, int HEIGHT)
@@ -31,65 +29,72 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	width = WIDTH; height = HEIGHT;
 
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
-	glGenFramebuffers(1, &fboID);
-	glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+	glCreateFramebuffers(1, &fboID);
 
-	// Position
+	// Position + AO
 	if (gPosition) delete gPosition;
 	gPosition = new myTexture();
 
-	glGenTextures(1, &gPosition->texture_id);
-	glBindTexture(GL_TEXTURE_2D, gPosition->texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition->texture_id, 0);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	glCreateTextures(GL_TEXTURE_2D, 1, &gPosition->texture_id);
+	glTextureStorage2D(gPosition->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
+
+	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, gPosition->texture_id, 0);
+	//glGenerateTextureMipmap(gPosition->texture_id);
 
 	// Albedo + Roughness
 	if (gAlbedo) delete gAlbedo;
 	gAlbedo = new myTexture();
 
-	glGenTextures(1, &gAlbedo->texture_id);
-	glBindTexture(GL_TEXTURE_2D, gAlbedo->texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gAlbedo->texture_id, 0);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	glCreateTextures(GL_TEXTURE_2D, 1, &gAlbedo->texture_id);
+	glTextureStorage2D(gAlbedo->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
+
+	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT1, gAlbedo->texture_id, 0);
+	//glGenerateTextureMipmap(gAlbedo->texture_id);
 
 	// Normals + Metalness
 	if (gNormal) delete gNormal;
 	gNormal = new myTexture();
 
-	glGenTextures(1, &gNormal->texture_id);
-	glBindTexture(GL_TEXTURE_2D, gNormal->texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gNormal->texture_id, 0);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	glCreateTextures(GL_TEXTURE_2D, 1, &gNormal->texture_id);
+	glTextureStorage2D(gNormal->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
 
-	// Define the COLOR_ATTACHMENTS for the G-Buffer
-	GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-	glDrawBuffers(3, attachments);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	// Z-Buffer
-	glGenRenderbuffers(1, &rboID);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboID);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, WIDTH, HEIGHT);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboID);
+	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT2, gNormal->texture_id, 0);
+	//glGenerateTextureMipmap(gNormal->texture_id);
 
-	// Check if the framebuffer is complete before continuing
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "GeoFBO not complete !" << std::endl;
+	if (depthTexture != nullptr) delete depthTexture;
+	depthTexture = new myTexture();
+
+	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
+	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT24, width, height);
+
+	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glNamedFramebufferTexture(fboID, GL_DEPTH_ATTACHMENT, depthTexture->texture_id, 0);
+
+	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glNamedFramebufferDrawBuffers(fboID, 3, attachments);
+
+	// finally check if framebuffer is complete
+	if (glCheckNamedFramebufferStatus(fboID, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		throw std::runtime_error("incomplete framebuffer");
 	}
-	unbind();
 }

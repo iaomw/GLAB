@@ -1,7 +1,7 @@
 # GLAB
 
-![Preview image](/assets/Capture.E.JPG)
-![Preview image](/assets/Capture.F.JPG)
+![Preview image](/capture/Capture.E.JPG)
+![Preview image](/capture/Capture.F.JPG)
 
 This serves as my final project for **Computer Graphics** course **2017 Fall**.
 

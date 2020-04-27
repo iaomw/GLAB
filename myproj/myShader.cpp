@@ -14,7 +14,7 @@
 
 using namespace std;
 
-myShader::myShader(string file_vertexshader, string file_fragmentshader)
+myShader::myShader(const std::string& file_vertexshader, const std::string& file_fragmentshader)
 {
 	text_to_id.clear();
 	//clear();
@@ -26,7 +26,7 @@ myShader::myShader(string file_vertexshader, string file_fragmentshader)
 		cout << "Error: shader not initialized properly.\n";
 }
 
-myShader::myShader(std::string file_vertexshader, std::string file_geometryshader, std::string file_fragmentshader)
+myShader::myShader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader)
 {
 	text_to_id.clear();
 	//clear();
@@ -43,7 +43,7 @@ myShader::~myShader()
 	clear();
 }
 
-GLuint myShader::_initShader(GLenum type, string filename)
+GLuint myShader::_initShader(GLenum type, const std::string& filename)
 {
 	ifstream fin(filename);
 
@@ -124,7 +124,7 @@ void myShader::stop() const
 	glUseProgram(0);
 }
 
-GLint myShader::getUniformLocation(string text) 
+GLint myShader::getUniformLocation(const std::string& text) 
 {
 	if (text_to_id.find(text) == text_to_id.end())
 	{
@@ -140,49 +140,49 @@ GLint myShader::getUniformLocation(string text)
 	return text_to_id[text];
 }
 
-void myShader::setUniform(std::string name, glm::mat4 & mat)
+void myShader::setUniform(const std::string& name, glm::mat4 & mat)
 {
 	glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void myShader::setUniform(std::string name, glm::mat3 &mat)
+void myShader::setUniform(const std::string& name, glm::mat3 &mat)
 {
 	glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void myShader::setUniform(std::string name, float val)
+void myShader::setUniform(const std::string& name, float val)
 {
 	glUniform1f(getUniformLocation(name), val);
 }
 
-void myShader::setUniform(std::string name, int val)
+void myShader::setUniform(const std::string& name, int val)
 {
 	glUniform1i(getUniformLocation(name), val);
 }
 
-void myShader::setUniform(std::string name, glm::vec2 vec)
+void myShader::setUniform(const std::string& name, glm::vec2 vec)
 {
 	glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(std::string name, glm::vec3 vec)
+void myShader::setUniform(const std::string& name, glm::vec3 vec)
 {
 	glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(std::string name, glm::vec4 vec)
+void myShader::setUniform(const std::string& name, glm::vec4 vec)
 {
 	glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(std::string name, vector<glm::vec3>& input_array)
+void myShader::setUniform(const std::string& name, vector<glm::vec3>& input_array)
 {
 	for (unsigned int i = 0; i < input_array.size(); ++i) {
 		glUniform3fv(getUniformLocation(name + "[" + std::to_string(i) + "]"), 1, &input_array[i][0]);
 	}
 }
 
-void myShader::setUniform(std::string name, vector<glm::vec4>& input_array)
+void myShader::setUniform(const std::string& name, vector<glm::vec4>& input_array)
 {
 	//glUniform4fv(getUniformLocation(name), input_array.size(), &input_array[0][0]);
 	for (unsigned int i = 0; i < input_array.size(); ++i) {

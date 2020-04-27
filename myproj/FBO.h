@@ -9,13 +9,14 @@
 class RenderTarget {
 
 public:
-	myTexture* colortexture;
-	myTexture* extratexture;
+	myTexture* colorTexture;
+	myTexture* extraTexture;
+	myTexture* depthTexture;
 
-	GLuint fboID, rboID;
+	GLuint fboID;
 	int width, height;
 
-	//virtual ~RenderTarget() {}
+	virtual ~RenderTarget() {}
 
 	void render(myShader* shader, myObject* object, glm::mat4 view_matrix, 
 		std::function<void()>* before=nullptr, std::function<void()>* after=nullptr) {
@@ -39,14 +40,13 @@ public:
 	virtual inline void bind() const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-		glBindRenderbuffer(GL_RENDERBUFFER, rboID);
+		//glBindRenderbuffer(GL_RENDERBUFFER, rboID);
 	}
 
 	virtual inline void unbind() const
 	{
-		glBindTexture(GL_TEXTURE_2D, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 
 	virtual void clear() const
@@ -66,10 +66,11 @@ class FBO: public RenderTarget
 public:
 
 	FBO(bool extra = false, bool mipmap = false);
+	
 	virtual ~FBO();
-	virtual void reset();
-
+	
 	void initFBO(int width, int height);
+	virtual void reset();
 
 private:
 	bool needExtra;

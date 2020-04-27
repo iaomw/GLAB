@@ -44,7 +44,7 @@ void main()
     vec4 obj = texture(colortex, texCoords).rgba;
     vec4 bloom = texture(gBloom, texCoords).rgba;
     
-    vec3 center = textureLod(gEnv, vec2(0.5, 0.5), 1024).rgb;
+    vec3 center = textureLod(gEnv, vec2(0.5, 0.5), 512).rgb;
     float luminance = dot(center, vec3(0.2126, 0.7152, 0.0722));
     float mapped = CEToneMapping(luminance, 1.0);
     mapped = 1.0 - clamp(mapped, 0.0, 0.96);

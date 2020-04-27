@@ -10,7 +10,7 @@ myShaders::~myShaders()
 {
 }
 
-void myShaders::addShader(myShader *shader, std::string name)
+void myShaders::addShader(myShader *shader, const std::string& name)
 {
 	if (shader == nullptr) return;
 
@@ -18,7 +18,7 @@ void myShaders::addShader(myShader *shader, std::string name)
 	all_shaders.push_back(shader);
 }
 
-myShader*& myShaders::operator[](const std::string name)
+myShader*& myShaders::operator[](const std::string& name)
 {
 	assert(byname.count(name) != 0);
 	

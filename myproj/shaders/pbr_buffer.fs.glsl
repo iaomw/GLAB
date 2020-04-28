@@ -7,12 +7,11 @@ const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
 uniform vec3 cam_position;
 
+uniform mat4 weiv_matrix;
 uniform mat4 myview_matrix;
 uniform mat4 mymodel_matrix;
 uniform mat3 mynormal_matrix;
 uniform mat4 myprojection_matrix;
-
-uniform mat4 inverse_view_matrix;
 
 in vec4 myvertex;
 in vec3 mynormal;
@@ -123,13 +122,12 @@ void main()
     vec3 kD = vec3(1.0)-kS;
     kD *= 1.0f - metalness;
 
-    float Atten = 0.01;
+    float atten = 0.01;
     vec3 color = vec3(0.0f); 
     vec3 diffuse = vec3(0.0f);  
     vec3 specular = vec3(0.0f);
     
     float c2p = distance((myview_matrix * vec4(cam_vspace, 1.0)).xyz, tPosition.xyz); // view space 
-    // Calculation in view space
     for (int i = 0; i < num_lights; i++) // treate them as point lights
     {
         vec4 light_pos = myview_matrix * vec4(lights[i].position, 1.0); // world space to view space
@@ -140,13 +138,13 @@ void main()
         vec3 lightColor = lights[i].color; 
         vec3 intensity = lights[i].intensity;
         float l2p = distance(light_pos.rgb, tPosition.rgb);
-        vec3 remain = intensity * max((1-(l2p+c2p) * Atten), 0.0); 
+        vec3 remain = intensity * max((1-(l2p+c2p) * atten), 0.0); 
 
         // Light source dependent BRDF term(s)
         float NdotL = saturate(dot(N, L));
         diffuse = tAlbedo / PI; // Lambertian
-        float kDisney = kDisneyTerm(NdotL, NdotV, roughness);
-        diffuse = diffuse * kDisney;
+        diffuse *= kDisneyTerm(NdotL, NdotV, roughness);
+        
         float D = DistributionGGX(N, H, roughness);
         float G = SmithGeometryGGX(NdotL, NdotV, roughness);
 
@@ -154,23 +152,24 @@ void main()
         color += (diffuse * kD + specular * kS) * lightColor * remain * NdotL; 
      }
 
-    vec4 world_N = inverse_view_matrix * vec4(N, 0);
-    vec4 world_R = inverse_view_matrix * vec4(R, 0);
+    vec4 world_N = weiv_matrix * vec4(N, 0);
+    vec4 world_R = weiv_matrix * vec4(R, 0);
 
-    vec3 irradianceX = texture(gIrradiance, world_N.xyz).rgb;
-    vec3 diffuseX = irradianceX * tAlbedo;
+    vec3 irradiance = texture(gIrradiance, world_N.xyz).rgb;
+    vec3 value_diffuse = irradiance * tAlbedo;
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(gPrefilter, world_R.xyz, roughness * MAX_REFLECTION_LOD).rgb;    
-    vec2 xBRDF  = texture(BRDF_LUT, vec2(NdotV, roughness)).rg;
-    vec3 specularX = prefilteredColor * (F * xBRDF.x + xBRDF.y);
-
-    vec3 ambient = (kD * diffuseX + kS * specularX) * ao;
+    float mip_level = roughness * MAX_REFLECTION_LOD;
+    vec2 value_BRDF = texture(BRDF_LUT, vec2(NdotV, roughness)).rg;
+    vec3 value_prefilter = textureLod(gPrefilter, world_R.xyz, mip_level).rgb; 
+    vec3 value_specular = value_prefilter * (F * value_BRDF.x + value_BRDF.y);
+       
+    vec3 ambient = (kD * value_diffuse + kS * value_specular) * ao;
 
     gColor.rgb = color + ambient;
-    //gColor.rgb = diffuseX;
     //gColor.rgb = specularX;
+    //gColor.rgb = diffuseX;
     gColor.a = tPosition.z;
     //gExtra = tPosition;
 }

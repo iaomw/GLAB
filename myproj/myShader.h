@@ -12,9 +12,9 @@
 class myShader
 {
 public:
-	GLuint vertex_shader;
-	GLuint geometry_shader;
-	GLuint fragment_shader;
+	GLuint vertex_shader = 0;
+	GLuint geometry_shader = 0;
+	GLuint fragment_shader = 0;
 
 	GLuint shaderprogram;
 

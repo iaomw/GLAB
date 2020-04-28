@@ -72,8 +72,15 @@ GLuint myShader::_initShader(GLenum type, const std::string& filename)
 bool myShader::_initProgram()
 {
 	shaderprogram = glCreateProgram();
-	glAttachShader(shaderprogram, vertex_shader);
-	glAttachShader(shaderprogram, fragment_shader);
+	if (vertex_shader != 0) {
+		glAttachShader(shaderprogram, vertex_shader);
+	}
+	if (geometry_shader != 0) {
+		glAttachShader(shaderprogram, geometry_shader);
+	}
+	if (fragment_shader != 0) {
+		glAttachShader(shaderprogram, fragment_shader);
+	}
 	glLinkProgram(shaderprogram);
 
 	GLint linked;

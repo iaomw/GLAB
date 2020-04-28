@@ -19,10 +19,11 @@ FBO::~FBO()
 }
 
 void FBO::reset() {
-	if (colorTexture != nullptr) delete colorTexture; colorTexture = nullptr;
-	if (extraTexture != nullptr) delete extraTexture; extraTexture = nullptr;
-	if (depthTexture != nullptr) delete extraTexture; extraTexture = nullptr;
-	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
+	if (fboID != 0) glDeleteFramebuffers(1, &fboID); fboID = 0;
+
+	delete colorTexture; colorTexture = nullptr;
+	delete extraTexture; extraTexture = nullptr;
+	delete depthTexture; depthTexture = nullptr;
 }
 
 void FBO::initFBO(int WIDTH, int HEIGHT) 
@@ -32,11 +33,10 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
 	glCreateFramebuffers(1, &fboID);
 
-	//if (colorTexture != nullptr) 
-		delete colorTexture;
+	delete colorTexture;
 	colorTexture = new myTexture();
 
-	auto mini_filter = needMipmap ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR;
+	auto mini_filter = needMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
 
 	//GL_NEAREST_MIPMAP_NEAREST 
 	//GL_LINEAR_MIPMAP_NEAREST 
@@ -54,9 +54,8 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	glTextureParameteri(colorTexture->texture_id, GL_TEXTURE_MIN_FILTER, mini_filter);
 
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, colorTexture->texture_id, 0);
-	glGenerateTextureMipmap(colorTexture->texture_id);
 
-	if (depthTexture != nullptr) delete depthTexture;
+	delete depthTexture;
 	depthTexture = new myTexture();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
@@ -75,7 +74,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 		glNamedFramebufferDrawBuffers(fboID, 1, attachment);
 	}
 	else {
-		if (extraTexture != nullptr) delete extraTexture;
+		delete extraTexture;
 		extraTexture = new myTexture();
 
 		glCreateTextures(GL_TEXTURE_2D, 1, &extraTexture->texture_id);
@@ -87,7 +86,6 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 		glTextureParameteri(extraTexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT1, extraTexture->texture_id, 0);
-		//glGenerateTextureMipmap(extratexture->texture_id);
 
 		unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 		glNamedFramebufferDrawBuffers(fboID, 2, attachments);

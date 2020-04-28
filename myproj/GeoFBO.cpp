@@ -18,10 +18,11 @@ GeoFBO::~GeoFBO()
 }
 
 void GeoFBO::reset() {
-	if (gPosition != nullptr) delete gPosition; gPosition = nullptr;
-	if (gAlbedo != nullptr) delete gAlbedo; gAlbedo = nullptr;
-	if (gNormal != nullptr) delete gNormal; gNormal = nullptr;
-	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
+	if (fboID != 0) glDeleteFramebuffers(1, &fboID); fboID = 0;
+
+	delete gPosition; gPosition = nullptr;
+	delete gAlbedo; gAlbedo = nullptr;
+	delete gNormal; gNormal = nullptr;
 }
 
 void GeoFBO::initFBO(int WIDTH, int HEIGHT)
@@ -76,7 +77,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT2, gNormal->texture_id, 0);
 	//glGenerateTextureMipmap(gNormal->texture_id);
 
-	if (depthTexture != nullptr) delete depthTexture;
+	delete depthTexture;
 	depthTexture = new myTexture();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);

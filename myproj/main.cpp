@@ -55,7 +55,7 @@ int mouse_position[2];
 bool mouse_button_pressed = false;
 
 bool quit = false;
-bool render_paused = false;
+bool render_loop_paused = false;
 bool windowsize_changed = true;
 bool crystalballorfirstperson_view = false;
 float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
@@ -98,7 +98,7 @@ void processEvents(SDL_Event current_event)
 		if (current_event.key.keysym.sym == SDLK_v)
 			crystalballorfirstperson_view = !crystalballorfirstperson_view;
 		if (current_event.key.keysym.sym == SDLK_SPACE)
-			render_paused = !render_paused;
+			render_loop_paused = !render_loop_paused;
 		if (current_event.key.keysym.sym == SDLK_o)
 		{
 			//nfdchar_t *outPath = NULL;
@@ -241,7 +241,7 @@ GLenum glCheckError_(const char* file, int line)
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
 
 enum class RenderPipeline {
-	PBR, SSSS
+	PBR, SSSS, Debug
 };
 
 int main(int argc, char* argv[])
@@ -470,21 +470,21 @@ int main(int argc, char* argv[])
 
 	auto posTextureMap = PosTextureMap {
 
-			{ glm::vec3(-10, 0, 0), std::map<Texture_Type, myTexture*> {
+			{ glm::vec3(-15, 0, 0), std::map<Texture_Type, myTexture*> {
 				{ Texture_Type::texAO, texAO_A },
 				{ Texture_Type::texAlbedo, texAlbedo_A },
 				{ Texture_Type::texMetal, texMetallic_A },
 				{ Texture_Type::texNormal, texNormal_A },
 				{ Texture_Type::texRough, texRoughness_A }
 			} },
-			{ glm::vec3(10, 0, 0), std::map<Texture_Type, myTexture*> {
+			{ glm::vec3(15, 0, 0), std::map<Texture_Type, myTexture*> {
 				{ Texture_Type::texAO, texAO_B },
 				{ Texture_Type::texAlbedo, texAlbedo_B},
 				{ Texture_Type::texMetal, texMetallic_B },
 				{ Texture_Type::texNormal, texNormal_B },
 				{ Texture_Type::texRough, texRoughness_B }
 			} },
-			{ glm::vec3(0, 10, -20), std::map<Texture_Type, myTexture*> {
+			{ glm::vec3(0, 0, 0), std::map<Texture_Type, myTexture*> {
 				{ Texture_Type::texAO, texAO_X },
 				{ Texture_Type::texAlbedo, texAlbedo_X},
 				{ Texture_Type::texMetal, texMetallic_X },
@@ -559,14 +559,6 @@ int main(int argc, char* argv[])
 
 		geometryFBO->initFBO(WIDTH, HEIGHT);
 		lightingFBO->initFBO(WIDTH, HEIGHT);
-
-		pbr_canvas->setTexture(geometryFBO->gPosition, Texture_Type::gPosition);
-		pbr_canvas->setTexture(geometryFBO->gAlbedo, Texture_Type::gAlbedo);
-		pbr_canvas->setTexture(geometryFBO->gNormal, Texture_Type::gNormal);
-
-		pbr_canvas->setTexture(iFBO->envTexture, Texture_Type::gIrradiance);
-		pbr_canvas->setTexture(pFBO->envTexture, Texture_Type::gPrefilter);
-		pbr_canvas->setTexture(bFBO->colorTexture, Texture_Type::BRDF_LUT);
 	};
 
 	std::function<void(int, int)> ssss_pipeline_init = [&](int WIDTH, int HEIGHT) {
@@ -687,14 +679,14 @@ int main(int argc, char* argv[])
 	bool first_pause_frame = true;
 	while (!quit)
 	{
-		if (render_paused) { 
+		if (render_loop_paused) {   
 			ui_pipeline_work(true, first_pause_frame);
 			first_pause_frame = false;
 			continue; 
 		} first_pause_frame = true;
 
 		if (windowsize_changed || pipeline_changed)
-		{
+		{   
 			SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
 			windowsize_changed = false; pipeline_changed = false;
 
@@ -715,6 +707,7 @@ int main(int argc, char* argv[])
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
 		glm::mat4 weiv_matrix = glm::inverse(view_matrix);
+		ui_pipeline_work(false, false);
 
 		//Setting uniform variables for each shader
 		for (unsigned int i = 0; i < shaders.size(); i++)
@@ -723,12 +716,12 @@ int main(int argc, char* argv[])
 			current_shader->setUniform("myprojection_matrix", projection_matrix);
 			current_shader->setUniform("cam_position", mainCam->camera_eye);
 
-			current_shader->setUniform("inverse_view_matrix", weiv_matrix);
 			current_shader->setUniform("myview_matrix", view_matrix);
+			current_shader->setUniform("weiv_matrix", weiv_matrix);
 			
-			current_shader->setUniform("fovY", mainCam->fovy);
-			current_shader->setUniform("farZ", mainCam->zFar);
 			current_shader->setUniform("nearZ", mainCam->zNear);
+			current_shader->setUniform("farZ", mainCam->zFar);
+			current_shader->setUniform("fovY", mainCam->fovy);
 
 			current_shader->setUniform("gamma", gamma);
 			current_shader->setUniform("exposure", exposure);
@@ -837,7 +830,7 @@ int main(int argc, char* argv[])
 
 					ssssBlurShader->setUniform("kernel", kernelSSSS);
 					ssssBlurShader->setUniform("kernelSize", (int)kernelSSSS.size());
-					});
+				});
 
 				ssssBlurFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
 				glCheckError();
@@ -856,9 +849,10 @@ int main(int argc, char* argv[])
 		if (RenderPipeline::PBR == current_pipeline) {
 
 			final_canvas->setTexture(lightingFBO->colorTexture, Texture_Type::colortex);
-			//scene["ppe_canvas"]->setTexture(rulbFBO->colortexture, Texture_Type::gExtra);
+			final_canvas->setTexture(NULL, Texture_Type::gExtra);
 
-		} else if (RenderPipeline::SSSS == current_pipeline) {
+		}
+		else if (RenderPipeline::SSSS == current_pipeline) {
 
 			final_canvas->setTexture(ssssRulbFBO->colorTexture, Texture_Type::colortex);
 			final_canvas->setTexture(ssssLightFBO->extraTexture, Texture_Type::gExtra);
@@ -873,11 +867,8 @@ int main(int argc, char* argv[])
 		current_shader->start();
 		current_shader->setUniform("background", background);
 		final_canvas->displayObjects(current_shader, view_matrix);
-		current_shader->stop(); //scene["ppe_canvas"]->cleanTexture();
-		glCheckError();
-
-		/*-----------------------*/
-		ui_pipeline_work(false, false);
+		current_shader->stop(); 
+		//scene["ppe_canvas"]->cleanTexture();
 		glCheckError();
 	}
 

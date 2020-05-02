@@ -3,20 +3,18 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp> 
-#include <glm/gtc/type_ptr.hpp>    
-#include <string>
-#include <vector>
-#include <sstream>
+#include <glm/gtc/type_ptr.hpp>  
 
 #include <GL/glew.h>  
 #include <SDL2/SDL.h>
 
-#include <iostream>
 #include <tuple>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <iostream>
 
 #include "errors.h"
-
-using namespace std;
 
 //rotates inputvec around rotation_axis by angle theta in three dimensions.
 static void rotate(glm::vec3 & inputvec, glm::vec3 rotation_axis, float theta, bool tonormalize = false)
@@ -133,29 +131,29 @@ static void checkOpenGLInfo(bool toprint = false)
 	myassert(glUniformMatrix4fv != 0);
 	myassert(glVertexAttribPointer != 0);
 	myassert(glViewport != 0);
-	stringstream output;
-	output << endl << "Start OpenGL Information.\n\n";
+	std::stringstream output;
+	output << std::endl << "Start OpenGL Information.\n\n";
 
-	vector<tuple<int, string>> string_params =
+	std::vector<std::tuple<int, std::string>> string_params =
 	{
-		make_tuple(GL_VENDOR, "Vendor"),
-		make_tuple(GL_RENDERER, "Renderer"),
-		make_tuple(GL_VERSION, "Version")
+		std::make_tuple(GL_VENDOR, "Vendor"),
+		std::make_tuple(GL_RENDERER, "Renderer"),
+		std::make_tuple(GL_VERSION, "Version")
 	};
 
 	for (size_t i = 0; i < string_params.size(); i++)
 	{
-		string res = (char*)glGetString(get<0>(string_params[i]));
-		if (!res.empty()) output << "\t" << get<1>(string_params[i]) << ": " << res << endl;
-	};  output << endl;
+		std::string res = (char*)glGetString(std::get<0>(string_params[i]));
+		if (!res.empty()) output << "\t" << std::get<1>(string_params[i]) << ": " << res << std::endl;
+	};  output << std::endl;
 
 	GLint n, i;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &n);
 	for (i = 0; i < n; i++) {
-		output << "\t" << glGetStringi(GL_EXTENSIONS, i) << endl;
-	}; output << endl;
+		output << "\t" << glGetStringi(GL_EXTENSIONS, i) << std::endl;
+	}; output << std::endl;
 
-	vector<tuple<int, string>> int_params =
+	std::vector<std::tuple<int, std::string>> int_params =
 	{
 		//make_tuple(GL_RED_BITS, "Red bits"),
 		//make_tuple(GL_GREEN_BITS, "Green bits"),
@@ -168,7 +166,7 @@ static void checkOpenGLInfo(bool toprint = false)
 	};
 
 	output << "End OpenGL Information.\n\n";
-	if (toprint) cout << output.str();
+	if (toprint) std::cout << output.str();
 }
 
 static void SDL_GetDisplayDPIRatio(int displayIndex, float* dpi, float* defaultDpi)

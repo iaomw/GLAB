@@ -7,11 +7,10 @@ uniform mat4 mymodel_matrix;
 uniform mat3 mynormal_matrix;
 uniform mat4 myprojection_matrix;
 
-uniform float gamma;
 uniform float fovY;
-
 uniform float farZ;
 uniform float nearZ;
+uniform float gamma;
 
 uniform vec3 color;
 
@@ -21,12 +20,6 @@ in vec2 texCoord;
 
 layout (location = 0) out vec4 gColor;
 //layout (location = 1) out vec4 gExtra;
-
-float LinearizeDepth(float depth)
-{
-    float z = depth * 2.0f - 1.0f;
-    return (2.0f * nearZ * farZ) / (farZ + nearZ - z * (farZ - nearZ));
-}
 
 void main (void)
 {   

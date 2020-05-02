@@ -32,12 +32,12 @@ public:
 	float closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle, mySubObject * & picked_object);
 	float closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle);
 
-	void translate(float x, float y, float z);
 	void scale(float x, float y, float z);
+	void translate(float x, float y, float z);
 	void rotate(float axis_x, float axis_y, float axis_z, float angle);
 
-	void translate(glm::vec3);
 	void scale(glm::vec3);
+	void translate(glm::vec3);
 	void rotate(glm::vec3 , float);
 
 	void computeTexturecoordinates_plane();

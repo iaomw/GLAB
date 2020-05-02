@@ -16,7 +16,7 @@ class myShader;
 
 enum class Texture_Type {
 
-	colortex, bumptex, cubetex,
+	colortex, bumptex, cubetex, depthtex,
 
 	texAO, texAlbedo, texMetal, texNormal, texRough,
 
@@ -38,13 +38,13 @@ public:
 
 	std::string name;
 
-	mySubObject(myMaterial *m, size_t s, size_t e, std::string n) ;
-	mySubObject(size_t s, size_t e, std::string);
+	mySubObject(myMaterial *m, size_t s, size_t e, const std::string& n) ;
+	mySubObject(size_t s, size_t e, const std::string&);
 	
 	~mySubObject();
 
 	void setTexture(myTexture *t, Texture_Type);
 
-	void displaySubObject(myVAO *vao, myShader *);
-	void displayNormals(myVAO *vao, myShader *);
+	void displaySubObject(myVAO*, myShader*);
+	void displayNormals(myVAO*, myShader*);
 };

@@ -3,7 +3,8 @@
 myVBO::myVBO(GLenum type)
 {
 	buffer_type = type;
-	glGenBuffers(1, &buffer_id);
+	//glGenBuffers(1, &buffer_id);
+	glCreateBuffers(1, &buffer_id);
 }
 
 myVBO::~myVBO()
@@ -23,5 +24,6 @@ void myVBO::unbind() const
 
 void myVBO::setData(GLvoid * data, size_t size_in_bytes)
 {
-	glBufferData(buffer_type, size_in_bytes, data, GL_STATIC_DRAW);
+	//glBufferData(buffer_type, size_in_bytes, data, GL_STATIC_DRAW);
+	glNamedBufferData(buffer_id, size_in_bytes, data, GL_STATIC_DRAW);
 }

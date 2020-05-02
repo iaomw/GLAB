@@ -10,9 +10,14 @@ in vec4 myvertex;
 in vec3 mynormal;
 in vec3 texCoord;
 
-uniform mat4 myprojection_matrix;
+uniform float fovY;
+uniform float farZ;
+uniform float nearZ;
+
 uniform mat4 myview_matrix;
 uniform mat4 mymodel_matrix;
+uniform mat3 mynormal_matrix;
+uniform mat4 myprojection_matrix;
 
 uniform samplerCube cubetex;
 
@@ -20,7 +25,7 @@ void main()
 {    
      //gExtra = myview_matrix * mymodel_matrix * myvertex; 
      gColor = texture(cubetex, texCoord);
-     gColor.a = 1.0; //neg_infinity; // background
+     gColor.a = -2*farZ; // background
     
      //float brightness = dot(gColor.rgb, vec3(0.2126, 0.7152, 0.0722));
      //gColor.w = (brightness>1.0)? 1.0:0.0;

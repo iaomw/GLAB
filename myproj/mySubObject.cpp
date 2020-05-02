@@ -12,9 +12,7 @@
 #include "myShader.h"
 #include "myLight.h"
 
-using namespace std;
-
-mySubObject::mySubObject(myMaterial *m, size_t s, size_t e, string n = "noname")
+mySubObject::mySubObject(myMaterial *m, size_t s, size_t e, const std::string& n = "noname")
 {
 	start = s;
 	end = e;
@@ -26,7 +24,7 @@ mySubObject::mySubObject(myMaterial *m, size_t s, size_t e, string n = "noname")
 	textures.clear();
 }
 
-mySubObject::mySubObject(size_t s, size_t e, string n) : mySubObject(nullptr, s, e, n) { }
+mySubObject::mySubObject(size_t s, size_t e, const std::string& n) : mySubObject(nullptr, s, e, n) { }
 
 void mySubObject::setTexture(myTexture* t, Texture_Type type)
 {

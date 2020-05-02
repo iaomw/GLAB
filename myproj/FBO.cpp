@@ -19,6 +19,7 @@ FBO::~FBO()
 }
 
 void FBO::reset() {
+
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID); fboID = 0;
 
 	delete colorTexture; colorTexture = nullptr;
@@ -36,14 +37,18 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	delete colorTexture;
 	colorTexture = new myTexture();
 
-	auto mini_filter = needMipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-
 	//GL_NEAREST_MIPMAP_NEAREST 
 	//GL_LINEAR_MIPMAP_NEAREST 
 	//GL_NEAREST_MIPMAP_LINEAR 
 	//GL_LINEAR_MIPMAP_LINEAR 
 
-	auto numLevels = 1 + floor(log2((double)std::max(width, height)));
+	auto mini_filter = GL_LINEAR;
+	auto numLevels = 1;
+	
+	if (needMipmap) {
+		mini_filter = GL_LINEAR_MIPMAP_LINEAR;
+		numLevels = 1 + floor(log2((double)std::max(width, height)));
+	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &colorTexture->texture_id);
 	glTextureStorage2D(colorTexture->texture_id, numLevels, GL_RGBA16F, width, height);
@@ -59,7 +64,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	depthTexture = new myTexture();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
-	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT24, width, height);
+	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT32, width, height);
 
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -73,7 +78,8 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 		unsigned int attachment[1] = { GL_COLOR_ATTACHMENT0 };
 		glNamedFramebufferDrawBuffers(fboID, 1, attachment);
 	}
-	else {
+	else 
+	{
 		delete extraTexture;
 		extraTexture = new myTexture();
 

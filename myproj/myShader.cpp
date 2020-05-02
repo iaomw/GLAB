@@ -12,8 +12,6 @@
 
 #include "myShader.h"`
 
-using namespace std;
-
 myShader::myShader(const std::string& file_vertexshader, const std::string& file_fragmentshader)
 {
 	text_to_id.clear();
@@ -23,7 +21,7 @@ myShader::myShader(const std::string& file_vertexshader, const std::string& file
 	fragment_shader = _initShader(GL_FRAGMENT_SHADER, file_fragmentshader);
 	
 	if (!_initProgram())
-		cout << "Error: shader not initialized properly.\n";
+		std::cout << "Error: shader not initialized properly.\n";
 }
 
 myShader::myShader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader)
@@ -35,7 +33,7 @@ myShader::myShader(const std::string& file_vertexshader, const std::string& file
 	fragment_shader = _initShader(GL_FRAGMENT_SHADER, file_fragmentshader);
 
 	if (!_initProgram())
-		cout << "Error: shader not initialized properly.\n";
+		std::cout << "Error: shader not initialized properly.\n";
 }
 
 myShader::~myShader()
@@ -45,14 +43,14 @@ myShader::~myShader()
 
 GLuint myShader::_initShader(GLenum type, const std::string& filename)
 {
-	ifstream fin(filename);
+	std::ifstream fin(filename);
 
 	if (!fin)
 	{
-		cerr << "Unable to Open File " << filename << "\n";
+		std::cerr << "Unable to Open File " << filename << "\n";
 		throw 2;
 	}
-	string shadertext = string((istreambuf_iterator<char>(fin)), (istreambuf_iterator<char>()));
+	std::string shadertext = std::string((std::istreambuf_iterator<char>(fin)), (std::istreambuf_iterator<char>()));
 	const GLchar* shadertext_cstr = shadertext.c_str();
 
 	GLuint shader = glCreateShader(type);
@@ -99,7 +97,7 @@ void myShader::_programErrors(const GLint program) {
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
 	log = new GLchar[length + 1];
 	glGetProgramInfoLog(program, length, &length, log);
-	cout << "Compile Error, Log Below\n" << log << "\n";
+	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
 }
 
@@ -109,7 +107,7 @@ void myShader::_shaderErrors(const GLint shader) {
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 	log = new GLchar[length + 1];
 	glGetShaderInfoLog(shader, length, &length, log);
-	cout << "Compile Error, Log Below\n" << log << "\n";
+	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
 }
 
@@ -182,14 +180,14 @@ void myShader::setUniform(const std::string& name, glm::vec4 vec)
 	glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(const std::string& name, vector<glm::vec3>& input_array)
+void myShader::setUniform(const std::string& name, std::vector<glm::vec3>& input_array)
 {
 	for (unsigned int i = 0; i < input_array.size(); ++i) {
 		glUniform3fv(getUniformLocation(name + "[" + std::to_string(i) + "]"), 1, &input_array[i][0]);
 	}
 }
 
-void myShader::setUniform(const std::string& name, vector<glm::vec4>& input_array)
+void myShader::setUniform(const std::string& name, std::vector<glm::vec4>& input_array)
 {
 	//glUniform4fv(getUniformLocation(name), input_array.size(), &input_array[0][0]);
 	for (unsigned int i = 0; i < input_array.size(); ++i) {

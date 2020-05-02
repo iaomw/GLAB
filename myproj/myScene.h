@@ -16,8 +16,8 @@ public:
 	myScene();
 	~myScene();
 
-	void addObjects(myObject *, std::string name = "default");
-	myObject * & operator[](const std::string name);
+	void addObjects(myObject *, const std::string& name = "default");
+	myObject * & operator[](const std::string& name);
 	myObject * & operator[](const unsigned int index);
 
 	size_t size() const;

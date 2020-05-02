@@ -8,8 +8,11 @@ CubeFBO::CubeFBO(): FBO()
 
 CubeFBO::~CubeFBO()
 {
-	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
-	if (envTexture != nullptr) delete envTexture;
+	if (fboID != 0) {
+		glDeleteFramebuffers(1, &fboID); 
+		fboID = 0;
+	}
+	delete envTexture;
 }
 
 void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format)
@@ -18,7 +21,7 @@ void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format)
 	glCreateFramebuffers(1, &fboID);
 	width = WIDTH; height = HEIGHT;
 
-	if (envTexture) delete envTexture;
+	delete envTexture;
 	envTexture = new myTexture(GL_TEXTURE_CUBE_MAP);
 
 	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &(envTexture->texture_id));

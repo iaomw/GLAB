@@ -9,10 +9,10 @@ uniform mat4 mymodel_matrix;
 uniform mat3 mynormal_matrix;
 uniform mat4 myprojection_matrix;
 
-out vec2 TexCoords;
+out vec2 texCoords;
 
 void main()
 {
-    TexCoords = texturecoordinate_modelspace;
+    texCoords = texturecoordinate_modelspace;
     gl_Position = mymodel_matrix * vertex_modelspace;
 }

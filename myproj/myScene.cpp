@@ -1,8 +1,6 @@
 #include "myScene.h"
 #include <iostream>
 
-using namespace std;
-
 myScene::myScene()
 {
 	lights = nullptr;
@@ -15,7 +13,7 @@ myScene::~myScene()
 	if (lights != nullptr) delete lights;
 }
 
-void myScene::addObjects(myObject* obj, string name)
+void myScene::addObjects(myObject* obj, const std::string& name)
 {
 	if (obj == nullptr) 
 	{
@@ -27,7 +25,7 @@ void myScene::addObjects(myObject* obj, string name)
 	all_objects.push_back(obj);
 }
 
-myObject* & myScene::operator[](const std::string name)
+myObject* & myScene::operator[](const std::string& name)
 {
 	size_t num = byname.count(name);
 	assert(num != 0);

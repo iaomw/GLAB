@@ -1,17 +1,14 @@
 #include <math.h>
+#include <iostream>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp> 
 #include <glm/gtc/type_ptr.hpp>    
 
-#include "helperFunctions.h"
 #include "myCamera.h"
-#include <iostream>
+#include "helperFunctions.h"
 #include "default_constants.h"
-
-using namespace std;
-
 
 myCamera::myCamera()
 {
@@ -141,8 +138,8 @@ void myCamera::turnRight(float size)
 
 void myCamera::print() const
 {
-	cout << "Eye: (" << camera_eye.x << ", " << camera_eye.y << ", " << camera_eye.z << ")" << endl;
-	cout << "Forward: (" << camera_forward.x << ", " << camera_forward.y << ", " << camera_forward.z << ")" << endl;
-	cout << "Up: (" << camera_up.x << ", " << camera_up.y << ", " << camera_up.z << ")" << endl;
+	std::cout << "Eye: (" << camera_eye.x << ", " << camera_eye.y << ", " << camera_eye.z << ")" << std::endl;
+	std::cout << "Forward: (" << camera_forward.x << ", " << camera_forward.y << ", " << camera_forward.z << ")" << std::endl;
+	std::cout << "Up: (" << camera_up.x << ", " << camera_up.y << ", " << camera_up.z << ")" << std::endl;
 }
 

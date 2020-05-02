@@ -17,8 +17,6 @@
 #include "helperFunctions.h"
 #include "errors.h"
 
-using namespace std;
-
 myObject::myObject()
 {
 	model_matrix = glm::mat4(1.0f);
@@ -39,26 +37,26 @@ void myObject::clear()
 		delete it->second;
 	objects.clear();
 
-	vector<glm::vec3> empty_f; 
+	std::vector<glm::vec3> empty_f; 
 	vertices.swap(empty_f);
 	vertex_normals.swap(empty_f);
 
-	vector<glm::ivec3> empty_i; 
+	std::vector<glm::ivec3> empty_i; 
 	indices.swap(empty_i);
 }
 
-void myObject::readMaterials(std::string mtlfilename, unordered_map<string, myMaterial *> & materials, unordered_map<string, myTexture *> & textures)
+void myObject::readMaterials(std::string mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures)
 {
-	ifstream mtlfin(mtlfilename);
+	std::ifstream mtlfin(mtlfilename);
 
 	//if (!mtlfin.is_open()) // very slow in some case
 	if(!mtlfin.good())
 	{
-		cout << "Error! Unable to open mtl file.\n";
+		std::cout << "Error! Unable to open mtl file.\n";
 		return;
 	}
 
-	string v;
+	std::string v;
 	myMaterial *curr_mat = nullptr;
 
 	while (mtlfin >> v)
@@ -76,7 +74,7 @@ void myObject::readMaterials(std::string mtlfilename, unordered_map<string, myMa
 		else if (v == "Ks") mtlfin >> curr_mat->ks.r >> curr_mat->ks.g >> curr_mat->ks.b;
 		else if (v == "map_Kd") 
 		{
-			string t;
+			std::string t;
 			mtlfin >> t;
 			size_t prefix = mtlfilename.find_last_of("/");
 			textures.emplace(curr_mat->mat_name, new myTexture(mtlfilename.substr(0, prefix) + "/" + t) );
@@ -89,23 +87,23 @@ bool myObject::readObjects(std::string filename, bool allow_duplication, bool to
 {
 	clear();
 
-	string s, t;
-	string mtlfilename;
+	std::string s, t;
+	std::string mtlfilename;
 
-	ifstream fin(filename);
+	std::ifstream fin(filename);
 	if (!fin.is_open()) return false;
 
 	size_t curr_start = 0; size_t curr_end;
-	string curr_name = "noname";
+	std::string curr_name = "noname";
 	myMaterial *curr_mat = nullptr;
 	myTexture *curr_texture = nullptr;
 
-	unordered_map<string, myMaterial *> materials;
-	unordered_map<string, myTexture *> textures;
+	std::unordered_map<std::string, myMaterial *> materials;
+	std::unordered_map<std::string, myTexture *> textures;
 
-	vector<glm::vec3> tmp_vertices;
-	vector<glm::vec3> tmp_normals;
-	vector<glm::vec2> tmp_texturecoordinates;
+	std::vector<glm::vec3> tmp_vertices;
+	std::vector<glm::vec3> tmp_normals;
+	std::vector<glm::vec2> tmp_texturecoordinates;
 
 	std::unordered_map<glm::vec3, uint32_t> cached;
 
@@ -115,7 +113,7 @@ bool myObject::readObjects(std::string filename, bool allow_duplication, bool to
 	
 	while (getline(fin, s))
 	{
-		stringstream myline(s);
+		std::stringstream myline(s);
 		myline >> t;
 		if (t == "g" || t == "o")
 		{
@@ -149,8 +147,8 @@ bool myObject::readObjects(std::string filename, bool allow_duplication, bool to
 		{
 			myline >> mtlfilename;
 			size_t prefix = filename.find_last_of("/");
-			if (prefix != string::npos)
-				mtlfilename = (filename.substr(0, prefix)).c_str() + string("/") + mtlfilename;
+			if (prefix != std::string::npos)
+				mtlfilename = (filename.substr(0, prefix)).c_str() + std::string("/") + mtlfilename;
 			//readMaterials(mtlfilename, materials, textures);
 		}
 		else if (t == "usemtl")
@@ -162,7 +160,7 @@ bool myObject::readObjects(std::string filename, bool allow_duplication, bool to
 
 			curr_start = curr_end;
 
-			string u;
+			std::string u;
 			myline >> u;
 			curr_name = u;
 
@@ -370,7 +368,7 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, std::stri
 {
 	if (vao == nullptr)
 	{
-		cout << "myVAO is empty. Nothing to draw.\n";
+		std::cout << "myVAO is empty. Nothing to draw.\n";
 		return;
 	}
 
@@ -539,7 +537,7 @@ float myObject::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked
 		for (size_t i = obj->start; i < obj->end; i++)
 		{
 			glm::vec3 intersection_point;
-			vector<glm::vec3> verts(3);
+			std::vector<glm::vec3> verts(3);
 			for (unsigned int j : {0, 1, 2})
 			{
 				glm::vec4 t = model_matrix * glm::vec4(vertices[indices[i][j]], 1.0f);

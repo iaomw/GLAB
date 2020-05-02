@@ -1,8 +1,8 @@
 #include "myVAO.h"
-#include <iostream>
-#include <glm/vec3.hpp>
 #include "errors.h"
 
+#include <iostream>
+#include <glm/vec3.hpp>
 
 myVAO::myVAO()
 {
@@ -10,7 +10,6 @@ myVAO::myVAO()
 	indices_buffer = nullptr;
 	num_triangles = 0;
 }
-
 
 myVAO::~myVAO()
 {
@@ -35,8 +34,9 @@ void myVAO::storeIndices(std::vector<glm::ivec3> & indices)
 	indices_buffer = new myVBO(GL_ELEMENT_ARRAY_BUFFER);
 
 	bind();
-	indices_buffer->bind();
-	indices_buffer->setData(&indices[0], indices.size() * sizeof(glm::ivec3));
+		indices_buffer->bind();
+		indices_buffer->setData(&indices[0], indices.size() * sizeof(glm::ivec3));
+		indices_buffer->bind();
 	unbind();
 
 	num_triangles = indices.size();
@@ -50,32 +50,33 @@ void myVAO::storeAttribute(Attribute c, int num_dimensions, GLvoid* data, size_t
 	attribute_buffers[c] = new myVBO(GL_ARRAY_BUFFER);
 
 	bind();
-	attribute_buffers[c]->bind();
-	attribute_buffers[c]->setData(data, size_in_bytes);
-	glVertexAttribPointer(shader_location, num_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(shader_location);
+		attribute_buffers[c]->bind();
+		attribute_buffers[c]->setData(data, size_in_bytes);
+			glVertexAttribPointer(shader_location, num_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(shader_location);
+		attribute_buffers[c]->unbind();
 	unbind();
 }
 
 
-void myVAO::storePositions(std::vector<glm::vec3> data, GLuint shader_location)
+void myVAO::storePositions(std::vector<glm::vec3>& data, GLuint shader_location)
 {
-	storeAttribute(POSITION, 3, &data[0], data.size() * sizeof(glm::vec3), shader_location);
+	storeAttribute(Attribute::POSITION, 3, &data[0], data.size() * sizeof(glm::vec3), shader_location);
 }
 
-void myVAO::storeNormals(std::vector<glm::vec3> data, GLuint shader_location)
+void myVAO::storeNormals(std::vector<glm::vec3>& data, GLuint shader_location)
 {
-	storeAttribute(NORMAL, 3, &data[0], data.size() * sizeof(glm::vec3), shader_location);
+	storeAttribute(Attribute::NORMAL, 3, &data[0], data.size() * sizeof(glm::vec3), shader_location);
 }
 
-void myVAO::storeTexturecoordinates(std::vector<glm::vec2> data, GLuint shader_location)
+void myVAO::storeTexturecoordinates(std::vector<glm::vec2>& data, GLuint shader_location)
 {
-	storeAttribute(TEXTURE_COORDINATE, 2, &data[0], data.size() * sizeof(glm::vec2), shader_location);
+	storeAttribute(Attribute::TEXTURE_COORDINATE, 2, &data[0], data.size() * sizeof(glm::vec2), shader_location);
 }
 
-void myVAO::storeTangents(std::vector<glm::vec3> data, GLuint shader_location)
+void myVAO::storeTangents(std::vector<glm::vec3>& data, GLuint shader_location)
 {
-	storeAttribute(TANGENT, 3, &data[0], data.size() * sizeof(glm::vec3), shader_location);
+	storeAttribute(Attribute::TANGENT, 3, &data[0], data.size() * sizeof(glm::vec3), shader_location);
 }
 
 void myVAO::draw()
@@ -88,8 +89,8 @@ void myVAO::draw()
 void myVAO::draw(size_t start, size_t end )
 {
 	bind();
-	//glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(end - start) * 3, GL_UNSIGNED_INT, (GLvoid*)(sizeof(GLuint) * start * 3));
-	glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(end - start) * 3, GL_UNSIGNED_INT, (GLvoid*)(sizeof(GLuint) * start * 3), 1);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(end - start) * 3, GL_UNSIGNED_INT, (GLvoid*)(sizeof(GLuint) * start * 3));
+	//glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(end - start) * 3, GL_UNSIGNED_INT, (GLvoid*)(sizeof(GLuint) * start * 3), 1);
 	unbind();
 }
 

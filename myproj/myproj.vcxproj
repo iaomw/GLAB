@@ -99,7 +99,6 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
     <None Include="shaders\basic-fragmentshader.glsl" />
     <None Include="shaders\bump-fragmentshader.glsl" />
     <None Include="shaders\bump-vertexshader.glsl" />

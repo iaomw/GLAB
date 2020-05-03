@@ -15,6 +15,6 @@ public:
 
 	void addLight(myLight *);
 
-	void setUniform(myShader *shader, std::string lightvariable_in_shader);
+	void setUniform(myShader *shader, const std::string& lightvariable_in_shader);
 };
 

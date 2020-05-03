@@ -310,8 +310,6 @@ int main(int argc, char* argv[])
 
 	glClearColor(0, 0, 0, 1.0);
 	glEnable(GL_DEPTH_TEST);
-	//glDepthFunc(GL_ALWAYS);
-	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
@@ -355,13 +353,13 @@ int main(int argc, char* argv[])
 	bFBO->initFBO(512, 512);
 
 	auto cFBO = new CubeFBO();
-	cFBO->initFBO(1024, 1024, GL_RGBA16F);
+	cFBO->initFBO(1024, 1024);
 
 	auto pFBO = new CubeFBO();
-	pFBO->initFBO(1024, 1024, GL_RGBA16F);
+	pFBO->initFBO(1024, 1024);
 
 	auto iFBO = new CubeFBO();
-	iFBO->initFBO(256, 256, GL_RGBA16F);
+	iFBO->initFBO(256, 256);
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 	myShaders shaders;
@@ -406,21 +404,25 @@ int main(int argc, char* argv[])
 	};
 
 	// pbr: convert HDR equirectangular environment map to cubemap equivalent
-	// ----------------------------------------------------------------------
+	// -------------------------------------------w-------------------------
 	cube->setTexture(hdrTexture, Texture_Type::colortex);
 	cFBO->render(shaderCapture, cube, captureViews, captureProjection);
+	glCheckError();
 
 	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
 	iFBO->render(shaderIrradiance, cube, captureViews, captureProjection);
+	glCheckError();
 
 	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
 	pFBO->render(shaderPrefilter, cube, captureViews, captureProjection, 5);
+	glCheckError();
 
 	auto the_canvas = new myObject();
 	the_canvas->readObjects("models/plane.obj", true, false);
 	the_canvas->createmyVAO();
 
 	bFBO->render(shaderBRDF, the_canvas, captureViews[0]);
+	glCheckError();
 
 	//enviornment mapped object
 	auto skycube = new myObject();
@@ -429,10 +431,12 @@ int main(int argc, char* argv[])
 	skycube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
 	skycube->scale(glm::vec3(2048));
 	scene.addObjects(skycube, "skycube");
+	glCheckError();
 
 	auto pbr_canvas = new myObject();
 	pbr_canvas->readObjects("models/plane.obj", true, false);
 	pbr_canvas->createmyVAO();
+	glCheckError();
 
 	auto final_canvas = new myObject();
 	final_canvas->readObjects("models/plane.obj", true, false);
@@ -535,6 +539,9 @@ int main(int argc, char* argv[])
 	ssss_canvas->createmyVAO();
 	glCheckError();
 
+	auto emptyTexture = new myTexture(); emptyTexture->empty();
+	glCheckError();
+
 	// display loop
 	myShader* current_shader;
 	float delta = (float)M_PI / 1000.0f;
@@ -542,6 +549,9 @@ int main(int argc, char* argv[])
 	float gamma = 2.2f;
 	float exposure = 1.0f;
 	float background = 1.0f;
+
+	bool tonemapping_object = false;
+	bool tonemapping_background = true;
 
 	static float bloomRange = 0.01;
 	static int bloomStrength = 8;
@@ -557,6 +567,8 @@ int main(int argc, char* argv[])
 	float ssss_width = 0.012f;
 	static glm::vec3 ssss_falloff = glm::vec3(1.0f, 0.37f, 0.30f);
 	static glm::vec3 ssss_strength = glm::vec3(0.48f, 0.41f, 0.28f);
+
+	std::vector<float> frametime_cache(1000, 0);
 
 	std::function<void(int, int)> pbr_pipeline_init = [&](int WIDTH, int HEIGHT) {
 
@@ -583,6 +595,10 @@ int main(int argc, char* argv[])
 
 	std::function<void(bool, bool)> ui_pipeline_work = [&](bool paused, bool first_pause_frame) {
 
+		auto frametime = 1000.0f / ImGui::GetIO().Framerate;
+		frametime_cache.erase(frametime_cache.begin());
+		frametime_cache.push_back(frametime);
+
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(window);
@@ -599,11 +615,20 @@ int main(int argc, char* argv[])
 		//static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
+		ImGui::Text("Statistics");
+		ImGui::PlotLines("Frame Time", frametime_cache.data(), frametime_cache.size());
+		ImGui::Text("Average %.3f ms (%.1f fps)", frametime, ImGui::GetIO().Framerate);
+		ImGui::Text("Press space button to %s.\n", paused ? "resume" : "pause");
+		ImGui::Text("");
+
 		ImGui::Text("General");
 		ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
 		ImGui::SliderFloat("Exposure", &exposure, 0.2f, 2.0f);
 		ImGui::SliderFloat("Background", &background, 0.0f, 1.0f);
 
+		ImGui::Checkbox("Tone mapping object", &tonemapping_object);
+		ImGui::Checkbox("Tone mapping background", &tonemapping_background);
+		
 		ImGui::Text("Bloom light source");
 		ImGui::SliderFloat("Bloom Range", &bloomRange, 0.01, 0.11);
 		ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
@@ -657,9 +682,7 @@ int main(int argc, char* argv[])
 			}
 			ImGui::EndTabBar();
 		} glCheckError();
-
-		ImGui::Text("Press space button to %s\n", paused ? "resume":"pause");
-		ImGui::Text("Average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		
 		ImGui::End();
 		glCheckError();
 
@@ -861,7 +884,7 @@ int main(int argc, char* argv[])
 		if (RenderPipeline::PBR == current_pipeline) {
 
 			final_canvas->setTexture(lightingFBO->colorTexture, Texture_Type::colortex);
-			final_canvas->setTexture(NULL, Texture_Type::gExtra);
+			final_canvas->setTexture(emptyTexture, Texture_Type::gExtra);
 
 		}
 		else if (RenderPipeline::SSSS == current_pipeline) {
@@ -878,6 +901,8 @@ int main(int argc, char* argv[])
 			current_shader = postprocessShader;
 			current_shader->start();
 			current_shader->setUniform("background", background);
+			current_shader->setUniform("tonemapping_object", tonemapping_object);
+			current_shader->setUniform("tonemapping_background", tonemapping_background);
 				final_canvas->displayObjects(current_shader, view_matrix);
 			current_shader->stop(); 
 		glCheckError();

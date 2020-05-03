@@ -16,7 +16,7 @@ void myLights::addLight(myLight *l)
 }
  
 
-void myLights::setUniform(myShader* shader, std::string lightvariable_in_shader)
+void myLights::setUniform(myShader* shader, const std::string& lightvariable_in_shader)
 {
 	for (unsigned int i = 0; i < lights.size(); ++i) {
 

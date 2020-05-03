@@ -15,8 +15,8 @@ public:
 	~myObject();
 	void clear();
 
-	void readMaterials(std::string mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures);
-	bool readObjects(std::string filename, bool individualvertices_per_face = true, bool tonormalize = false);
+	void readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures);
+	bool readObjects(const std::string& filename, bool individualvertices_per_face = true, bool tonormalize = false);
 	void normalize();
 	void computeNormals();
 	void createmyVAO();
@@ -24,7 +24,7 @@ public:
 	glm::mat3 normalMatrix(glm::mat4 view_matrix);
 
 	void displayObjects(myShader *, glm::mat4);
-	void displayObjects(myShader *shader, glm::mat4, std::string name);
+	void displayObjects(myShader *shader, glm::mat4, const std::string& name);
 
 	void displayNormals(myShader *);
 	

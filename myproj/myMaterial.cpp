@@ -24,7 +24,7 @@ myMaterial::~myMaterial()
 {
 }
 
-void myMaterial::setUniform(myShader* shader, std::string name)
+void myMaterial::setUniform(myShader* shader, const std::string& name)
 {
 	shader->setUniform(name + ".kd", kd);
 	shader->setUniform(name + ".ks", ks);

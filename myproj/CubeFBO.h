@@ -11,10 +11,11 @@ class CubeFBO: public FBO
 {
 public:
 	myTexture* envTexture;
-	CubeFBO();
-	~CubeFBO();
 
-	void initFBO(const int& WIDTH, const int& HEIGHT, const GLenum format);
+	CubeFBO(GLenum textureFormat = GL_RGBA, GLenum internalFormat = GL_RGBA16F);
+	virtual ~CubeFBO();
+
+	void initFBO(const int& WIDTH, const int& HEIGHT);
 
 	void render(myShader* shader, myObject* object, 
 				glm::mat4 captureViews[], glm::mat4 projection_matrix, unsigned int mipCount=1) {
@@ -58,5 +59,9 @@ public:
 		shader->stop();
 		unbind();
 	}
+
+private:
+	GLenum textureFormat;
+	GLenum internalFormat;
 };
 

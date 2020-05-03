@@ -5,10 +5,10 @@
 
 myLight::myLight()
 {
+	type = LightType::POINTLIGHT;
 	position = DEFAULT_LIGHT_POSITION;
 	intensity = DEFAULT_LIGHT_INTENSITY;
 	direction = DEFAULT_LIGHT_DIRECTION;
-	type = POINTLIGHT;
 }
 
 myLight::myLight(LightType t, glm::vec3 p, glm::vec3 d)
@@ -23,7 +23,7 @@ myLight::~myLight()
 {
 }
 
-void myLight::setUniform(myShader* shader, std::string lightvariable_in_shader) 
+void myLight::setUniform(myShader* shader, const std::string& lightvariable_in_shader) 
 {
 	shader->setUniform(lightvariable_in_shader + ".type", type);
 	shader->setUniform(lightvariable_in_shader + ".color", color);

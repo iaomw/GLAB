@@ -13,6 +13,9 @@ uniform sampler2D gEnv;
 uniform sampler2D gExtra;
 uniform sampler2D gBloom;
 
+uniform bool tonemapping_object;
+uniform bool tonemapping_background;
+
 in vec2 texCoords;
 
 vec3 CEToneMapping(vec3 color, float adapted_lum) 
@@ -49,22 +52,22 @@ void main()
     float mapped = CEToneMapping(luminance, 1.0);
     mapped = 1.0 - clamp(mapped, 0.0, 0.96);
     // HDR tonemapping
-    env.rgb = ACESToneMapping(env.rgb, exposure * mapped);
-    //obj.rgb = ACESToneMapping(obj.rgb, exposure);
+    env.rgb = tonemapping_background? ACESToneMapping(env.rgb, exposure * mapped) : env.rgb;
+    obj.rgb = tonemapping_object? ACESToneMapping(obj.rgb, exposure * mapped) : obj.rgb;
     env.rgb *= background;
 
     vec3 result;
     if (obj.a == 1.0) {
         result = env.rgb + bloom.rgb;
     } else {
-        result = (obj.a > env.a || env.a == 1.0) ? obj.rgb : env.rgb; 
-        result += (bloom.a >= obj.a) ? bloom.rgb : vec3(0);
+        result = (obj.a > env.a) ? obj.rgb : env.rgb; 
+        result += (bloom.a > obj.a) ? bloom.rgb : vec3(0);
     }
 
     result += texture(gExtra, texCoords).rgb;
     // Gamma correct
     result = pow(result, vec3(1.0/gamma));
 
-    gColor.rgb = result;
+    gColor.rgb = clamp(result, 0, 1);
     gColor.a = 1.0;
 }

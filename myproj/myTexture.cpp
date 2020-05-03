@@ -43,6 +43,20 @@ myTexture::~myTexture()
 }
 
 
+void myTexture::empty() {
+	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
+
+	width = 1, height = 1;
+	auto textureFormat = GL_RGBA;
+	auto internalFormat = GL_RGBA16F;
+
+	std::vector<GLubyte> emptyData(4, 0);
+	glTextureStorage2D(texture_id, 1, internalFormat, width, height);
+	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_UNSIGNED_BYTE, &emptyData[0]);
+
+	//configTexture(texture_id);
+}
+
 bool myTexture::readTexture2D(const std::string& filename)
 {
 	int size; GLubyte* mytexture;
@@ -50,7 +64,7 @@ bool myTexture::readTexture2D(const std::string& filename)
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
 	mytexture = stbi_load(filename.c_str(), &width, &height, &size, 0);
 
-	std::map<int, std::tuple<GLint, GLenum>> map;
+	std::map<int, std::tuple<GLenum, GLenum>> map;
 
 	map[1] = std::make_tuple(GL_RED, GL_R16F);
 	map[2] = std::make_tuple(GL_RG, GL_RG16F); // Will lead to crash in some case

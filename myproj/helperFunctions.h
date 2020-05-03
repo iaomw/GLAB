@@ -88,7 +88,7 @@ static GLubyte * readPPMfile(const char *filename, int & width, int & height)
 	return mytexture;
 }
 
-static void parseObjFace(std::string t, unsigned int & vertex_index, unsigned int & texture_index, unsigned int & normal_index)
+static void parseObjFace(const std::string& t, unsigned int & vertex_index, unsigned int & texture_index, unsigned int & normal_index)
 {
 	vertex_index = texture_index = normal_index = 0;
 

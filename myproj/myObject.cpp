@@ -45,7 +45,7 @@ void myObject::clear()
 	indices.swap(empty_i);
 }
 
-void myObject::readMaterials(std::string mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures)
+void myObject::readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures)
 {
 	std::ifstream mtlfin(mtlfilename);
 
@@ -83,7 +83,7 @@ void myObject::readMaterials(std::string mtlfilename, std::unordered_map<std::st
 	mtlfin.close();
 }
 
-bool myObject::readObjects(std::string filename, bool allow_duplication, bool tonormalize)
+bool myObject::readObjects(const std::string& filename, bool allow_duplication, bool tonormalize)
 {
 	clear();
 
@@ -364,7 +364,7 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix)
 		it->second->displaySubObject(vao, shader);
 }
 
-void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, std::string name)
+void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, const std::string& name)
 {
 	if (vao == nullptr)
 	{

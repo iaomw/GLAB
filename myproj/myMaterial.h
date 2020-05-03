@@ -9,11 +9,12 @@ class myMaterial
 {
 public:
 	myMaterial();
-	myMaterial(glm::vec4 kd, glm::vec4 ks, glm::vec4 ka, float specular);
-	myMaterial(myMaterial *);
 	~myMaterial();
 
-	void setUniform(myShader *shader, std::string name);
+	myMaterial(myMaterial*);
+	myMaterial(glm::vec4 kd, glm::vec4 ks, glm::vec4 ka, float specular);
+	
+	void setUniform(myShader *shader, const std::string& name);
 	
 	glm::vec4 kd;
 	glm::vec4 ks;

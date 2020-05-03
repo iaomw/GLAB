@@ -41,7 +41,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 
 	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, gPosition->texture_id, 0);
@@ -56,7 +56,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 
 	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT1, gAlbedo->texture_id, 0);
@@ -71,7 +71,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 
 	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT2, gNormal->texture_id, 0);
@@ -81,7 +81,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	depthTexture = new myTexture();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
-	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT24, width, height);
+	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT32, width, height);
 
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

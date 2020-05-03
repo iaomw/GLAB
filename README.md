@@ -1,6 +1,6 @@
 # GLAB
 
-![Preview image](/capture/Capture.E.JPG)
+![Preview image](/capture/Capture.G.JPG)
 ![Preview image](/capture/Capture.F.JPG)
 
 This serves as my final project for **Computer Graphics** course **2017 Fall**.
@@ -58,4 +58,5 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 [FREE PBR](https://freepbr.com/)\
 [HDRI Haven](https://hdrihaven.com/)\
 [CCOTextures](https://cc0textures.com/)\
+[Material ball in 3D-Coat](https://sketchfab.com/3d-models/material-ball-in-3d-coat-a6bdf1d11d714e07b9dd99dda02de965)\
 [McGuire Computer Graphics Archive](http://casual-effects.com/data/index.html)

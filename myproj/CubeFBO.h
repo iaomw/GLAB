@@ -1,8 +1,11 @@
 #pragma once
+
+#include <chrono>
 #include <iostream>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "FBO.h"
 #include "myTexture.h"
@@ -12,13 +15,31 @@ class CubeFBO: public FBO
 public:
 	myTexture* envTexture;
 
-	CubeFBO(GLenum textureFormat = GL_RGBA, GLenum internalFormat = GL_RGBA16F);
+	CubeFBO(bool shadow = false, GLenum textureFormat = GL_RGBA, GLenum internalFormat = GL_RGBA16F);
 	virtual ~CubeFBO();
 
 	void initFBO(const int& WIDTH, const int& HEIGHT);
 
+	std::vector<glm::mat4> configCamera(glm::vec3 lookFrom) {
+
+		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 1000.0f);
+		std::vector<glm::mat4> captureViews =
+		{
+			glm::lookAt(lookFrom, lookFrom + glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			glm::lookAt(lookFrom, lookFrom + glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			glm::lookAt(lookFrom, lookFrom + glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+			glm::lookAt(lookFrom, lookFrom + glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+			glm::lookAt(lookFrom, lookFrom + glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+			glm::lookAt(lookFrom, lookFrom + glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+		};
+
+		return captureViews;
+	}
+
 	void render(myShader* shader, myObject* object, 
-				glm::mat4 captureViews[], glm::mat4 projection_matrix, unsigned int mipCount=1) {
+				glm::vec3 lookFrom, glm::mat4 projection_matrix, unsigned int mipCount=1) {
+
+		auto& captureViews = configCamera(lookFrom);
 
 		bind();
 		shader->start();
@@ -60,7 +81,52 @@ public:
 		unbind();
 	}
 
+	void shadowMapping(myShader* shader, myObject* object, glm::vec3 lookFrom, glm::mat4 projection_matrix) {
+
+		auto s0 = std::chrono::high_resolution_clock::now();
+
+		auto& captureViews = configCamera(lookFrom);
+
+		auto s1 = std::chrono::high_resolution_clock::now();
+		auto d1 = s1 - s0;
+		
+
+		float near_plane = 1.0f;
+		float far_plane = 1000.0f;
+
+		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, near_plane, far_plane);
+
+		bind();
+		shader->start();
+		glViewport(0, 0, width, height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 model = glm::mat4(1.0f);
+
+		shader->setUniform("model", model);
+		shader->setUniform("lightPos", lookFrom);
+		shader->setUniform("far_plane", far_plane);
+		
+		for (size_t i = 0; i < 6; ++i) {
+			shader->setUniform("shadowMatrices[" + std::to_string(i) + "]", captureProjection * captureViews[i]);
+		}
+		auto s2 = std::chrono::high_resolution_clock::now();
+		auto d2 = s2 - s1;
+
+		object->displayObjects(shader, captureViews[0]);
+
+		auto s3 = std::chrono::high_resolution_clock::now();
+		auto d3 = s3 - s2;
+
+		shader->stop();
+		unbind();
+
+		auto s4 = std::chrono::high_resolution_clock::now();
+		auto d4 = s4 - s3;
+	}
+
 private:
+	bool shadow;
 	GLenum textureFormat;
 	GLenum internalFormat;
 };

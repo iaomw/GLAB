@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 
+#include "CubeFBO.h"
 #include "myShader.h"
 #include "myTexture.h"
 
@@ -16,8 +17,8 @@ public:
 	glm::vec3 position;
 	glm::vec3 intensity;
 	glm::vec3 direction;
-	myTexture* cubeShadowMap;
 
+	CubeFBO* shadowFBO;
 	glm::mat4 model_matrix;
 	
 	myLight();

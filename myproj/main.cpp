@@ -270,7 +270,7 @@ int main(int argc, char* argv[])
 	glContext = SDL_GL_CreateContext(window);
 	glewInit(); SDL_GL_MakeCurrent(window, glContext);
 
-	auto vsync = SDL_GL_SetSwapInterval(1);
+	auto vsync = SDL_GL_SetSwapInterval(0);
 	auto errot = SDL_GetError();
 
 	// During init, enable debug output
@@ -332,6 +332,7 @@ int main(int argc, char* argv[])
 	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
 	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.1, 0.7, 0.1), glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(1.0)));
 	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.1, 0.1, 0.7), glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(1.0)));
+	glCheckError();
 
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
@@ -381,6 +382,8 @@ int main(int argc, char* argv[])
 	myShader* shaderBlur = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
 	shaders.addShader(shaderBlur, "blurShader");
 
+	myShader* shadowShader = new myShader("shaders/point_shadow.vs.glsl", "shaders/point_shadow.gs.glsl", "shaders/point_shadow.fs.glsl");
+
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
 	auto cube = new myObject(); // for capture only
@@ -406,15 +409,15 @@ int main(int argc, char* argv[])
 	// pbr: convert HDR equirectangular environment map to cubemap equivalent
 	// -------------------------------------------w-------------------------
 	cube->setTexture(hdrTexture, Texture_Type::colortex);
-	cFBO->render(shaderCapture, cube, captureViews, captureProjection);
+	cFBO->render(shaderCapture, cube, glm::vec3(0.0f), captureProjection);
 	glCheckError();
 
 	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
-	iFBO->render(shaderIrradiance, cube, captureViews, captureProjection);
+	iFBO->render(shaderIrradiance, cube, glm::vec3(0.0f), captureProjection);
 	glCheckError();
 
 	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
-	pFBO->render(shaderPrefilter, cube, captureViews, captureProjection, 5);
+	pFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, 5);
 	glCheckError();
 
 	auto the_canvas = new myObject();
@@ -503,7 +506,7 @@ int main(int argc, char* argv[])
 
 	// SSSS: set up SSSS
 	auto headObject = new myObject();
-	headObject->readObjects("lpshead/head.obj", false, false);
+	headObject->readObjects("lpshead/head.obj", true, false);
 	glCheckError();
 	headObject->scale(64, 64, 64);
 	headObject->translate(0, 5, 0);
@@ -772,7 +775,7 @@ int main(int argc, char* argv[])
 
 				current_shader = shaders["basicx"];
 				current_shader->start();
-				for (auto light : scene.lights->lights) {
+				for (auto& light : scene.lights->lights) {
 					current_shader->setUniform("color", light->color);
 					lightball->translate(light->position);
 						lightball->displayObjects(current_shader, view_matrix);
@@ -836,6 +839,12 @@ int main(int argc, char* argv[])
 			glCheckError();
 
 		} else if (RenderPipeline::SSSS == current_pipeline) {
+
+			/*for (auto& light : scene.lights->lights) {
+
+				light->shadowFBO->shadowMapping(shadowShader, headObject, light->position, captureProjection);
+
+			} glCheckError();*/
 
 				auto lambda = std::function<void()>([&] {
 

@@ -52,8 +52,8 @@ void myVAO::storeAttribute(Attribute c, int num_dimensions, GLvoid* data, size_t
 	bind();
 		attribute_buffers[c]->bind();
 		attribute_buffers[c]->setData(data, size_in_bytes);
-			glVertexAttribPointer(shader_location, num_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
 			glEnableVertexAttribArray(shader_location);
+			glVertexAttribPointer(shader_location, num_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
 		attribute_buffers[c]->unbind();
 	unbind();
 }

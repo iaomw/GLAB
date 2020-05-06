@@ -103,7 +103,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 	std::vector<glm::vec3> tmp_vertices;
 	std::vector<glm::vec3> tmp_normals;
-	std::vector<glm::vec2> tmp_texturecoordinates;
+	std::vector<glm::vec2> tmp_coords;
 
 	std::unordered_map<glm::vec3, uint32_t> cached;
 
@@ -141,7 +141,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 		{
 			float _s, _t;
 			myline >> _s >> _t;
-			tmp_texturecoordinates.push_back(glm::vec2(_s, 1.0f - _t));
+			tmp_coords.push_back(glm::vec2(_s, 1.0f - _t));
 		}
 		else if (t == "mtllib")
 		{
@@ -187,37 +187,27 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 				if (allow_duplication) 
 				{	// duplicate
-					vertices.push_back(tmp_vertices[vertex_idx_a]);
+					auto transfer = [&](uint32_t v_idx, uint32_t t_idx, uint32_t n_idx) -> uint32_t {
 
-					if (texture_idx_a < tmp_texturecoordinates.size())
-						texturecoordinates.push_back(tmp_texturecoordinates[texture_idx_a]);
-					else texturecoordinates.push_back(glm::vec2(0, 0));
+						auto index = vertices.size();
+						vertices.push_back(tmp_vertices[v_idx]);
 
-					if (normal_idx_a < tmp_normals.size())
-						vertex_normals.push_back(tmp_normals[normal_idx_a]);
-					else vertex_normals.push_back(glm::vec3(0, 0, 0));
+						if (n_idx < tmp_normals.size())
+							vertex_normals.push_back(tmp_normals[n_idx]);
+						else vertex_normals.push_back(glm::vec3(0, 0, 0));
 
-					vertices.push_back(tmp_vertices[vertex_idx_b]);
+						if (t_idx < tmp_coords.size())
+							texturecoords.push_back(tmp_coords[t_idx]);
+						else texturecoords.push_back(glm::vec2(0, 0));
 
-					if (texture_idx_b < tmp_texturecoordinates.size())
-						texturecoordinates.push_back(tmp_texturecoordinates[texture_idx_b]);
-					else texturecoordinates.push_back(glm::vec2(0, 0));
+						return index;
+					};
 
-					if (normal_idx_b < tmp_normals.size())
-						vertex_normals.push_back(tmp_normals[normal_idx_b]);
-					else vertex_normals.push_back(glm::vec3(0, 0, 0));
+					auto cached_a = transfer(vertex_idx_a, texture_idx_a, normal_idx_a);
+					auto cached_b = transfer(vertex_idx_b, texture_idx_b, normal_idx_b);
+					auto cached_c = transfer(vertex_idx_c, texture_idx_c, normal_idx_c);
 
-					vertices.push_back(tmp_vertices[vertex_idx_c]);
-
-					if (texture_idx_c < tmp_texturecoordinates.size())
-						texturecoordinates.push_back(tmp_texturecoordinates[texture_idx_c]);
-					else texturecoordinates.push_back(glm::vec2(0, 0));
-
-					if (normal_idx_c < tmp_normals.size())
-						vertex_normals.push_back(tmp_normals[normal_idx_c]);
-					else vertex_normals.push_back(glm::vec3(0, 0, 0));
-
-					indices.push_back(glm::ivec3(vertices.size() - 3, vertices.size() - 2, vertices.size() - 1));
+					indices.push_back(glm::ivec3(cached_a, cached_b, cached_c));
 				}
 				else {
 
@@ -227,19 +217,20 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 						if (cached.count(tmp_v) == 0) {
 							cached[tmp_v] = vertices.size();
+							auto result = vertices.size();
 							vertices.push_back(tmp_v);
 
-							if (tmp_texturecoordinates.size() > 0 && t_idx < (tmp_texturecoordinates.size() - 1)) {
-								auto tmp_t = tmp_texturecoordinates[t_idx];
-								texturecoordinates.push_back(tmp_t);
-							}
-
-							if (tmp_normals.size() > 0 && n_idx < (tmp_normals.size()-1)) {
-								auto tmp_n = tmp_normals[t_idx];
+							if (tmp_normals.size() > 0 && n_idx < tmp_normals.size()) {
+								auto tmp_n = tmp_normals[n_idx];
 								vertex_normals.push_back(tmp_n);
 							}
 
-							return vertices.size() - 1;
+							if (tmp_coords.size() > 0 && t_idx < tmp_coords.size()) {
+								auto tmp_t = tmp_coords[t_idx];
+								texturecoords.push_back(tmp_t);
+							}
+
+							return result;
 						}
 						else {
 							auto index_v = cached[tmp_v];
@@ -312,41 +303,56 @@ void myObject::normalize()
 
 void myObject::computeNormals()
 {
-
 	face_normals.assign(indices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
-	for (unsigned int i = 0; i < indices.size(); i++)
-	{
-		glm::vec3 face_normal = glm::cross(vertices[indices[i][1]] - vertices[indices[i][0]], vertices[indices[i][2]] - vertices[indices[i][1]]);
-		face_normals[i] += face_normal;
-	} 
-
-	std::vector<uint32_t> count; count.assign(vertices.size(), 0);
-
 	vertex_normals.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
+
 	for (unsigned int i = 0; i < indices.size(); i++)
 	{
-		glm::vec3 face_normal = glm::cross(vertices[indices[i][1]] - vertices[indices[i][0]], vertices[indices[i][2]] - vertices[indices[i][1]]);
-		vertex_normals[indices[i][0]] += face_normal; count[indices[i][0]] += 1;
-		vertex_normals[indices[i][1]] += face_normal; count[indices[i][1]] += 1;
-		vertex_normals[indices[i][2]] += face_normal; count[indices[i][2]] += 1;
+		auto a = vertices[indices[i][1]] - vertices[indices[i][0]];
+		auto b = vertices[indices[i][2]] - vertices[indices[i][1]];
+
+		glm::vec3 face_normal = glm::cross(a, b);
+		face_normals[i] = face_normal;
+
+		vertex_normals[indices[i][0]] += face_normal;  
+		vertex_normals[indices[i][1]] += face_normal;  
+		vertex_normals[indices[i][2]] += face_normal;  
 	}
+
+	std::unordered_map<glm::vec3, glm::vec3> cached; 
+
 	for (unsigned int i = 0; i < vertices.size(); i++) {
-		vertex_normals[i] = glm::normalize(vertex_normals[i]);
-		//vertex_normals[i] /= count[i];
+		auto& v = vertices[i];
+		auto& n = vertex_normals[i];
+
+		if (cached.count(v) == 0) {
+			cached[v] = n ;
+		}
+		else {
+			cached[v] += n;
+		}
+	}
+
+	for (unsigned int i = 0; i < vertices.size(); i++) {
+
+		auto& v = vertices[i];
+		auto& n = cached[v];
+
+		vertex_normals[i] = glm::normalize(n);
 	}
 }
 
 void myObject::createmyVAO()
 {
-	if (vao != nullptr) delete vao;
+	delete vao;
 	vao = new myVAO();
 
+	if (indices.size()) vao->storeIndices(indices);
 	if (vertices.size()) vao->storePositions(vertices, 0);
 	if (vertex_normals.size()) vao->storeNormals(vertex_normals, 1);
-	if (texturecoordinates.size()) vao->storeTexturecoordinates(texturecoordinates, 2);
-	if (tangents.size()) vao->storeTangents(tangents, 3);
+	if (texturecoords.size()) vao->storeTexturecoordinates(texturecoords, 2);
 
-	if (indices.size()) vao->storeIndices(indices);
+	if (tangents.size()) vao->storeTangents(tangents, 3);
 }
 
 glm::mat3 myObject::normalMatrix(glm::mat4 view_matrix) {
@@ -448,37 +454,37 @@ void myObject::rotate(glm::vec3 v, float angle)
 
 void myObject::computeTexturecoordinates_plane()
 {
-	texturecoordinates.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
+	texturecoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
-		texturecoordinates[i].s = vertices[i].x / 10.0f;
-		texturecoordinates[i].t = vertices[i].y / 10.0f;
+		texturecoords[i].s = vertices[i].x / 10.0f;
+		texturecoords[i].t = vertices[i].y / 10.0f;
 	}
 }
 
 void myObject::computeTexturecoordinates_cylinder()
 {
-	texturecoordinates.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
+	texturecoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
 		float x = vertices[i].x;
 		float y = vertices[i].y;
 		float z = vertices[i].z;
 
-		texturecoordinates[i].t = y - 0.5f;
-		texturecoordinates[i].s = static_cast<float>((z >= 0.0f) ? atan2(z, x) / (M_PI) : (-atan2(z, x)) / (M_PI));
+		texturecoords[i].t = y - 0.5f;
+		texturecoords[i].s = static_cast<float>((z >= 0.0f) ? atan2(z, x) / (M_PI) : (-atan2(z, x)) / (M_PI));
 	}
 }
 
 void myObject::computeTexturecoordinates_sphere()
 {
-	texturecoordinates.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
+	texturecoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
 		glm::vec3 v = glm::normalize(vertices[i]);
 
-		texturecoordinates[i].t = static_cast<float>(-(atan2(2 * v.y, 2 * v.x) + M_PI) / (2 * M_PI));
-		texturecoordinates[i].s = static_cast<float>(acos(v.z) / M_PI);
+		texturecoords[i].t = static_cast<float>(-(atan2(2 * v.y, 2 * v.x) + M_PI) / (2 * M_PI));
+		texturecoords[i].s = static_cast<float>(acos(v.z) / M_PI);
 	}
 }
 
@@ -487,8 +493,8 @@ void myObject::computeTangents()
 	tangents.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 	for (unsigned int i = 0; i < indices.size(); i++)
 	{
-		glm::vec2 t10 = texturecoordinates[indices[i][1]] - texturecoordinates[indices[i][0]];
-		glm::vec2 t20 = texturecoordinates[indices[i][2]] - texturecoordinates[indices[i][0]];
+		glm::vec2 t10 = texturecoords[indices[i][1]] - texturecoords[indices[i][0]];
+		glm::vec2 t20 = texturecoords[indices[i][2]] - texturecoords[indices[i][0]];
 		float f = t10.s*t20.t - t10.t*t20.s;
 		if (f == 0) continue;
 		f = 1.0f / f;

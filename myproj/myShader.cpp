@@ -137,6 +137,7 @@ GLint myShader::getUniformLocation(const std::string& text)
 		if (location == -1)
 		{
 			//cerr << "Error: unable to get location of variable with name: " << text << endl;
+			text_to_id[text] = -1;
 			return -1;
 		}
 		else text_to_id[text] = location;
@@ -147,43 +148,60 @@ GLint myShader::getUniformLocation(const std::string& text)
 
 void myShader::setUniform(const std::string& name, glm::mat4 & mat)
 {
-	glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 void myShader::setUniform(const std::string& name, glm::mat3 &mat)
 {
-	glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 void myShader::setUniform(const std::string& name, float val)
 {
-	glUniform1f(getUniformLocation(name), val);
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniform1f(location, val);
 }
 
 void myShader::setUniform(const std::string& name, int val)
 {
-	glUniform1i(getUniformLocation(name), val);
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniform1i(location, val);
 }
 
 void myShader::setUniform(const std::string& name, glm::vec2 vec)
 {
-	glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(vec));
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniform2fv(location, 1, glm::value_ptr(vec));
 }
 
 void myShader::setUniform(const std::string& name, glm::vec3 vec)
 {
-	glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(vec));
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniform3fv(location, 1, glm::value_ptr(vec));
 }
 
 void myShader::setUniform(const std::string& name, glm::vec4 vec)
 {
-	glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(vec));
+	auto location = getUniformLocation(name);
+	if (-1 == location) { return; }
+	glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
 void myShader::setUniform(const std::string& name, std::vector<glm::vec3>& input_array)
 {
 	for (unsigned int i = 0; i < input_array.size(); ++i) {
-		glUniform3fv(getUniformLocation(name + "[" + std::to_string(i) + "]"), 1, &input_array[i][0]);
+
+		auto location = getUniformLocation(name + "[" + std::to_string(i) + "]");
+		if (-1 == location) { continue; }
+		glUniform3fv(location, 1, &input_array[i][0]);
 	}
 }
 
@@ -191,6 +209,9 @@ void myShader::setUniform(const std::string& name, std::vector<glm::vec4>& input
 {
 	//glUniform4fv(getUniformLocation(name), input_array.size(), &input_array[0][0]);
 	for (unsigned int i = 0; i < input_array.size(); ++i) {
-		glUniform4fv(getUniformLocation(name + "[" + std::to_string(i) + "]"), 1, &input_array[i][0]);
+
+		auto location = getUniformLocation(name + "[" + std::to_string(i) + "]");
+		if (-1 == location) { return; }
+		glUniform4fv(location, 1, &input_array[i][0]);
 	}
 }

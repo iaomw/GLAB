@@ -10,12 +10,13 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 ## Features
 - [ ] C++ 11~17
 - [x] OBJ geometry
-- [x] Deferred shading
+- [ ] Batch Rendering
+- [x] Deferred Rendering
 - [x] Point light
     - [x] Bloom
     - [ ] Volumetric Effects
     - [ ] Directional shadow mapping
-    - [ ] Omnidirectional shadow mapping.
+    - [ ] Omnidirectional shadow mapping
 - [x] Physically Based Rendering
     - [x] HDR environment
     - [x] Image-based lighting

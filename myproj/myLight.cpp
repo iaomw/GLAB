@@ -33,7 +33,8 @@ myLight::~myLight()
 
 void myLight::setUniform(myShader* shader, const std::string& lightvariable_in_shader) 
 {
-	shader->setUniform(lightvariable_in_shader + ".type", type);
+	auto type_i= magic_enum::enum_integer(type);
+	shader->setUniform(lightvariable_in_shader + ".type", type_i);
 	shader->setUniform(lightvariable_in_shader + ".color", color);
 	shader->setUniform(lightvariable_in_shader + ".position", position);
 	shader->setUniform(lightvariable_in_shader + ".direction", direction);

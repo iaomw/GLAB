@@ -5,11 +5,13 @@
 #include "CubeFBO.h"
 #include "myShader.h"
 #include "myTexture.h"
+#include "magic_enum.hpp"
+
+enum class LightType { POINTLIGHT, SPOTLIGHT, DIRECTIONALLIGHT };
 
 class myLight
 {
 public:
-	enum LightType { POINTLIGHT, SPOTLIGHT, DIRECTIONALLIGHT };
 
 	LightType type;
 

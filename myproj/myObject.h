@@ -16,7 +16,7 @@ public:
 	void clear();
 
 	void readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures);
-	bool readObjects(const std::string& filename, bool individualvertices_per_face = true, bool tonormalize = false);
+	bool readObjects(const std::string& filename, bool individualvertices_per_face = true, bool tonormalize = false, bool subgroup = false);
 	void normalize();
 	void computeNormals();
 	void createmyVAO();
@@ -62,6 +62,6 @@ public:
 	
 	std::string name;
 	glm::mat4 model_matrix;
-	std::unordered_multimap<std::string, mySubObject *> objects;
+	std::unordered_multimap<std::string, mySubObject*> subObjects;
 };
 

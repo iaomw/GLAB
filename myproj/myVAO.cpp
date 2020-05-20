@@ -90,7 +90,6 @@ void myVAO::draw(size_t start, size_t end )
 {
 	bind();
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(end - start) * 3, GL_UNSIGNED_INT, (GLvoid*)(sizeof(GLuint) * start * 3));
-	//glDrawElementsInstanced(GL_TRIANGLES, static_cast<GLsizei>(end - start) * 3, GL_UNSIGNED_INT, (GLvoid*)(sizeof(GLuint) * start * 3), 1);
 	unbind();
 }
 

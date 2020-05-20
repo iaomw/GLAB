@@ -1,8 +1,3 @@
-
-#include <ctime>
-#include <thread>
-#include <chrono> 
-
 #include <string>
 #include <vector>
 #include <fstream>
@@ -49,20 +44,20 @@
 SDL_Window* window;
 SDL_GLContext glContext;
 
-int mouse_position[2];
-bool mouse_button_pressed = false;
-
-bool quit = false;
-bool render_loop_paused = false;
-bool windowsize_changed = true;
-bool crystalballorfirstperson_view = false;
-float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
+// All the meshes 
+myScene scene;
 
 // Camera parameters.
 myCamera* mainCam;
 
-// All the meshes 
-myScene scene;
+int mouse_position[2];
+bool mouse_pressed = false;
+
+bool quit = false;
+bool renderloop_paused = false;
+bool windowsize_changed = true;
+bool crystalball_viewing = false;
+float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
 
 //Triangle to draw to illustrate picking
 size_t picked_triangle_index = 0;
@@ -94,9 +89,9 @@ void processEvents(SDL_Event current_event)
 		if (current_event.key.keysym.sym == SDLK_RIGHT || current_event.key.keysym.sym == SDLK_d)
 			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE);
 		if (current_event.key.keysym.sym == SDLK_v)
-			crystalballorfirstperson_view = !crystalballorfirstperson_view;
+			crystalball_viewing = !crystalball_viewing;
 		if (current_event.key.keysym.sym == SDLK_SPACE)
-			render_loop_paused = !render_loop_paused;
+			renderloop_paused = !renderloop_paused;
 		if (current_event.key.keysym.sym == SDLK_o)
 		{
 			//nfdchar_t *outPath = NULL;
@@ -118,7 +113,7 @@ void processEvents(SDL_Event current_event)
 	{
 		mouse_position[0] = current_event.button.x;
 		mouse_position[1] = current_event.button.y;
-		mouse_button_pressed = true;
+		mouse_pressed = true;
 
 		const Uint8* state = SDL_GetKeyboardState(nullptr);
 		if (state[SDL_SCANCODE_LCTRL])
@@ -130,7 +125,7 @@ void processEvents(SDL_Event current_event)
 	}
 	case SDL_MOUSEBUTTONUP:
 	{
-		mouse_button_pressed = false;
+		mouse_pressed = false;
 		break;
 	}
 	case SDL_MOUSEMOTION:
@@ -144,11 +139,11 @@ void processEvents(SDL_Event current_event)
 		mouse_position[0] = x;
 		mouse_position[1] = y;
 
-		if ((dx == 0 && dy == 0) || !mouse_button_pressed) return;
+		if ((dx == 0 && dy == 0) || !mouse_pressed) return;
 
-		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalballorfirstperson_view)
+		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalball_viewing)
 			mainCam->crystalball_rotateView(dx, dy);
-		else if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && !crystalballorfirstperson_view)
+		else if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && !crystalball_viewing)
 			mainCam->firstperson_rotateView(dx, dy);
 		else if (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_RIGHT))
 			mainCam->panView(dx, dy);
@@ -329,9 +324,9 @@ int main(int argc, char* argv[])
 	 
 	/**************************INITIALIZING LIGHTS ***************************/
 	scene.lights = new myLights();
-	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
-	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.1, 0.7, 0.1), glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(1.0)));
-	scene.lights->lights.push_back(new myLight(myLight::POINTLIGHT, glm::vec3(0.1, 0.1, 0.7), glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(1.0)));
+	scene.lights->lights.push_back(new myLight(LightType::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
+	scene.lights->lights.push_back(new myLight(LightType::POINTLIGHT, glm::vec3(0.1, 0.7, 0.1), glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(1.0)));
+	scene.lights->lights.push_back(new myLight(LightType::POINTLIGHT, glm::vec3(0.1, 0.1, 0.7), glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(1.0)));
 	glCheckError();
 
 	/**************************INITIALIZING FBO ***************************/
@@ -714,7 +709,7 @@ int main(int argc, char* argv[])
 	bool first_pause_frame = true;
 	while (!quit)
 	{
-		if (render_loop_paused) {   
+		if (renderloop_paused) {   
 			ui_pipeline_work(true, first_pause_frame);
 			first_pause_frame = false;
 			continue; 

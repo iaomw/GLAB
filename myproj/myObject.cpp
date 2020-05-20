@@ -1,4 +1,5 @@
 #include "myObject.h"
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -33,9 +34,9 @@ void myObject::clear()
 {
 	if (vao) delete vao;
 
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
+	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = subObjects.begin(); it != subObjects.end(); ++it)
 		delete it->second;
-	objects.clear();
+	subObjects.clear();
 
 	std::vector<glm::vec3> empty_f; 
 	vertices.swap(empty_f);
@@ -83,7 +84,7 @@ void myObject::readMaterials(const std::string& mtlfilename, std::unordered_map<
 	mtlfin.close();
 }
 
-bool myObject::readObjects(const std::string& filename, bool allow_duplication, bool tonormalize)
+bool myObject::readObjects(const std::string& filename, bool allow_duplication, bool tonormalize, bool subgroup)
 {
 	clear();
 
@@ -93,7 +94,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 	std::ifstream fin(filename);
 	if (!fin.is_open()) return false;
 
-	size_t curr_start = 0; size_t curr_end;
+	size_t curr_start = 0, curr_end;
 	std::string curr_name = "noname";
 	myMaterial *curr_mat = nullptr;
 	myTexture *curr_texture = nullptr;
@@ -115,12 +116,12 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 	{
 		std::stringstream myline(s);
 		myline >> t;
-		if (t == "g" || t == "o")
+		if (t == "g" || t == "o" || t == "s")
 		{
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-			o->setTexture(curr_texture, Texture_Type::colortex);
-			objects.emplace(curr_name, o);
+			//o->setTexture(curr_texture, Texture_Type::colortex);
+			subObjects.emplace(curr_name, o);
 
 			curr_start = curr_end;
 			myline >> curr_name;
@@ -155,8 +156,8 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 		{
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-			o->setTexture(curr_texture, Texture_Type::colortex);
-			objects.emplace(curr_name, o);
+			//o->setTexture(curr_texture, Texture_Type::colortex);
+			subObjects.emplace(curr_name, o);
 
 			curr_start = curr_end;
 
@@ -172,7 +173,6 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 				curr_texture = textures[u];
 			else curr_texture = nullptr;
 		}
-		else if (t == "s") {}
 		else if (t == "f")
 		{
 			myline >> t; 
@@ -255,9 +255,20 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 	}
 
 	curr_end = indices.size();
-	mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
-	o->setTexture(curr_texture, Texture_Type::colortex);
-	objects.emplace(curr_name, o);
+
+	if (subgroup) {
+
+		mySubObject* o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
+		//o->setTexture(curr_texture, Texture_Type::colortex);
+		subObjects.emplace(curr_name, o);
+	}
+	else {
+
+		mySubObject* o = new mySubObject(curr_mat, 0, indices.size(), curr_name);
+		//o->setTexture(curr_texture, Texture_Type::colortex);
+			subObjects.clear();
+		subObjects.emplace(curr_name, o);
+	}
 
 	if (tmp_normals.size() == 0) {
 		computeNormals();
@@ -365,9 +376,10 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix)
 
 	shader->setUniform("mymodel_matrix", model_matrix);
 	shader->setUniform("mynormal_matrix", normalMatrix(view_matrix));
-	
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
+
+	for (std::unordered_multimap<std::string, mySubObject*>::iterator it = subObjects.begin(); it != subObjects.end(); ++it) {
 		it->second->displaySubObject(vao, shader);
+	}
 }
 
 void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, const std::string& name)
@@ -381,7 +393,7 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, const std
 	shader->setUniform("mymodel_matrix", model_matrix);
 	shader->setUniform("mynormal_matrix", normalMatrix(view_matrix));
 
-	auto st = objects.equal_range(name);
+	auto st = subObjects.equal_range(name);
 	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = st.first; it != st.second; ++it)
 		it->second->displaySubObject(vao, shader);
 }
@@ -513,13 +525,13 @@ void myObject::computeTangents()
 
 void myObject::setTexture(myTexture *tex, Texture_Type type)
 {
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
+	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = subObjects.begin(); it != subObjects.end(); ++it)
 		it->second->setTexture(tex, type);
 }
 
 void myObject::cleanTexture() {
 
-	for (auto& sub : objects) {
+	for (auto& sub : subObjects) {
 		sub.second->textures.clear();
 	}
 }
@@ -537,7 +549,7 @@ float myObject::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked
 	picked_triangle = 0;
 	picked_object = nullptr;
 
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = objects.begin(); it != objects.end(); ++it)
+	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = subObjects.begin(); it != subObjects.end(); ++it)
 	{
 		mySubObject *obj = it->second;
 		for (size_t i = obj->start; i < obj->end; i++)

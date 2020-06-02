@@ -100,7 +100,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 	myTexture *curr_texture = nullptr;
 
 	std::unordered_map<std::string, myMaterial *> materials;
-	std::unordered_map<std::string, myTexture *> textures;
+	//std::unordered_map<std::string, myTexture *> textures;
 
 	std::vector<glm::vec3> tmp_vertices;
 	std::vector<glm::vec3> tmp_normals;
@@ -169,9 +169,9 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 				curr_mat = materials[u];
 			else curr_mat = nullptr;
 
-			if (textures.count(u) != 0)
-				curr_texture = textures[u];
-			else curr_texture = nullptr;
+			//if (textures.count(u) != 0)
+			//	curr_texture = textures[u];
+			//else curr_texture = nullptr;
 		}
 		else if (t == "f")
 		{

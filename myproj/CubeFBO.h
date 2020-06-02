@@ -83,15 +83,9 @@ public:
 
 	void shadowMapping(myShader* shader, myObject* object, glm::vec3 lookFrom, glm::mat4 projection_matrix) {
 
-		auto s0 = std::chrono::high_resolution_clock::now();
+		auto& captureViews = configCamera(lookFrom);		
 
-		auto& captureViews = configCamera(lookFrom);
-
-		auto s1 = std::chrono::high_resolution_clock::now();
-		auto d1 = s1 - s0;
-		
-
-		float near_plane = 1.0f;
+		float near_plane = 0.1f;
 		float far_plane = 1000.0f;
 
 		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, near_plane, far_plane);
@@ -101,7 +95,7 @@ public:
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 model = object->model_matrix;
 
 		shader->setUniform("model", model);
 		shader->setUniform("lightPos", lookFrom);
@@ -110,19 +104,11 @@ public:
 		for (size_t i = 0; i < 6; ++i) {
 			shader->setUniform("shadowMatrices[" + std::to_string(i) + "]", captureProjection * captureViews[i]);
 		}
-		auto s2 = std::chrono::high_resolution_clock::now();
-		auto d2 = s2 - s1;
 
 		object->displayObjects(shader, captureViews[0]);
 
-		auto s3 = std::chrono::high_resolution_clock::now();
-		auto d3 = s3 - s2;
-
 		shader->stop();
 		unbind();
-
-		auto s4 = std::chrono::high_resolution_clock::now();
-		auto d4 = s4 - s3;
 	}
 
 private:

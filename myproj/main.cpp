@@ -835,14 +835,14 @@ int main(int argc, char* argv[])
 
 		} else if (RenderPipeline::SSSS == current_pipeline) {
 
-			/*for (auto& light : scene.lights->lights) {
+			for (auto& light : scene.lights->lights) {
 
 				light->shadowFBO->shadowMapping(shadowShader, headObject, light->position, captureProjection);
 
-			} glCheckError();*/
+			} glCheckError();
 
 				auto lambda = std::function<void()>([&] {
-
+					
 					ssssPhongShader->setUniform("kD", ssss_kD);
 					ssssPhongShader->setUniform("kS", ssss_kS);
 

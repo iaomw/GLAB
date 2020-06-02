@@ -47,7 +47,7 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - [SDL2](https://www.libsdl.org/) - Window & Context 
 - [ImGui](https://github.com/ocornut/imgui) - User interface
 - [GLM](https://glm.g-truc.net/) - Math operations
-- [STD](https://github.com/nothings/stb) - Image loading
+- [STB](https://github.com/nothings/stb) - Image loading
 - [Magic Enum C++](https://github.com/Neargye/magic_enum)
 
 ## References

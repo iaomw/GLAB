@@ -20,7 +20,7 @@ void myVAO::clear()
 {
 	if (indices_buffer) delete indices_buffer;
 
-	for (std::map<Attribute, myVBO *>::iterator it = attribute_buffers.begin(); it != attribute_buffers.end(); ++it)
+	for (auto it = attribute_buffers.begin(); it != attribute_buffers.end(); ++it)
 		delete it->second;
 
 	attribute_buffers.clear();

@@ -79,7 +79,7 @@ float myScene::closestObject(glm::vec3 ray, glm::vec3 origin, myObject * & picke
 	}
 
 	std::unordered_multimap<std::string, size_t>::iterator it;
-	for (it = byname.begin(); it != byname.end(); ++it)
+	for (auto it = byname.begin(); it != byname.end(); ++it)
 		if (it->second == min_index)
 			break;
 

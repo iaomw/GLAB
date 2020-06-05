@@ -24,7 +24,11 @@ enum class Texture_Type {
 
 	gIrradiance, gPrefilter, BRDF_LUT,
 
-	gExtra, gBloom, gSSSS, Unknow
+	gExtra, gBloom, gSSSS, 
+	
+	shadowCube, shadowDir,
+
+	Unknow
 };
 
 

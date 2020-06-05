@@ -1,10 +1,9 @@
 #version 460 core
 
-uniform vec3 cam_position;
-uniform mat4 myview_matrix;
-uniform mat4 mymodel_matrix;
-uniform mat3 mynormal_matrix;
-uniform mat4 myprojection_matrix;
+uniform mat4 view_matrix;
+uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
+uniform mat4 projection_matrix;
 
 uniform sampler2D gAlbedo; 
 uniform sampler2D gExtra;
@@ -37,7 +36,6 @@ in vec2 texCoords;
 
 void main()
 {   
-    //vec3 cam_vspace = (myview_matrix * vec4(cam_position, 1.0)).xyz; 
     vec3 colorM = texture(gAlbedo, texCoords).rgb; 
     float depthM = texture(gAlbedo, texCoords).a;
     float mark = texture(gExtra, texCoords).a;

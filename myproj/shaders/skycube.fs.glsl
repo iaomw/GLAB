@@ -14,16 +14,16 @@ uniform float fovY;
 uniform float farZ;
 uniform float nearZ;
 
-uniform mat4 myview_matrix;
-uniform mat4 mymodel_matrix;
-uniform mat3 mynormal_matrix;
-uniform mat4 myprojection_matrix;
+uniform mat4 view_matrix;
+uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
+uniform mat4 projection_matrix;
 
 uniform samplerCube cubetex;
 
 void main()
 {    
-     //gExtra = myview_matrix * mymodel_matrix * myvertex; 
+     //gExtra = view_matrix * model_matrix * myvertex; 
      gColor = texture(cubetex, texCoord);
      gColor.a = -2*farZ; // background
     

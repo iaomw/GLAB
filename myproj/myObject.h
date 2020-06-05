@@ -58,10 +58,10 @@ public:
 	std::vector<glm::vec3> vertex_normals;
 	
 	std::vector<glm::vec3> tangents;
-	std::vector<glm::vec2> texturecoords;
+	std::vector<glm::vec2> texcoords;
 	
 	std::string name;
 	glm::mat4 model_matrix;
-	std::unordered_multimap<std::string, mySubObject*> subObjects;
+	std::unordered_multimap<std::string, mySubObject*> children;
 };
 

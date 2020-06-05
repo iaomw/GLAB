@@ -11,19 +11,19 @@ myLight::myLight()
 	direction = DEFAULT_LIGHT_DIRECTION;
 
 	shadowFBO = new CubeFBO(true); 
-	shadowFBO->initFBO(512, 512);
+	shadowFBO->initFBO(1024, 1024);
 }
 
 myLight::myLight(LightType t, glm::vec3 p, glm::vec3 d)
 	:type(t), color(1.0), position(p), direction(d), intensity(1.0) {
 	shadowFBO = new CubeFBO(true);
-	shadowFBO->initFBO(512, 512);
+	shadowFBO->initFBO(1024, 1024);
 }
 
 myLight::myLight(LightType t, glm::vec3 c, glm::vec3 p, glm::vec3 d, glm::vec3 i)
 	:type(t), color(c), position(p), direction(d), intensity(i) {
 	shadowFBO = new CubeFBO(true);
-	shadowFBO->initFBO(512, 512);
+	shadowFBO->initFBO(1024, 1024);
 }
 
 myLight::~myLight()

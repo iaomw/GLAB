@@ -5,13 +5,11 @@ layout (location = 0) out vec4 gColor;
 
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
-uniform vec3 cam_position;
-
 uniform mat4 weiv_matrix;
-uniform mat4 myview_matrix;
-uniform mat4 mymodel_matrix;
-uniform mat3 mynormal_matrix;
-uniform mat4 myprojection_matrix;
+uniform mat4 view_matrix;
+uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
+uniform mat4 projection_matrix;
 
 in vec4 myvertex;
 in vec3 mynormal;
@@ -104,9 +102,7 @@ void main()
     float metalness = texture(gNormal, texCoords).a;
     float ao = texture(gPosition, texCoords).a;
 
-    vec3 cam_vspace = (myview_matrix * vec4(cam_position, 1.0)).xyz; 
-
-    vec3 V = normalize(cam_vspace - tPosition.rgb);
+    vec3 V = normalize(vec3(0.0) - tPosition.rgb);
     vec3 N = normalize(tNormal);
     vec3 R = reflect(-V, N);
 
@@ -127,10 +123,10 @@ void main()
     vec3 diffuse = vec3(0.0f);  
     vec3 specular = vec3(0.0f);
     
-    float c2p = distance((myview_matrix * vec4(cam_vspace, 1.0)).xyz, tPosition.xyz); // view space 
+    float c2p = distance(vec3(0.0), tPosition.xyz); // view space 
     for (int i = 0; i < num_lights; i++) // treate them as point lights
     {
-        vec4 light_pos = myview_matrix * vec4(lights[i].position, 1.0); // world space to view space
+        vec4 light_pos = view_matrix * vec4(lights[i].position, 1.0); // world space to view space
         vec3 direction = (light_pos-tPosition).rgb;
         vec3 L = normalize(direction);
         vec3 H = normalize(L + V);

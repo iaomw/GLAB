@@ -39,7 +39,7 @@ public:
 	void setUniform(const std::string& name, glm::vec3);
 	void setUniform(const std::string& name, glm::vec4);
 	void setUniform(const std::string& name, std::vector<glm::vec3>& input_array);
-	void setUniform(const std::string& name, std::vector<glm::fvec4>& input_array);
+	void setUniform(const std::string& name, std::vector<glm::vec4>& input_array);
 	
 
 private:

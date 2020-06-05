@@ -2,6 +2,7 @@
 
 ![Preview image](/capture/Capture.G.JPG)
 ![Preview image](/capture/Capture.F.JPG)
+![Preview image](/capture/Capture.H.JPG)
 
 This serves as my final project for **Computer Graphics** course **2017 Fall**.
 
@@ -11,12 +12,13 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - [ ] C++ 11~17
 - [x] OBJ geometry
 - [ ] Batch Rendering
+- [ ] Bindless Texture
 - [x] Deferred Rendering
 - [x] Point light
     - [x] Bloom
     - [ ] Volumetric Effects
     - [ ] Directional shadow mapping
-    - [ ] Omnidirectional shadow mapping
+    - [x] Omnidirectional shadow mapping
 - [x] Physically Based Rendering
     - [x] HDR environment
     - [x] Image-based lighting
@@ -29,8 +31,8 @@ I will continue improving it for fun. But it's weird for me to continue the Open
     - [x] Phong lighting
     - [ ] PBR lighting
     - [x] Gaussian blur 
-    - [ ] Transmittance
-    - [ ] Shadow
+    - [x] Transmittance
+    - [x] Shadow
 - [x] Post-process
     - [x] ACES tone mapping
     - [x] Basic eye adoption

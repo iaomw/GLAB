@@ -47,7 +47,7 @@ void mySubObject::displaySubObject(myVAO *vao, myShader *shader)
 
 		auto texName = magic_enum::enum_name(type);
 		auto texIndex = magic_enum::enum_integer(type);
-		tex->bind(shader, texName, texIndex);
+		tex->bind(shader, std::string(texName), texIndex);
 	}
 	
 	if (vao != nullptr) vao->draw(start, end);

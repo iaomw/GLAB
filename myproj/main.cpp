@@ -283,8 +283,8 @@ int main(int argc, char* argv[])
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -557,7 +557,7 @@ int main(int argc, char* argv[])
 	float ssss_kD = 0.1f;
 	float ssss_kS = 0.1f;
 
-	float translucency = 0.83;
+	float translucency = 0.02;
 	float luminance_threshold = 0.1;
 	float texture_coefficient = 1.0f;
 	float depthtest_coefficient = 1.0f;
@@ -591,7 +591,7 @@ int main(int argc, char* argv[])
 
 	FBO* FBOs[] = { environmentFBO, blurFBO, rulbFBO, geometryFBO, lightingFBO, ssssLightFBO, ssssBlurFBO, ssssRulbFBO };
 
-	std::function<void(bool, bool)> ui_pipeline_work = [&](bool paused, bool first_pause_frame) {
+	std::function<void(bool)> ui_pipeline_work = [&](bool paused) {
 
 		auto frametime = 1000.0f / ImGui::GetIO().Framerate;
 		frametime_cache.erase(frametime_cache.begin());
@@ -613,11 +613,13 @@ int main(int argc, char* argv[])
 		//static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 		//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-		ImGui::Text("Statistics");
+		auto& width = mainCam->window_width;
+		auto& height = mainCam->window_height;
+
+		ImGui::BeginGroup();
+		ImGui::Text("%d x %d Average %.1f fps (%.3f ms)", width, height, ImGui::GetIO().Framerate, frametime);
 		ImGui::PlotLines("Frame Time", frametime_cache.data(), frametime_cache.size());
-		ImGui::Text("Average %.3f ms (%.1f fps)", frametime, ImGui::GetIO().Framerate);
-		ImGui::Text("Press space button to %s.\n", paused ? "resume" : "pause");
-		ImGui::Text("");
+		ImGui::EndGroup();
 
 		ImGui::Text("General");
 		ImGui::SliderFloat("Gamma", &gamma, 1.0f, 3.0f);
@@ -664,7 +666,7 @@ int main(int argc, char* argv[])
 				ImGui::ColorEdit3("SSSS Falloff", (float*)&ssss_falloff);
 				ImGui::ColorEdit3("SSSS Strength", (float*)&ssss_strength);
 
-				ImGui::SliderFloat("Translucency", &translucency, 0.0f, 1.0f);
+				ImGui::SliderFloat("Translucency", &translucency, 0.0f, 0.1f);
 				ImGui::SliderFloat("Luminance Threshold", &luminance_threshold, 0.0f, 1.0f);
 				ImGui::SliderFloat("Depthtest Coefficient", &depthtest_coefficient, 0.1f, 2.0f);
 
@@ -686,13 +688,15 @@ int main(int argc, char* argv[])
 
 		// Rendering
 		ImGui::Render();
-		//SDL_GL_MakeCurrent(window, glContext);
-		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		SDL_GL_MakeCurrent(window, glContext);
+		auto d_width = (GLsizei)io.DisplaySize.x;
+		auto d_height = (GLsizei)io.DisplaySize.y;
+		glViewport(0, 0, d_width, d_height);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glCheckError();
 
-		SDL_Event current_event;
-		if (!paused || first_pause_frame) {SDL_GL_SwapWindow(window);}
+		SDL_Event current_event; glCheckError();
+		if (!paused) {SDL_GL_SwapWindow(window);}
 		glCheckError(); auto error = SDL_GetError();
 
 		while (SDL_PollEvent(&current_event) != 0) {
@@ -706,14 +710,12 @@ int main(int argc, char* argv[])
 		} glCheckError();
 	};
 
-	bool first_pause_frame = true;
 	while (!quit)
 	{
 		if (renderloop_paused) {   
-			ui_pipeline_work(true, first_pause_frame);
-			first_pause_frame = false;
+			ui_pipeline_work(true);
 			continue; 
-		} first_pause_frame = true;
+		}
 
 		if (windowsize_changed || pipeline_changed)
 		{   
@@ -736,16 +738,15 @@ int main(int argc, char* argv[])
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
 		glm::mat4 weiv_matrix = glm::inverse(view_matrix);
-		ui_pipeline_work(false, false);
+		ui_pipeline_work(false);
 
 		//Setting uniform variables for each shader
 		for (unsigned int i = 0; i < shaders.size(); i++)
 		{
 			current_shader = shaders[i]; current_shader->start();
-			current_shader->setUniform("myprojection_matrix", projection_matrix);
-			current_shader->setUniform("cam_position", mainCam->camera_eye);
 
-			current_shader->setUniform("myview_matrix", view_matrix);
+			current_shader->setUniform("projection_matrix", projection_matrix);
+			current_shader->setUniform("view_matrix", view_matrix);
 			current_shader->setUniform("weiv_matrix", weiv_matrix);
 			
 			current_shader->setUniform("nearZ", mainCam->zNear);
@@ -841,11 +842,14 @@ int main(int argc, char* argv[])
 
 			} glCheckError();
 
+			headObject->setTexture(scene.lights->lights[0]->shadowFBO->envTexture, Texture_Type::shadowCube);
+
 				auto lambda = std::function<void()>([&] {
 					
 					ssssPhongShader->setUniform("kD", ssss_kD);
 					ssssPhongShader->setUniform("kS", ssss_kS);
 
+					ssssPhongShader->setUniform("translucency", translucency);
 					ssssPhongShader->setUniform("texture_coefficient", texture_coefficient);
 				});
 

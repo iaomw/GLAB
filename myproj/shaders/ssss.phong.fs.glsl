@@ -2,17 +2,20 @@
 
 uniform sampler2D texAlbedo;
 uniform sampler2D texNormal;
+uniform samplerCube shadowCube;
 
 //layout(location = 0)
 
-uniform mat4 myview_matrix;
-uniform mat4 mymodel_matrix;
-uniform mat3 mynormal_matrix;
-uniform mat4 myprojection_matrix;
+uniform mat4 view_matrix;
+uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
+uniform mat4 projection_matrix;
 
-in vec2 coordinate;
-in vec4 vertex_viewspace;
-in vec3 normal_viewspace;
+smooth in vec2 coordinate;
+smooth in vec4 vertex_viewspace;
+smooth in vec3 normal_viewspace;
+
+uniform float gamma;
 
 layout (location = 0) out vec4 gColor;
 layout (location = 1) out vec4 gExtra;
@@ -23,26 +26,18 @@ struct Light {
     vec3 position;
     vec3 intensity;	
     vec3 direction;
+	//samplerCube shadow;
 };
-
-uniform float kD;
-uniform float kS;
-
-uniform float texture_coefficient;
-
-uniform float gamma;
 
 uniform int num_lights;
 const int NR_LIGHTS = 32;
 uniform Light lights[NR_LIGHTS];
 
-// uniform struct Material
-// {
-// 	vec4 kd;
-// 	vec4 ks;
-// 	vec4 ka;
-// 	float specular;
-// } material;
+uniform float kD;
+uniform float kS;
+
+uniform float translucency;
+uniform float texture_coefficient;
 
 struct PhongResult {
 	vec3 specular;
@@ -87,23 +82,114 @@ vec3 detailedTexNormal(vec3 normal_vspace, vec3 pos_vspace, vec3 tNormal)
     return normalize(TBN * tNormal);
 }
 
+// array of offset direction for sampling
+vec3 gridSamplingDisk[20] = vec3[]
+(
+   vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+   vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+   vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+   vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+   vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+);
+
+struct ShadowResult {
+	float shadow;
+	float delta;
+};
+
+ShadowResult shadowCalculation(vec3 fragPos, vec3 lightPos, samplerCube depthMap)
+{
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - lightPos;
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+
+	vec3 viewPos = vec3(0.0);
+	float far_plane = 1000.0f;
+
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / far_plane)) / 25.0;
+
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(depthMap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= far_plane;   // undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples); 
+
+	ShadowResult result;
+	result.shadow = shadow;
+
+	float depth = texture(depthMap, fragToLight).r;
+	result.delta = currentDepth - depth * far_plane;
+        
+    return result;
+}
+
+vec3 T(float s) {
+  return vec3(0.233, 0.455, 0.649) * exp(-s * s / 0.0064) +
+         vec3(0.1,   0.336, 0.344) * exp(-s * s / 0.0484) +
+         vec3(0.118, 0.198, 0.0)   * exp(-s * s / 0.187)  +
+         vec3(0.113, 0.007, 0.007) * exp(-s * s / 0.567)  +
+         vec3(0.358, 0.004, 0.0)   * exp(-s * s / 1.99)   +
+         vec3(0.078, 0.0,   0.0)   * exp(-s * s / 7.41);
+}
+
 void main (void)
 {   
-	vec3 tColor = texture_coefficient * texture(texAlbedo, coordinate.st).rgb; 
-	float mark =  texture(texAlbedo, coordinate.st).a;
-	gColor.rgb = pow(tColor, vec3(gamma));
+	vec3 frag_pos = vertex_viewspace.xyz;
 
-	vec3 tNormal = texture(texNormal, coordinate).rgb;
+	vec3 tColor = texture(texAlbedo, coordinate.st).rgb; 
+	tColor = pow(tColor, vec3(gamma));
+	gColor.rgb = texture_coefficient * tColor;
+
+	float mark =  texture(texAlbedo, coordinate.st).a;
+
+	vec3 tNormal = texture(texNormal, coordinate).rgb; 
 	tNormal = normalize(tNormal * 2.0 - 1.0);   
-	vec3 bNormal = detailedTexNormal(normal_viewspace.xyz, vertex_viewspace.xyz, tNormal);
-	for (int i=0; i<3; i++) {
-		vec3 light_pos = (myview_matrix * vec4(lights[i].position, 1.0)).xyz;
+	vec3 bNormal = detailedTexNormal(normal_viewspace, frag_pos, tNormal);
+
+	frag_pos = frag_pos - 0.005 * bNormal;
+
+	vec3 diffuse = vec3(0.0);
+	vec3 specular = vec3(0.0);
+	
+	for (int i=0; i<1; i++) {
+
+		vec3 light_pos = (view_matrix * vec4(lights[i].position, 1.0)).xyz;
+
+		vec3 lightdir = frag_pos - light_pos; 
+
+		ShadowResult shadow = shadowCalculation(frag_pos, light_pos, shadowCube);               
+    	//vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;  
+
+		float distance = shadow.delta;
+
+		//if (distance > 0.005) {
+			float S = distance; //scale;
+			float irradiance = max(0.3 + dot(bNormal, lightdir), 0.0);
+			vec3 transmittance = T(S) * lights[i].color * translucency * irradiance * tColor.rgb;
+
+			diffuse += transmittance;
+			//gColor.rgb = transmittance;
+		//}
+		
 	    PhongResult phong = computeColor( light_pos, lights[i].color, 
-                            	vec3(kD), vec3(kS), bNormal.xyz, 
-		  							vertex_viewspace.xyz, vec3(0,0,0) );
-		gColor.rgb += mark*phong.diffuse;
-		gExtra.rgb += mark*phong.specular;
+									vec3(kD), vec3(kS), bNormal.xyz, 
+		  							vertex_viewspace.xyz, vec3(0.0) );
+
+		diffuse += (1.0 - shadow.shadow) * mark * phong.diffuse;
+		specular += (1.0 - shadow.shadow) * mark * phong.specular;
 	}
+
+	gColor.rgb += diffuse;
+	gExtra.rgb *= specular;
+
 	gColor.a = vertex_viewspace.z;
 	gExtra.a = mark;
 } 

@@ -62,8 +62,8 @@ public:
 				glNamedFramebufferTextureLayer(fboID, GL_COLOR_ATTACHMENT0, envTexture->texture_id, mip, i);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				shader->setUniform("myview_matrix", captureViews[i]);
-				shader->setUniform("myprojection_matrix", projection_matrix);
+				shader->setUniform("view_matrix", captureViews[i]);
+				shader->setUniform("projection_matrix", projection_matrix);
 
 				object->displayObjects(shader, captureViews[i]);
 			}
@@ -85,7 +85,7 @@ public:
 
 		auto& captureViews = configCamera(lookFrom);		
 
-		float near_plane = 0.1f;
+		float near_plane = 0.0f;
 		float far_plane = 1000.0f;
 
 		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, near_plane, far_plane);

@@ -34,9 +34,11 @@ void myObject::clear()
 {
 	if (vao) delete vao;
 
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = subObjects.begin(); it != subObjects.end(); ++it)
+	for (auto it = children.begin(); it != children.end(); ++it) {
 		delete it->second;
-	subObjects.clear();
+	}
+
+	children.clear();
 
 	std::vector<glm::vec3> empty_f; 
 	vertices.swap(empty_f);
@@ -121,7 +123,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
 			//o->setTexture(curr_texture, Texture_Type::colortex);
-			subObjects.emplace(curr_name, o);
+			children.emplace(curr_name, o);
 
 			curr_start = curr_end;
 			myline >> curr_name;
@@ -157,7 +159,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 			curr_end = indices.size();
 			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
 			//o->setTexture(curr_texture, Texture_Type::colortex);
-			subObjects.emplace(curr_name, o);
+			children.emplace(curr_name, o);
 
 			curr_start = curr_end;
 
@@ -197,8 +199,8 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 						else vertex_normals.push_back(glm::vec3(0, 0, 0));
 
 						if (t_idx < tmp_coords.size())
-							texturecoords.push_back(tmp_coords[t_idx]);
-						else texturecoords.push_back(glm::vec2(0, 0));
+							texcoords.push_back(tmp_coords[t_idx]);
+						else texcoords.push_back(glm::vec2(0, 0));
 
 						return index;
 					};
@@ -227,7 +229,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 							if (tmp_coords.size() > 0 && t_idx < tmp_coords.size()) {
 								auto tmp_t = tmp_coords[t_idx];
-								texturecoords.push_back(tmp_t);
+								texcoords.push_back(tmp_t);
 							}
 
 							return result;
@@ -260,14 +262,14 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 		mySubObject* o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
 		//o->setTexture(curr_texture, Texture_Type::colortex);
-		subObjects.emplace(curr_name, o);
+		children.emplace(curr_name, o);
 	}
 	else {
 
 		mySubObject* o = new mySubObject(curr_mat, 0, indices.size(), curr_name);
 		//o->setTexture(curr_texture, Texture_Type::colortex);
-			subObjects.clear();
-		subObjects.emplace(curr_name, o);
+			children.clear();
+		children.emplace(curr_name, o);
 	}
 
 	if (tmp_normals.size() == 0) {
@@ -361,7 +363,7 @@ void myObject::createmyVAO()
 	if (indices.size()) vao->storeIndices(indices);
 	if (vertices.size()) vao->storePositions(vertices, 0);
 	if (vertex_normals.size()) vao->storeNormals(vertex_normals, 1);
-	if (texturecoords.size()) vao->storeTexturecoordinates(texturecoords, 2);
+	if (texcoords.size()) vao->storeTexturecoordinates(texcoords, 2);
 
 	if (tangents.size()) vao->storeTangents(tangents, 3);
 }
@@ -374,10 +376,10 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix)
 {
 	myassert(vao != nullptr);
 
-	shader->setUniform("mymodel_matrix", model_matrix);
-	shader->setUniform("mynormal_matrix", normalMatrix(view_matrix));
+	shader->setUniform("model_matrix", model_matrix);
+	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 
-	for (std::unordered_multimap<std::string, mySubObject*>::iterator it = subObjects.begin(); it != subObjects.end(); ++it) {
+	for (auto it = children.begin(); it != children.end(); ++it) {
 		it->second->displaySubObject(vao, shader);
 	}
 }
@@ -390,10 +392,10 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, const std
 		return;
 	}
 
-	shader->setUniform("mymodel_matrix", model_matrix);
-	shader->setUniform("mynormal_matrix", normalMatrix(view_matrix));
+	shader->setUniform("model_matrix", model_matrix);
+	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 
-	auto st = subObjects.equal_range(name);
+	auto st = children.equal_range(name);
 	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = st.first; it != st.second; ++it)
 		it->second->displaySubObject(vao, shader);
 }
@@ -466,37 +468,37 @@ void myObject::rotate(glm::vec3 v, float angle)
 
 void myObject::computeTexturecoordinates_plane()
 {
-	texturecoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
+	texcoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
-		texturecoords[i].s = vertices[i].x / 10.0f;
-		texturecoords[i].t = vertices[i].y / 10.0f;
+		texcoords[i].s = vertices[i].x / 10.0f;
+		texcoords[i].t = vertices[i].y / 10.0f;
 	}
 }
 
 void myObject::computeTexturecoordinates_cylinder()
 {
-	texturecoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
+	texcoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
 		float x = vertices[i].x;
 		float y = vertices[i].y;
 		float z = vertices[i].z;
 
-		texturecoords[i].t = y - 0.5f;
-		texturecoords[i].s = static_cast<float>((z >= 0.0f) ? atan2(z, x) / (M_PI) : (-atan2(z, x)) / (M_PI));
+		texcoords[i].t = y - 0.5f;
+		texcoords[i].s = static_cast<float>((z >= 0.0f) ? atan2(z, x) / (M_PI) : (-atan2(z, x)) / (M_PI));
 	}
 }
 
 void myObject::computeTexturecoordinates_sphere()
 {
-	texturecoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
+	texcoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
 	{
 		glm::vec3 v = glm::normalize(vertices[i]);
 
-		texturecoords[i].t = static_cast<float>(-(atan2(2 * v.y, 2 * v.x) + M_PI) / (2 * M_PI));
-		texturecoords[i].s = static_cast<float>(acos(v.z) / M_PI);
+		texcoords[i].t = static_cast<float>(-(atan2(2 * v.y, 2 * v.x) + M_PI) / (2 * M_PI));
+		texcoords[i].s = static_cast<float>(acos(v.z) / M_PI);
 	}
 }
 
@@ -505,8 +507,8 @@ void myObject::computeTangents()
 	tangents.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 	for (unsigned int i = 0; i < indices.size(); i++)
 	{
-		glm::vec2 t10 = texturecoords[indices[i][1]] - texturecoords[indices[i][0]];
-		glm::vec2 t20 = texturecoords[indices[i][2]] - texturecoords[indices[i][0]];
+		glm::vec2 t10 = texcoords[indices[i][1]] - texcoords[indices[i][0]];
+		glm::vec2 t20 = texcoords[indices[i][2]] - texcoords[indices[i][0]];
 		float f = t10.s*t20.t - t10.t*t20.s;
 		if (f == 0) continue;
 		f = 1.0f / f;
@@ -525,13 +527,13 @@ void myObject::computeTangents()
 
 void myObject::setTexture(myTexture *tex, Texture_Type type)
 {
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = subObjects.begin(); it != subObjects.end(); ++it)
+	for (auto it = children.begin(); it != children.end(); ++it)
 		it->second->setTexture(tex, type);
 }
 
 void myObject::cleanTexture() {
 
-	for (auto& sub : subObjects) {
+	for (auto& sub : children) {
 		sub.second->textures.clear();
 	}
 }
@@ -549,7 +551,7 @@ float myObject::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked
 	picked_triangle = 0;
 	picked_object = nullptr;
 
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = subObjects.begin(); it != subObjects.end(); ++it)
+	for (auto it = children.begin(); it != children.end(); ++it)
 	{
 		mySubObject *obj = it->second;
 		for (size_t i = obj->start; i < obj->end; i++)

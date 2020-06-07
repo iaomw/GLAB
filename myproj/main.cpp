@@ -554,12 +554,16 @@ int main(int argc, char* argv[])
 	static float bloomRange = 0.01;
 	static int bloomStrength = 8;
 
+	float ambient = 0.5f;
 	float ssss_kD = 0.1f;
 	float ssss_kS = 0.1f;
 
+	float shadow_bias = 0.75;
+	float distance_scale = 1.0;
+
 	float translucency = 0.02;
 	float luminance_threshold = 0.1;
-	float texture_coefficient = 1.0f;
+	
 	float depthtest_coefficient = 1.0f;
 
 	float ssss_width = 0.012f;
@@ -593,7 +597,8 @@ int main(int argc, char* argv[])
 
 	std::function<void(bool)> ui_pipeline_work = [&](bool paused) {
 
-		auto frametime = 1000.0f / ImGui::GetIO().Framerate;
+		auto framerate = ImGui::GetIO().Framerate;
+		auto frametime = 1000.0f / framerate;
 		frametime_cache.erase(frametime_cache.begin());
 		frametime_cache.push_back(frametime);
 
@@ -617,7 +622,7 @@ int main(int argc, char* argv[])
 		auto& height = mainCam->window_height;
 
 		ImGui::BeginGroup();
-		ImGui::Text("%d x %d Average %.1f fps (%.3f ms)", width, height, ImGui::GetIO().Framerate, frametime);
+		ImGui::Text("%d * %d @ %.1f fps average %.1f ms", width, height, framerate, frametime);
 		ImGui::PlotLines("Frame Time", frametime_cache.data(), frametime_cache.size());
 		ImGui::EndGroup();
 
@@ -656,17 +661,21 @@ int main(int argc, char* argv[])
 				}
 
 				ImGui::Text("Light pass for SSSS");
-				ImGui::SliderFloat("Texture Coefficient", &texture_coefficient, 0.0f, 1.0f);
 				ImGui::SliderFloat("kD", &ssss_kD, 0.0f, 1.0f);
 				ImGui::SliderFloat("kS", &ssss_kS, 0.0f, 1.0f);
 
-				ImGui::Text("Blur pass for SSSS");
+				ImGui::SliderFloat("Ambient", &ambient, 0.0f, 1.0f);
+				ImGui::SliderFloat("Translucency", &translucency, 0.0f, 0.1f);
+
+				ImGui::SliderFloat("Shadow Bias", &shadow_bias, 0.0f, 1.0f);
+				ImGui::SliderFloat("Distance Scale", &distance_scale, 0.0f, 1.0f);
+				
+				ImGui::Text("Gaussian pass for SSSS");
 				ImGui::SliderFloat("SSSS Width", &ssss_width, 0.0f, 2.0f);
 
 				ImGui::ColorEdit3("SSSS Falloff", (float*)&ssss_falloff);
 				ImGui::ColorEdit3("SSSS Strength", (float*)&ssss_strength);
 
-				ImGui::SliderFloat("Translucency", &translucency, 0.0f, 0.1f);
 				ImGui::SliderFloat("Luminance Threshold", &luminance_threshold, 0.0f, 1.0f);
 				ImGui::SliderFloat("Depthtest Coefficient", &depthtest_coefficient, 0.1f, 2.0f);
 
@@ -849,8 +858,11 @@ int main(int argc, char* argv[])
 					ssssPhongShader->setUniform("kD", ssss_kD);
 					ssssPhongShader->setUniform("kS", ssss_kS);
 
+					ssssPhongShader->setUniform("ambient", ambient);
 					ssssPhongShader->setUniform("translucency", translucency);
-					ssssPhongShader->setUniform("texture_coefficient", texture_coefficient);
+
+					ssssPhongShader->setUniform("shadow_bias", shadow_bias);
+					ssssPhongShader->setUniform("distance_scale", distance_scale);
 				});
 
 				ssssLightFBO->render(ssssPhongShader, headObject, view_matrix, &lambda);
@@ -862,7 +874,6 @@ int main(int argc, char* argv[])
 				lambda = std::function<void()>([&] {
 
 					ssssBlurShader->setUniform("direction", glm::vec2(1, 0));
-					ssssBlurShader->setUniform("translucency", translucency);
 
 					ssssBlurShader->setUniform("ssss_width", ssss_width);
 					ssssBlurShader->setUniform("ssss_falloff", ssss_falloff);

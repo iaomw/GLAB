@@ -2,18 +2,20 @@
 
 uniform sampler2D texAlbedo;
 uniform sampler2D texNormal;
+
 uniform samplerCube shadowCube;
 
 //layout(location = 0)
 
+uniform mat4 weiv_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform mat3 normal_matrix;
 uniform mat4 projection_matrix;
 
-smooth in vec2 coordinate;
-smooth in vec4 vertex_viewspace;
-smooth in vec3 normal_viewspace;
+smooth in vec2 texcoord;
+smooth in vec3 normal_vs;
+smooth in vec4 vertex_vs;
 
 uniform float gamma;
 
@@ -36,50 +38,47 @@ uniform Light lights[NR_LIGHTS];
 uniform float kD;
 uniform float kS;
 
+uniform float ambient;
 uniform float translucency;
-uniform float texture_coefficient;
+
+uniform float shadow_bias;
+uniform float distance_scale;
 
 struct PhongResult {
 	vec3 specular;
 	vec3 diffuse;
 };
 
-PhongResult computeColor(vec3 _lightpos, vec3 lightcolor,
-                  			vec3 kd, vec3 ks,
-				 		 vec3 _normal, vec3 _mypos, vec3 _eyepos)
+PhongResult phongColor(vec3 lightpos, vec3 lightcolor, vec3 normal, vec3 mypos)
 {
-	vec3 mypos = _mypos.xyz;
-	vec3 eyepos = _eyepos.xyz;
-	vec3 lightpos = _lightpos.xyz;
-    vec3 normal = normalize(_normal);
+	vec3 eyepos = vec3(0.0f);
 
-    vec3 mypos_to_lightpos = normalize( lightpos - mypos );
-	vec3 lightpos_to_mypos = -mypos_to_lightpos;
 	vec3 mypos_to_eyepos = normalize(eyepos - mypos);
+    vec3 mypos_to_lightpos = normalize(lightpos - mypos);
 
-	vec3 reflection = normalize( lightpos_to_mypos + (2 * dot(mypos_to_lightpos, normal))*normal );
+	vec3 reflection = normalize( -mypos_to_lightpos + (2 * dot(mypos_to_lightpos, normal)) * normal );
 
 	PhongResult result;
 	 
-	result.diffuse = lightcolor * kd * max(dot(normal, mypos_to_lightpos), 0);
-	result.specular = lightcolor * ks * pow(max(dot(reflection, mypos_to_eyepos), 0), 20);
+	result.diffuse = lightcolor * kD * max(dot(normal, mypos_to_lightpos), 0);
+	result.specular = lightcolor * kS * pow(max(dot(reflection, mypos_to_eyepos), 0), 20);
 
 	return result;
 }
 
-vec3 detailedTexNormal(vec3 normal_vspace, vec3 pos_vspace, vec3 tNormal)
+vec3 richNormal(vec3 normal_vspace, vec3 pos_vspace, vec3 texNormal)
 { 
     vec3 dPosX  = dFdx(pos_vspace.xyz);
     vec3 dPosY  = dFdy(pos_vspace.xyz);
-    vec2 dTexX = dFdx(coordinate);
-    vec2 dTexY = dFdy(coordinate);
+    vec2 dTexX = dFdx(texcoord);
+    vec2 dTexY = dFdy(texcoord);
 
     vec3 normal = normalize(normal_vspace.xyz);
     vec3 tangent = normalize(dPosX * dTexY.t - dPosY * dTexX.t);
     vec3 binormal = -normalize(cross(normal, tangent));
     mat3 TBN = mat3(tangent, binormal, normal);
 
-    return normalize(TBN * tNormal);
+    return normalize(TBN * texNormal);
 }
 
 // array of offset direction for sampling
@@ -101,11 +100,14 @@ ShadowResult shadowCalculation(vec3 fragPos, vec3 lightPos, samplerCube depthMap
 {
     // get vector between fragment position and light position
     vec3 fragToLight = fragPos - lightPos;
+
+	fragToLight = ( weiv_matrix * vec4(fragToLight, 0.0) ).xyz;
+
     float currentDepth = length(fragToLight);
 
-    float shadow = 0.0;
-    float bias = 0.15;
+    float bias = shadow_bias; //0.5;
     int samples = 20;
+	float shadow = 0.0;
 
 	vec3 viewPos = vec3(0.0);
 	float far_plane = 1000.0f;
@@ -131,7 +133,7 @@ ShadowResult shadowCalculation(vec3 fragPos, vec3 lightPos, samplerCube depthMap
     return result;
 }
 
-vec3 T(float s) {
+vec3 T(float s) { // It doesn't matter, positive or negative value.
   return vec3(0.233, 0.455, 0.649) * exp(-s * s / 0.0064) +
          vec3(0.1,   0.336, 0.344) * exp(-s * s / 0.0484) +
          vec3(0.118, 0.198, 0.0)   * exp(-s * s / 0.187)  +
@@ -142,55 +144,46 @@ vec3 T(float s) {
 
 void main (void)
 {   
-	vec3 frag_pos = vertex_viewspace.xyz;
+	vec3 texColor = texture(texAlbedo, texcoord).rgb; 
+	texColor = pow(texColor, vec3(gamma));
 
-	vec3 tColor = texture(texAlbedo, coordinate.st).rgb; 
-	tColor = pow(tColor, vec3(gamma));
-	gColor.rgb = texture_coefficient * tColor;
+	float mark =  texture(texAlbedo, texcoord).a;
+	vec3 frag_pos = vertex_vs.xyz;
 
-	float mark =  texture(texAlbedo, coordinate.st).a;
-
-	vec3 tNormal = texture(texNormal, coordinate).rgb; 
-	tNormal = normalize(tNormal * 2.0 - 1.0);   
-	vec3 bNormal = detailedTexNormal(normal_viewspace, frag_pos, tNormal);
-
-	frag_pos = frag_pos - 0.005 * bNormal;
+	vec3 texNormal = texture(texNormal, texcoord).rgb; 
+	texNormal = normalize(texNormal * 2.0 - 1.0);   
+	texNormal = richNormal(normal_vs, frag_pos, texNormal);
+	//frag_pos = frag_pos - 0.005 * texNormal;
 
 	vec3 diffuse = vec3(0.0);
 	vec3 specular = vec3(0.0);
+	vec3 transmit = vec3(0.0);
 	
 	for (int i=0; i<1; i++) {
 
 		vec3 light_pos = (view_matrix * vec4(lights[i].position, 1.0)).xyz;
+		vec3 light_dir = normalize(frag_pos - light_pos); 
+		//lightdir = -light_pos;
 
-		vec3 lightdir = frag_pos - light_pos; 
+		ShadowResult sr = shadowCalculation(frag_pos, light_pos, shadowCube);               
 
-		ShadowResult shadow = shadowCalculation(frag_pos, light_pos, shadowCube);               
-    	//vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;  
+		float S = sr.delta * distance_scale;
+		float irradiance = max(0.3 + dot(texNormal, light_dir), 0.0);
+		vec3 transmittance = T(S) * lights[i].color * translucency * irradiance;
 
-		float distance = shadow.delta;
-
-		//if (distance > 0.005) {
-			float S = distance; //scale;
-			float irradiance = max(0.3 + dot(bNormal, lightdir), 0.0);
-			vec3 transmittance = T(S) * lights[i].color * translucency * irradiance * tColor.rgb;
-
-			diffuse += transmittance;
-			//gColor.rgb = transmittance;
-		//}
+		transmit += transmittance;
 		
-	    PhongResult phong = computeColor( light_pos, lights[i].color, 
-									vec3(kD), vec3(kS), bNormal.xyz, 
-		  							vertex_viewspace.xyz, vec3(0.0) );
+	    PhongResult phong = phongColor(light_pos, lights[i].color, texNormal, frag_pos);
 
-		diffuse += (1.0 - shadow.shadow) * mark * phong.diffuse;
-		specular += (1.0 - shadow.shadow) * mark * phong.specular;
+		diffuse += (1.0 - sr.shadow) * mark * phong.diffuse;
+		specular += (1.0 - sr.shadow) * mark * phong.specular;
 	}
 
-	gColor.rgb += diffuse;
-	gExtra.rgb *= specular;
+	//gColor.rgb = ambient * texColor;
+	gColor.rgb += (ambient + diffuse) * texColor;
+	gExtra.rgb += (transmit + specular) * texColor;
 
-	gColor.a = vertex_viewspace.z;
+	gColor.a = frag_pos.z;
 	gExtra.a = mark;
 } 
 

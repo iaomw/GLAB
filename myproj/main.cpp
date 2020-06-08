@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <memory>
 #include <fstream>
 #include <iostream>
 
@@ -18,12 +19,13 @@
 #undef main
 
 #pragma comment(lib, "Shcore.lib")
+
 #include <ShellScalingAPI.h>
 #include <windows.h>
 #include <comdef.h>
 
-#include "helperFunctions.h";
-#include "default_constants.h";
+#include "helperFunctions.h"
+#include "default_constants.h"
 
 #include "Camera.h"
 #include "Shader.h"
@@ -550,7 +552,7 @@ int main(int argc, char* argv[])
 	bool tonemapping_object = false;
 	bool tonemapping_background = true;
 
-	static float bloomRange = 0.01;
+	static float bloomRange = 0.01f;
 	static int bloomStrength = 8;
 
 	float ambient = 0.5f;
@@ -560,8 +562,8 @@ int main(int argc, char* argv[])
 	float shadow_bias = 0.75;
 	float distance_scale = 1.0;
 
-	float translucency = 0.02;
-	float luminance_threshold = 0.1;
+	float translucency = 0.02f;
+	float luminance_threshold = 0.1f;
 	
 	float depthtest_coefficient = 1.0f;
 

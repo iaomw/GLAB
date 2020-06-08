@@ -47,7 +47,7 @@ public:
 	std::vector<glm::vec4> kernel;
 
 private:
-	int sampleCount;
+	size_t sampleCount;
 	std::string getKernelCode() const;
 
 	void calculateKernel();

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <iostream>
 
 #include <GL/glew.h>
@@ -50,8 +49,8 @@ public:
 		for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
 		{
 			// reisze framebuffer according to mip-level size.
-			unsigned int mipWidth = width * std::pow(0.5, mip);
-			unsigned int mipHeight = height * std::pow(0.5, mip);
+			GLsizei mipWidth = width * std::pow(0.5, mip);
+			GLsizei mipHeight = height * std::pow(0.5, mip);
 			glViewport(0, 0, mipWidth, mipHeight);
 
 			float roughness = (float)mip / (maxMipLevels - 1);

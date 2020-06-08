@@ -42,7 +42,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	
 	if (needMipmap) {
 		mini_filter = GL_LINEAR_MIPMAP_LINEAR;
-		numLevels = 1 + floor(log2((double)std::max(width, height)));
+		numLevels = 1 + (int)floor(log2((double)std::max(width, height)));
 	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &colorTexture->texture_id);

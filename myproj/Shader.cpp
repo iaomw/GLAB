@@ -1,18 +1,17 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
+#include "Shader.h"
+
 #include <map>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <filesystem>
 
 #include <GL/glew.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>  
 #include <glm/gtc/matrix_transform.hpp> 
-
-#include <filesystem>
-
-#include "Shader.h"`
 
 Shader::Shader(const std::string& key) {
 
@@ -120,7 +119,7 @@ void Shader::_programErrors(const GLint program) {
 	GLint length;
 	GLchar * log;
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-	log = new GLchar[length + 1];
+	log = new GLchar[(GLint)1 + length];
 	glGetProgramInfoLog(program, length, &length, log);
 	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
@@ -130,7 +129,7 @@ void Shader::_shaderErrors(const GLint shader) {
 	GLint length;
 	GLchar * log;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-	log = new GLchar[length + 1];
+	log = new GLchar[(GLint)1 + length];
 	glGetShaderInfoLog(shader, length, &length, log);
 	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;

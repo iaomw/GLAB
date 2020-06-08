@@ -46,16 +46,16 @@
     <IncludePath>$(ProjectDir)include;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath);$(ProjectDir)libs</LibraryPath>
     <ExecutablePath>$(VCInstallDir)\bin\x86_amd64;$(VCInstallDir)bin;$(WindowsSdkDir)bin\NETFX 4.0 Tools;$(WindowsSdkDir)bin;$(VSInstallDir)Common7\Tools\bin;$(VSInstallDir)Common7\tools;$(VSInstallDir)Common7\ide;$(FrameworkSDKDir)\bin;$(MSBuildToolsPath32);$(VSInstallDir);$(FxCopDir);$(ExecutablePath)</ExecutablePath>
-    <OutDir>$(SolutionDir)\$(Configuration)\$(Platform)\output</OutDir>
-    <IntDir>$(SolutionDir)\$(Configuration)\$(Platform)\intermediate</IntDir>
+    <OutDir>$(SolutionDir)\$(Configuration)\$(Platform)\output\</OutDir>
+    <IntDir>$(SolutionDir)\$(Configuration)\$(Platform)\intermediate\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;$(ProjectDir)include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)lib\amd64;$(VCInstallDir)\bin\x86_amd64;$(VCInstallDir)atlmfc\lib\amd64;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;$(ProjectDir)\libs;$(ProjectDir)\libs\release;$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(VCInstallDir)\bin\x86_amd64;$(WindowsSdkDir)bin\NETFX 4.0 Tools;$(WindowsSdkDir)bin;$(VSInstallDir)Common7\Tools\bin;$(VSInstallDir)Common7\tools;$(VSInstallDir)Common7\ide;$(ProgramFiles)\HTML Help Workshop;$(FrameworkSDKDir)\bin;$(MSBuildToolsPath32);$(VSInstallDir);$(SystemRoot)\SysWow64;$(FxCopDir);$(PATH);$(ProjectDir)bin;$(ProjectDir)bin\release;$(ExecutablePath)</ExecutablePath>
-    <OutDir>$(SolutionDir)\$(Platform)\$(Configuration)\output</OutDir>
-    <IntDir>$(SolutionDir)\$(Platform)\$(Configuration)\intermediate</IntDir>
+    <OutDir>$(SolutionDir)\$(Configuration)\$(Platform)\output\</OutDir>
+    <IntDir>$(SolutionDir)\$(Configuration)\$(Platform)\intermediate\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

@@ -6,8 +6,8 @@
 SSSS::SSSS(int sampleNumber)
 {
 	sampleCount = sampleNumber;
-	falloff = glm::vec3(0.4);
-	strength = glm::vec4(0.6);
+	falloff = glm::vec3(0.4f);
+	strength = glm::vec4(0.6f);
 
 	falloff = glm::vec3(1.0f, 0.37f, 0.3f);
 	strength = glm::vec3(0.48f, 0.41f, 0.28f);
@@ -68,9 +68,9 @@ void SSSS::calculateKernel() {
 	}
 
 	// Calculate the weights:
-	for (int i = 0; i < sampleCount; i++) {
-		float w0 = i > 0 ? abs(kernel[i].w - kernel[i - 1].w) : 0.0f;
-		float w1 = i < (sampleCount - 1) ? abs(kernel[i].w - kernel[i + 1].w) : 0.0f;
+	for (size_t i = 0; i < sampleCount; i++) {
+		float w0 = i > 0 ? abs(kernel[i].w - kernel[i - (size_t)1].w) : 0.0f;
+		float w1 = i < (sampleCount - (size_t)1) ? abs(kernel[i].w - kernel[i + (size_t)1].w) : 0.0f;
 		float area = (w0 + w1) / 2.0f;
 		glm::vec3 t = area * profile(kernel[i].w);
 		kernel[i].x = t.x;
@@ -80,8 +80,8 @@ void SSSS::calculateKernel() {
 
 	// We want the offset 0.0 to come first:
 	glm::vec4 t = kernel[sampleCount / 2];
-	for (int i = sampleCount / 2; i > 0; i--)
-		kernel[i] = kernel[i - 1];
+	for (size_t i = sampleCount / 2; i > 0; i--)
+		kernel[i] = kernel[i - (size_t)1];
 	kernel[0] = t;
 
 	// Calculate the sum of the weights, we will need to normalize them below:

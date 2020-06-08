@@ -11,8 +11,8 @@ public:
 	GLuint texture_id;
 	GLenum texture_type;
 		
-	GLenum textureFormat;
-	GLenum internalFormat;
+	GLenum textureFormat = 0;
+	GLenum internalFormat = 0;
 	int width=0, height=0;
 
 	Texture();

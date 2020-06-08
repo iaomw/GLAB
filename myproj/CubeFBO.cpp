@@ -34,7 +34,7 @@ void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT)
 		//glTextureStorage2D(envTexture->texture_id, 1, GL_DEPTH_COMPONENT24, WIDTH, HEIGHT);
 
 		glBindTexture(GL_TEXTURE_CUBE_MAP, envTexture->texture_id);
-		for (size_t face = 0; face < 6; ++face)
+		for (GLenum face = 0; face < 6; ++face)
 		{
 			//glTextureSubImage3D(envTexture->texture_id, 0, 0, 0, face, WIDTH, HEIGHT, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_DEPTH_COMPONENT24, WIDTH, HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);

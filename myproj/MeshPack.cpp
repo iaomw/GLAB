@@ -78,7 +78,7 @@ void MeshPack::readMaterials(const std::string& mtlfilename, std::unordered_map<
 			std::string t;
 			mtlfin >> t;
 			size_t prefix = mtlfilename.find_last_of("/");
-			textures.emplace(curr_mat->mat_name, new Texture(mtlfilename.substr(0, prefix) + "/" + t) );
+			//textures.emplace(curr_mat->mat_name, new Texture(mtlfilename.substr(0, prefix) + "/" + t) );
 		}
 	}
 	mtlfin.close();
@@ -106,7 +106,7 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 	std::vector<glm::vec3> tmp_normals;
 	std::vector<glm::vec2> tmp_coords;
 
-	std::unordered_map<glm::vec3, uint32_t> cached;
+	std::unordered_map<glm::vec3, size_t> cached;
 
 	unsigned int vertex_idx_a, texture_idx_a, normal_idx_a;
 	unsigned int vertex_idx_b, texture_idx_b, normal_idx_b;
@@ -187,7 +187,7 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 
 				if (allow_duplication) 
 				{	// duplicate
-					auto transfer = [&](uint32_t v_idx, uint32_t t_idx, uint32_t n_idx) -> uint32_t {
+					auto transfer = [&](uint32_t v_idx, uint32_t t_idx, uint32_t n_idx) -> size_t {
 
 						auto index = vertices.size();
 						vertices.push_back(tmp_vertices[v_idx]);
@@ -211,7 +211,7 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 				}
 				else {
 
-					auto cacheCheck = [&](uint32_t v_idx, uint32_t t_idx, uint32_t n_idx) -> uint32_t { // ignore normal
+					auto cacheCheck = [&](uint32_t v_idx, uint32_t t_idx, uint32_t n_idx) -> size_t { // ignore normal
 
 						auto tmp_v = tmp_vertices[v_idx];
 

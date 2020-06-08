@@ -9,16 +9,16 @@
 #include "Texture.h"
 #include "helperFunctions.h"
 
-Texture::Texture()
+Texture::Texture() : Texture(GL_TEXTURE_2D)
 {
-	texture_id = 0;
-	texture_type = GL_TEXTURE_2D;
 }
 
 Texture::Texture(GLenum type)
 {
 	texture_id = 0;
 	texture_type = type;
+
+	//internalFormat = 0;
 }
 
 Texture::Texture(const std::string& filename)

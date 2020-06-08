@@ -25,30 +25,29 @@
 #include "helperFunctions.h";
 #include "default_constants.h";
 
-#include "myShader.h"
-#include "myCamera.h"
-#include "myObject.h"
-#include "mySubObject.h"
+#include "Camera.h"
+#include "Shader.h"
+#include "MeshPack.h"
 
 #include "SSSS.h" 
 
-#include "myScene.h"
-#include "myLights.h"
-#include "myShaders.h"
+#include "Scene.h"
+#include "LightList.h"
+#include "ShaderPack.h"
 
 #include "FBO.h"
 #include "GeoFBO.h"
 #include "CubeFBO.h"
 
-// SDL variables
-SDL_Window* window;
-SDL_GLContext glContext;
+// Meshes 
+Scene scene;
 
-// All the meshes 
-myScene scene;
+// SDL variables
+SDL_Window* _window;
+SDL_GLContext context;
 
 // Camera parameters.
-myCamera* mainCam;
+std::unique_ptr<Camera> mainCam;
 
 int mouse_position[2];
 bool mouse_pressed = false;
@@ -61,7 +60,7 @@ float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
 
 //Triangle to draw to illustrate picking
 size_t picked_triangle_index = 0;
-myObject* picked_object = nullptr;
+MeshPack* picked_object = nullptr;
 
 // Process the event.  
 void processEvents(SDL_Event current_event)
@@ -255,15 +254,15 @@ int main(int argc, char* argv[])
 	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	auto flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// Create window
-	window = SDL_CreateWindow("GLAB",
+	_window = SDL_CreateWindow("GLAB",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
 		DEFAULT_WINDOW_WIDTH,
 		DEFAULT_WINDOW_HEIGHT, flags);
 	//SDL_SetWindowBordered(window, SDL_FALSE);
-	auto render = SDL_GetRenderer(window);
-	glContext = SDL_GL_CreateContext(window);
-	glewInit(); SDL_GL_MakeCurrent(window, glContext);
+	auto render = SDL_GetRenderer(_window);
+	context = SDL_GL_CreateContext(_window);
+	glewInit(); SDL_GL_MakeCurrent(_window, context);
 
 	auto vsync = SDL_GL_SetSwapInterval(0);
 	auto errot = SDL_GetError();
@@ -275,7 +274,7 @@ int main(int argc, char* argv[])
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 	float scaledDPI, defaultDPI;
-	auto displayIndex = SDL_GetWindowDisplayIndex(window);
+	auto displayIndex = SDL_GetWindowDisplayIndex(_window);
 	SDL_GetDisplayDPIRatio(displayIndex, &scaledDPI, &defaultDPI);
 	auto sacledRatio = scaledDPI / defaultDPI;
 
@@ -292,7 +291,7 @@ int main(int argc, char* argv[])
 	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer bindings
-	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+	ImGui_ImplSDL2_InitForOpenGL(_window, context);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
 	ImGui::GetIO().FontAllowUserScaling = true;
@@ -317,75 +316,75 @@ int main(int argc, char* argv[])
 
 	checkOpenGLInfo(true);
 
-	mainCam = new myCamera(); mainCam->camera_eye = glm::vec3(0, 0, 32);
-	SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
+	mainCam = std::make_unique<Camera>(); mainCam->camera_eye = glm::vec3(0, 0, 32);
+	SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
 
 	mainCam->zFar = 5000; mainCam->zNear = 0.5; mainCam->fovy = 45;
 	 
 	/**************************INITIALIZING LIGHTS ***************************/
-	scene.lights = new myLights();
-	scene.lights->lights.push_back(new myLight(LightType::POINTLIGHT, glm::vec3(0.7, 0.1, 0.1), glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(1.0)));
-	scene.lights->lights.push_back(new myLight(LightType::POINTLIGHT, glm::vec3(0.1, 0.7, 0.1), glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(1.0)));
-	scene.lights->lights.push_back(new myLight(LightType::POINTLIGHT, glm::vec3(0.1, 0.1, 0.7), glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(1.0)));
+	scene.lightList = std::make_unique<LightList>();
+	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.7, 0.1, 0.1) )));
+	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1) )));
+	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7) )));
 	glCheckError();
 
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
 
-	auto geometryFBO = new GeoFBO();
+	auto geometryFBO = std::make_shared<GeoFBO>();
 	geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto lightingFBO = new FBO(false, false);
+	auto lightingFBO = std::make_shared<FBO>(false, false);
 	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
-	auto environmentFBO = new FBO(false, true);
+	auto environmentFBO = std::make_shared<FBO>(false, true);
 	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto blurFBO = new FBO();
+	auto blurFBO = std::make_shared<FBO>();
 	blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
-	auto rulbFBO = new FBO();
+	auto rulbFBO = std::make_shared<FBO>();
 	rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto bFBO = new FBO();
+	auto bFBO = std::make_unique<FBO>();
 	bFBO->initFBO(512, 512);
 
-	auto cFBO = new CubeFBO();
+	auto cFBO = std::make_unique<CubeFBO>();
 	cFBO->initFBO(1024, 1024);
 
-	auto pFBO = new CubeFBO();
+	auto pFBO = std::make_unique<CubeFBO>();
 	pFBO->initFBO(1024, 1024);
 
-	auto iFBO = new CubeFBO();
+	auto iFBO = std::make_unique<CubeFBO>();
 	iFBO->initFBO(256, 256);
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
-	myShaders shaders;
+	ShaderPack shaderPack;
 
-	shaders.addShader(new myShader("shaders/geo_buffer.vs.glsl", "shaders/geo_buffer.fs.glsl"), "geo_buffer");
-	shaders.addShader(new myShader("shaders/pbr_buffer.vs.glsl", "shaders/pbr_buffer.fs.glsl"), "pbr_buffer");
+	shaderPack.add(std::make_shared<Shader>("geo_buffer"), "geo_buffer");
+	shaderPack.add(std::make_shared<Shader>("pbr_buffer"), "pbr_buffer");
 
-	shaders.addShader(new myShader("shaders/skycube.vs.glsl", "shaders/skycube.fs.glsl"), "shader_skycube");
-	shaders.addShader(new myShader("shaders/basic.vs.glsl", "shaders/basic.fs.glsl"), "basicx");
+	shaderPack.add(std::make_shared<Shader>("skycube"), "shader_skycube");
+	shaderPack.add(std::make_shared<Shader>("basic"), "basicx");
 
-	myShader* shaderCapture = new myShader("shaders/equirectangular.vs.glsl", "shaders/equirectangular.fs.glsl");
-	myShader* shaderIrradiance = new myShader("shaders/irradiance.vs.glsl", "shaders/irradiance.fs.glsl");
-	myShader* shaderPrefilter = new myShader("shaders/equirectangular.vs.glsl", "shaders/prefilter.fs.glsl");
-	myShader* shaderBRDF = new myShader("shaders/brdf.vs.glsl", "shaders/brdf.fs.glsl");
+	auto shaderCapture = std::make_shared<Shader>("equirectangular");
+	auto shaderIrradiance = std::make_shared<Shader>("irradiance");
+	auto shaderPrefilter = std::make_shared<Shader>("prefilter");
+	auto shaderBRDF = std::make_shared<Shader>("brdf");
 	
-	myShader* postprocessShader = new myShader("shaders/postprocess.vs.glsl", "shaders/postprocess.fs.glsl");
-	shaders.addShader(postprocessShader, "postprocess");
+	auto postprocessShader = std::make_shared<Shader>("postprocess");
+	shaderPack.add(postprocessShader, "postprocess");
 
-	myShader* shaderBlur = new myShader("shaders/blur.vs.glsl", "shaders/blur.fs.glsl");
-	shaders.addShader(shaderBlur, "blurShader");
+	auto shaderBlur = std::make_shared<Shader>("blur");
+	shaderPack.add(shaderBlur, "blurShader");
 
-	myShader* shadowShader = new myShader("shaders/point_shadow.vs.glsl", "shaders/point_shadow.gs.glsl", "shaders/point_shadow.fs.glsl");
+	auto shadowShader = std::make_shared<Shader>("point_shadow");
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
-	auto cube = new myObject(); // for capture only
+	auto cube = std::make_unique<MeshPack>(); // for capture only
 	cube->readObjects("models/skycube.obj", true, false);
-	cube->createmyVAO();
+	cube->createVAO();
 
-	auto hdrTexture = new myTexture();
+	auto hdrTexture = std::make_shared<Texture>();
 	hdrTexture->readTextureHDR("textures/envirment/vulture_hide_4k.hdr");
 
 	// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
@@ -415,75 +414,74 @@ int main(int argc, char* argv[])
 	pFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, 5);
 	glCheckError();
 
-	auto the_canvas = new myObject();
+	auto the_canvas = std::make_unique<MeshPack>();
 	the_canvas->readObjects("models/plane.obj", true, false);
-	the_canvas->createmyVAO();
+	the_canvas->createVAO();
 
 	bFBO->render(shaderBRDF, the_canvas, captureViews[0]);
 	glCheckError();
 
 	//enviornment mapped object
-	auto skycube = new myObject();
+	auto skycube = std::make_unique<MeshPack>();
 	skycube->readObjects("models/skycube.obj", true, false);
-	skycube->createmyVAO();
+	skycube->createVAO();
 	skycube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
 	skycube->scale(glm::vec3(2048));
-	scene.addObjects(skycube, "skycube");
 	glCheckError();
 
-	auto pbr_canvas = new myObject();
+	auto pbr_canvas = std::make_unique<MeshPack>();
 	pbr_canvas->readObjects("models/plane.obj", true, false);
-	pbr_canvas->createmyVAO();
+	pbr_canvas->createVAO();
 	glCheckError();
 
-	auto final_canvas = new myObject();
+	auto final_canvas = std::make_unique<MeshPack>();
 	final_canvas->readObjects("models/plane.obj", true, false);
-	final_canvas->createmyVAO();
+	final_canvas->createVAO();
 	glCheckError();
 
-	auto shaderball = new myObject();
+	auto shaderball = std::make_unique<MeshPack>();
 	shaderball->readObjects("models/shaderball.obj", true, false);
-	shaderball->createmyVAO();
+	shaderball->createVAO();
 	glCheckError();
 
-	auto texAlbedo_A = new myTexture("textures/rustediron/albedo.png");
-	auto texAO_A = new myTexture("textures/rustediron/ao.png");
-	auto texMetallic_A = new myTexture("textures/rustediron/metalness.png");
-	auto texNormal_A = new myTexture("textures/rustediron/normal.png");
-	auto texRoughness_A = new myTexture("textures/rustediron/roughness.png");
+	auto texAlbedo_A = std::make_shared<Texture>("textures/rustediron/albedo.png");
+	auto texAO_A = std::make_shared<Texture>("textures/rustediron/ao.png");
+	auto texMetallic_A = std::make_shared<Texture>("textures/rustediron/metalness.png");
+	auto texNormal_A = std::make_shared<Texture>("textures/rustediron/normal.png");
+	auto texRoughness_A = std::make_shared<Texture>("textures/rustediron/roughness.png");
 	glCheckError();
 
-	auto texAlbedo_B = new myTexture("textures/aluminum/basecolor.png");
-	auto texAO_B = new myTexture("textures/aluminum/ao.png");
-	auto texMetallic_B = new myTexture("textures/aluminum/metallic.png");
-	auto texNormal_B = new myTexture("textures/aluminum/normal.png");
-	auto texRoughness_B = new myTexture("textures/aluminum/roughness.png");
+	auto texAlbedo_B = std::make_shared<Texture>("textures/aluminum/basecolor.png");
+	auto texAO_B = std::make_shared<Texture>("textures/aluminum/ao.png");
+	auto texMetallic_B = std::make_shared<Texture>("textures/aluminum/metallic.png");
+	auto texNormal_B = std::make_shared<Texture>("textures/aluminum/normal.png");
+	auto texRoughness_B = std::make_shared<Texture>("textures/aluminum/roughness.png");
 	glCheckError();
 
-	auto texAlbedo_X = new myTexture("textures/coatedball/albedo.png"); 
-	auto texAO_X = new myTexture("textures/coatedball/ao.png");
-	auto texMetallic_X = new myTexture("textures/coatedball/metalness.png"); 
-	auto texNormal_X = new myTexture("textures/coatedball/normal.png"); 
-	auto texRoughness_X = new myTexture("textures/coatedball/roughness.png");
+	auto texAlbedo_X = std::make_shared<Texture>("textures/coatedball/albedo.png");
+	auto texAO_X = std::make_shared<Texture>("textures/coatedball/ao.png");
+	auto texMetallic_X = std::make_shared<Texture>("textures/coatedball/metalness.png");
+	auto texNormal_X = std::make_shared<Texture>("textures/coatedball/normal.png");
+	auto texRoughness_X = std::make_shared<Texture>("textures/coatedball/roughness.png");
 	glCheckError();
 
 	auto posTextureMap = PosTextureMap {
 
-			{ glm::vec3(-15, 0, -10), std::map<Texture_Type, myTexture*> {
+			{ glm::vec3(-15, 0, -10), std::map<Texture_Type, std::shared_ptr<Texture>> {
 				{ Texture_Type::texAO, texAO_A },
 				{ Texture_Type::texAlbedo, texAlbedo_A },
 				{ Texture_Type::texMetal, texMetallic_A },
 				{ Texture_Type::texNormal, texNormal_A },
 				{ Texture_Type::texRough, texRoughness_A }
 			} },
-			{ glm::vec3(15, 0, -10), std::map<Texture_Type, myTexture*> {
+			{ glm::vec3(15, 0, -10), std::map<Texture_Type, std::shared_ptr<Texture>> {
 				{ Texture_Type::texAO, texAO_B },
 				{ Texture_Type::texAlbedo, texAlbedo_B},
 				{ Texture_Type::texMetal, texMetallic_B },
 				{ Texture_Type::texNormal, texNormal_B },
 				{ Texture_Type::texRough, texRoughness_B }
 			} },
-			{ glm::vec3(0, 0, 0), std::map<Texture_Type, myTexture*> {
+			{ glm::vec3(0, 0, 0), std::map<Texture_Type, std::shared_ptr<Texture>> {
 				{ Texture_Type::texAO, texAO_X },
 				{ Texture_Type::texAlbedo, texAlbedo_X},
 				{ Texture_Type::texMetal, texMetallic_X },
@@ -493,55 +491,56 @@ int main(int argc, char* argv[])
 	};
 
 	auto lightSize = 2.0f;
-	auto lightball = new myObject(); 
+	auto lightball = std::make_unique<MeshPack>(); 
 	lightball->readObjects("models/sphere.obj", true, true);
 	lightball->scale(glm::vec3(lightSize));
-	lightball->createmyVAO();
+	lightball->createVAO();
 	glCheckError();
 
 	// SSSS: set up SSSS
-	auto headObject = new myObject();
+	auto headObject = std::make_unique<MeshPack>();
 	headObject->readObjects("lpshead/head.obj", true, false);
 	glCheckError();
 	headObject->scale(64, 64, 64);
 	headObject->translate(0, 5, 0);
-	headObject->createmyVAO();
+	headObject->createVAO();
 	glCheckError();
 	
-	auto skinTexture = new myTexture("lpshead/albedo.png");
+	auto skinTexture = std::make_shared<Texture>("lpshead/albedo.png");
 	headObject->setTexture(skinTexture, Texture_Type::texAlbedo);
 	glCheckError();
 
-	auto skinNormal = new myTexture("lpshead/normal.png");
+	auto skinNormal = std::make_shared<Texture>("lpshead/normal.png");
 	headObject->setTexture(skinNormal, Texture_Type::texNormal);
 	glCheckError();
 
-	auto ssssPhongShader = new myShader("shaders/ssss.phong.vs.glsl", "shaders/ssss.phong.fs.glsl");
-	auto ssssBlurShader = new myShader("shaders/ssss.blur.vs.glsl", "shaders/ssss.blur.fs.glsl");
+	auto ssssPhongShader = std::make_shared<Shader>("shaders/ssss.phong.vs.glsl", "shaders/ssss.phong.fs.glsl");
+	auto ssssBlurShader = std::make_shared<Shader>("shaders/ssss.blur.vs.glsl", "shaders/ssss.blur.fs.glsl");
 	glCheckError();
 
-	shaders.addShader(ssssPhongShader, "ssssPhongShader");
-	shaders.addShader(ssssBlurShader,  "ssssBlurShader");
+	shaderPack.add(ssssPhongShader, "ssssPhongShader");
+	shaderPack.add(ssssBlurShader,  "ssssBlurShader");
 	glCheckError();
 
-	auto ssssLightFBO = new FBO(true);
+	auto ssssLightFBO = std::make_shared<FBO>(true);
 	ssssLightFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto ssssBlurFBO = new FBO(false);
+	auto ssssBlurFBO = std::make_shared<FBO>(false);
 	ssssBlurFBO->initFBO(mainCam->window_width, mainCam->window_height);
-	auto ssssRulbFBO = new FBO(false);
+	auto ssssRulbFBO = std::make_shared<FBO>(false);
 	ssssRulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
-	auto ssss_canvas = new myObject();
+	auto ssss_canvas = std::make_unique<MeshPack>();
 	ssss_canvas->readObjects("models/plane.obj", true, false);
-	ssss_canvas->createmyVAO();
+	ssss_canvas->createVAO();
 	glCheckError();
 
-	auto emptyTexture = new myTexture(); emptyTexture->empty();
+	auto emptyTexture = std::make_shared<Texture>();
+	emptyTexture->empty();
 	glCheckError();
 
 	// display loop
-	myShader* current_shader;
+	std::shared_ptr<Shader> current_shader;
 	float delta = (float)M_PI / 1000.0f;
 
 	float gamma = 2.2f;
@@ -593,7 +592,9 @@ int main(int argc, char* argv[])
 	pipeline_init = &pbr_pipeline_init;
 	bool pipeline_changed = true;
 
-	FBO* FBOs[] = { environmentFBO, blurFBO, rulbFBO, geometryFBO, lightingFBO, ssssLightFBO, ssssBlurFBO, ssssRulbFBO };
+	std::vector<std::shared_ptr<FBO>> FBOs = { environmentFBO, blurFBO, rulbFBO, geometryFBO, lightingFBO, ssssLightFBO, ssssBlurFBO, ssssRulbFBO };
+
+	auto a = std::make_shared<FBO>(); auto b = std::make_shared<CubeFBO>(); auto c = std::make_shared<GeoFBO>();
 
 	std::function<void(bool)> ui_pipeline_work = [&](bool paused) {
 
@@ -604,7 +605,7 @@ int main(int argc, char* argv[])
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(window);
+		ImGui_ImplSDL2_NewFrame(_window);
 		ImGui::NewFrame(); io.WantCaptureMouse = true;
 
 		if (show_demo_window)
@@ -641,7 +642,7 @@ int main(int argc, char* argv[])
 
 		ImGui::Text("Render pipeline");
 		static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-		if (ImGui::BeginTabBar("MyTabBar", tab_bar_flags))
+		if (ImGui::BeginTabBar("TabBar", tab_bar_flags))
 		{
 			if (ImGui::BeginTabItem("PBR"))
 			{
@@ -677,7 +678,7 @@ int main(int argc, char* argv[])
 				ImGui::ColorEdit3("SSSS Strength", (float*)&ssss_strength);
 
 				ImGui::SliderFloat("Luminance Threshold", &luminance_threshold, 0.0f, 1.0f);
-				ImGui::SliderFloat("Depthtest Coefficient", &depthtest_coefficient, 0.1f, 2.0f);
+				ImGui::SliderFloat("Depthtest Coefficient", &depthtest_coefficient, 0.1f, 2.0f);     
 
 				ImGui::EndTabItem();
 			}
@@ -697,7 +698,7 @@ int main(int argc, char* argv[])
 
 		// Rendering
 		ImGui::Render();
-		SDL_GL_MakeCurrent(window, glContext);
+		SDL_GL_MakeCurrent(_window, context);
 		auto d_width = (GLsizei)io.DisplaySize.x;
 		auto d_height = (GLsizei)io.DisplaySize.y;
 		glViewport(0, 0, d_width, d_height);
@@ -705,7 +706,7 @@ int main(int argc, char* argv[])
 		glCheckError();
 
 		SDL_Event current_event; glCheckError();
-		if (!paused) {SDL_GL_SwapWindow(window);}
+		if (!paused) {SDL_GL_SwapWindow(_window);}
 		glCheckError(); auto error = SDL_GetError();
 
 		while (SDL_PollEvent(&current_event) != 0) {
@@ -728,7 +729,7 @@ int main(int argc, char* argv[])
 
 		if (windowsize_changed || pipeline_changed)
 		{   
-			SDL_GetWindowSize(window, &mainCam->window_width, &mainCam->window_height);
+			SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
 			windowsize_changed = false; pipeline_changed = false;
 
 			for (auto& fbo : FBOs) { fbo->reset(); }
@@ -750,9 +751,9 @@ int main(int argc, char* argv[])
 		ui_pipeline_work(false);
 
 		//Setting uniform variables for each shader
-		for (unsigned int i = 0; i < shaders.size(); i++)
+		for (unsigned int i = 0; i < shaderPack.size(); i++)
 		{
-			current_shader = shaders[i]; current_shader->start();
+			current_shader = shaderPack[i]; current_shader->start();
 
 			current_shader->setUniform("projection_matrix", projection_matrix);
 			current_shader->setUniform("view_matrix", view_matrix);
@@ -765,7 +766,7 @@ int main(int argc, char* argv[])
 			current_shader->setUniform("exposure", exposure);
 			current_shader->setUniform("gamma", gamma);
 			
-			scene.lights->setUniform(current_shader, "lights");
+			scene.lightList->setUniform(current_shader, "lights");
 			current_shader->stop();
 		}
 
@@ -773,14 +774,14 @@ int main(int argc, char* argv[])
 
 		environmentFBO->multi_render(
 			&std::function<void()>([&] {
-				current_shader = shaders["shader_skycube"];
+				current_shader = shaderPack["shader_skycube"];
 				current_shader->start();
 					skycube->displayObjects(current_shader, view_matrix);
 				current_shader->stop();
 
-				current_shader = shaders["basicx"];
+				current_shader = shaderPack["basicx"];
 				current_shader->start();
-				for (auto& light : scene.lights->lights) {
+				for (auto& light : scene.lightList->list) {
 					current_shader->setUniform("color", light->color);
 					lightball->translate(light->position);
 						lightball->displayObjects(current_shader, view_matrix);
@@ -806,7 +807,7 @@ int main(int argc, char* argv[])
 		glCheckError();
 
 		int blurIndex = 0; int count = 0;
-		static FBO* blurList[2] = { blurFBO, rulbFBO };
+		static std::vector<std::shared_ptr<FBO>> blurList = { blurFBO, rulbFBO };
 
 		while (count < bloomStrength) {
 			auto currentFBO = blurList[blurIndex];
@@ -827,7 +828,7 @@ int main(int argc, char* argv[])
 
 		if (RenderPipeline::PBR == current_pipeline) {
 
-			current_shader = shaders["geo_buffer"];
+			current_shader = shaderPack["geo_buffer"];
 			shaderball->rotate(0.0f, 1.0f, 0.0f, delta);
 			geometryFBO->loopRender(current_shader, shaderball, view_matrix, posTextureMap);
 			glCheckError();
@@ -840,18 +841,18 @@ int main(int argc, char* argv[])
 			pbr_canvas->setTexture(pFBO->envTexture, Texture_Type::gPrefilter);
 			pbr_canvas->setTexture(bFBO->colorTexture, Texture_Type::BRDF_LUT);
 
-			lightingFBO->render(shaders["pbr_buffer"], pbr_canvas, view_matrix);
+			lightingFBO->render(shaderPack["pbr_buffer"], pbr_canvas, view_matrix);
 			glCheckError();
 
 		} else if (RenderPipeline::SSSS == current_pipeline) {
 
-			for (auto& light : scene.lights->lights) {
+			for (auto& light : scene.lightList->list) {
 
 				light->shadowFBO->shadowMapping(shadowShader, headObject, light->position, captureProjection);
 
 			} glCheckError();
 
-			headObject->setTexture(scene.lights->lights[0]->shadowFBO->envTexture, Texture_Type::shadowCube);
+			headObject->setTexture(scene.lightList->list[0]->shadowFBO->envTexture, Texture_Type::shadowCube);
 
 				auto lambda = std::function<void()>([&] {
 					
@@ -935,8 +936,8 @@ int main(int argc, char* argv[])
 
 	// Freeing resources before exiting.
 	// Destroy window
-	if (glContext) SDL_GL_DeleteContext(glContext);
-	if (window) SDL_DestroyWindow(window);
+	if (context) SDL_GL_DeleteContext(context);
+	if (_window) SDL_DestroyWindow(_window);
 	// Quit SDL subsystems
 	SDL_Quit();
 	return 0;

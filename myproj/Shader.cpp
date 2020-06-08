@@ -10,12 +10,37 @@
 #include <glm/gtc/type_ptr.hpp>  
 #include <glm/gtc/matrix_transform.hpp> 
 
-#include "myShader.h"`
+#include <filesystem>
 
-myShader::myShader(const std::string& file_vertexshader, const std::string& file_fragmentshader)
+#include "Shader.h"`
+
+Shader::Shader(const std::string& key) {
+
+	text_to_id.clear();
+
+	auto vs = shaderURI + key + ".vs.glsl";
+	auto gs = shaderURI + key + ".gs.glsl";
+	auto fs = shaderURI + key + ".fs.glsl";
+
+	if (std::filesystem::exists(vs)) {
+		vertex_shader = _initShader(GL_VERTEX_SHADER, vs);
+	}
+
+	if (std::filesystem::exists(gs)) {
+		geometry_shader = _initShader(GL_GEOMETRY_SHADER, gs);
+	}
+
+	if (std::filesystem::exists(fs)) {
+		fragment_shader = _initShader(GL_FRAGMENT_SHADER, fs);
+	}
+
+	if (!_initProgram())
+		std::cout << "Error: shader not initialized properly.\n";
+}
+
+Shader::Shader(const std::string& file_vertexshader, const std::string& file_fragmentshader)
 {
 	text_to_id.clear();
-	//clear();
 
 	vertex_shader = _initShader(GL_VERTEX_SHADER, file_vertexshader);
 	fragment_shader = _initShader(GL_FRAGMENT_SHADER, file_fragmentshader);
@@ -24,10 +49,10 @@ myShader::myShader(const std::string& file_vertexshader, const std::string& file
 		std::cout << "Error: shader not initialized properly.\n";
 }
 
-myShader::myShader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader)
+Shader::Shader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader)
 {
 	text_to_id.clear();
-	//clear();
+
 	vertex_shader = _initShader(GL_VERTEX_SHADER, file_vertexshader);
 	geometry_shader = _initShader(GL_GEOMETRY_SHADER, file_geometryshader);
 	fragment_shader = _initShader(GL_FRAGMENT_SHADER, file_fragmentshader);
@@ -36,12 +61,12 @@ myShader::myShader(const std::string& file_vertexshader, const std::string& file
 		std::cout << "Error: shader not initialized properly.\n";
 }
 
-myShader::~myShader()
+Shader::~Shader()
 {
 	clear();
 }
 
-GLuint myShader::_initShader(GLenum type, const std::string& filename)
+GLuint Shader::_initShader(GLenum type, const std::string& filename)
 {
 	std::ifstream fin(filename);
 
@@ -67,7 +92,7 @@ GLuint myShader::_initShader(GLenum type, const std::string& filename)
 	return shader;
 }
 
-bool myShader::_initProgram()
+bool Shader::_initProgram()
 {
 	shaderprogram = glCreateProgram();
 	if (vertex_shader != 0) {
@@ -91,7 +116,7 @@ bool myShader::_initProgram()
 	return true;
 }
 
-void myShader::_programErrors(const GLint program) {
+void Shader::_programErrors(const GLint program) {
 	GLint length;
 	GLchar * log;
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
@@ -101,7 +126,7 @@ void myShader::_programErrors(const GLint program) {
 	delete[] log;
 }
 
-void myShader::_shaderErrors(const GLint shader) {
+void Shader::_shaderErrors(const GLint shader) {
 	GLint length;
 	GLchar * log;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
@@ -111,7 +136,7 @@ void myShader::_shaderErrors(const GLint shader) {
 	delete[] log;
 }
 
-void myShader::clear()
+void Shader::clear()
 {
 	glDeleteShader(vertex_shader);
 	glDeleteShader(geometry_shader);
@@ -119,17 +144,17 @@ void myShader::clear()
 	glDeleteProgram(shaderprogram);
 }
 
-void myShader::start() const
+void Shader::start() const
 {
 	glUseProgram(shaderprogram);
 }
 
-void myShader::stop() const
+void Shader::stop() const
 {
 	glUseProgram(0);
 }
 
-GLint myShader::getUniformLocation(const std::string& text) 
+GLint Shader::getUniformLocation(const std::string& text) 
 {
 	if (text_to_id.find(text) == text_to_id.end())
 	{
@@ -146,56 +171,56 @@ GLint myShader::getUniformLocation(const std::string& text)
 	return text_to_id[text];
 }
 
-void myShader::setUniform(const std::string& name, glm::mat4 & mat)
+void Shader::setUniform(const std::string& name, glm::mat4 & mat)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void myShader::setUniform(const std::string& name, glm::mat3 &mat)
+void Shader::setUniform(const std::string& name, glm::mat3 &mat)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void myShader::setUniform(const std::string& name, float val)
+void Shader::setUniform(const std::string& name, float val)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform1f(location, val);
 }
 
-void myShader::setUniform(const std::string& name, int val)
+void Shader::setUniform(const std::string& name, int val)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform1i(location, val);
 }
 
-void myShader::setUniform(const std::string& name, glm::vec2 vec)
+void Shader::setUniform(const std::string& name, glm::vec2 vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform2fv(location, 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(const std::string& name, glm::vec3 vec)
+void Shader::setUniform(const std::string& name, glm::vec3 vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform3fv(location, 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(const std::string& name, glm::vec4 vec)
+void Shader::setUniform(const std::string& name, glm::vec4 vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
-void myShader::setUniform(const std::string& name, std::vector<glm::vec3>& input_array)
+void Shader::setUniform(const std::string& name, std::vector<glm::vec3>& input_array)
 {
 	for (unsigned int i = 0; i < input_array.size(); ++i) {
 
@@ -205,7 +230,7 @@ void myShader::setUniform(const std::string& name, std::vector<glm::vec3>& input
 	}
 }
 
-void myShader::setUniform(const std::string& name, std::vector<glm::vec4>& input_array)
+void Shader::setUniform(const std::string& name, std::vector<glm::vec4>& input_array)
 {
 	//glUniform4fv(getUniformLocation(name), input_array.size(), &input_array[0][0]);
 	for (unsigned int i = 0; i < input_array.size(); ++i) {

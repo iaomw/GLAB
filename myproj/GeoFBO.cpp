@@ -19,10 +19,6 @@ GeoFBO::~GeoFBO()
 
 void GeoFBO::reset() {
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID); fboID = 0;
-
-	delete gPosition; gPosition = nullptr;
-	delete gAlbedo; gAlbedo = nullptr;
-	delete gNormal; gNormal = nullptr;
 }
 
 void GeoFBO::initFBO(int WIDTH, int HEIGHT)
@@ -33,8 +29,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	glCreateFramebuffers(1, &fboID);
 
 	// Position + AO
-	if (gPosition) delete gPosition;
-	gPosition = new myTexture();
+	gPosition = std::make_shared<Texture>();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &gPosition->texture_id);
 	glTextureStorage2D(gPosition->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
@@ -48,8 +43,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	//glGenerateTextureMipmap(gPosition->texture_id);
 
 	// Albedo + Roughness
-	if (gAlbedo) delete gAlbedo;
-	gAlbedo = new myTexture();
+	gAlbedo = std::make_shared<Texture>();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &gAlbedo->texture_id);
 	glTextureStorage2D(gAlbedo->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
@@ -63,8 +57,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	//glGenerateTextureMipmap(gAlbedo->texture_id);
 
 	// Normals + Metalness
-	if (gNormal) delete gNormal;
-	gNormal = new myTexture();
+	gNormal = std::make_shared<Texture>();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &gNormal->texture_id);
 	glTextureStorage2D(gNormal->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
@@ -77,8 +70,7 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT2, gNormal->texture_id, 0);
 	//glGenerateTextureMipmap(gNormal->texture_id);
 
-	delete depthTexture;
-	depthTexture = new myTexture();
+	depthTexture = std::make_shared<Texture>();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
 	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT32, width, height);

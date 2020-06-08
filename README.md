@@ -10,10 +10,11 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 
 ## Features
 - [ ] C++ 11~17
-- [x] OBJ geometry
-- [ ] Batch Rendering
+- [x] Wavefront.obj
 - [ ] Bindless Texture
+- [ ] Batch Rendering
 - [x] Deferred Rendering
+- [ ] Quaternion Rotation
 - [x] Point light
     - [x] Bloom
     - [ ] Volumetric Effects
@@ -43,6 +44,7 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - Light source should be brighter.
 - Adjust bloom range based on depth.
 - Redone the pipeline, reduce VRAM cost.
+- After switching raw pointer to smart pointer, the code runs noticeable slower.
 
 ## Dependencies
 - [GLEW](http://glew.sourceforge.net/) - OpenGL loading library

@@ -6,11 +6,11 @@
 #include <glm/gtc/matrix_transform.hpp> 
 #include <glm/gtc/type_ptr.hpp>    
 
-#include "myCamera.h"
+#include "Camera.h"
 #include "helperFunctions.h"
 #include "default_constants.h"
 
-myCamera::myCamera()
+Camera::Camera()
 {
 	camera_eye = DEFAULT_CAMERA_EYE;
 	camera_up = DEFAULT_CAMERA_UP;
@@ -24,11 +24,11 @@ myCamera::myCamera()
 	window_height = DEFAULT_WINDOW_HEIGHT;
 }
 
-myCamera::~myCamera()
+Camera::~Camera()
 {
 }
 
-void myCamera::reset()
+void Camera::reset()
 {
 	camera_eye = DEFAULT_CAMERA_EYE;
 	camera_up = DEFAULT_CAMERA_UP;
@@ -39,7 +39,7 @@ void myCamera::reset()
 	zFar = DEFAULT_zFAR;
 }
 
-void myCamera::crystalball_rotateView(int dx, int dy)
+void Camera::crystalball_rotateView(int dx, int dy)
 {
 	if (dx == 0 && dy == 0) return;
 
@@ -58,7 +58,7 @@ void myCamera::crystalball_rotateView(int dx, int dy)
 	rotate(camera_eye, rotation_axis, theta, false);
 }
 
-void myCamera::firstperson_rotateView(int dx, int dy)
+void Camera::firstperson_rotateView(int dx, int dy)
 {
 	if (dx == 0 && dy == 0) return;
 
@@ -76,7 +76,7 @@ void myCamera::firstperson_rotateView(int dx, int dy)
 	//rotate(camera_up, rotation_axis, theta, true);
 }
 
-void myCamera::panView(int dx, int dy)
+void Camera::panView(int dx, int dy)
 {
 	if (dx == 0 && dy == 0) return;
 
@@ -89,7 +89,7 @@ void myCamera::panView(int dx, int dy)
 	camera_eye += 1.6f * tomovein_direction;
 }
 
-glm::vec3 myCamera::constructRay(int x, int y) const
+glm::vec3 Camera::constructRay(int x, int y) const
 {
 	glm::mat4 projection_matrix = projectionMatrix( );
 	glm::mat4 view_matrix = viewMatrix();
@@ -106,37 +106,37 @@ glm::vec3 myCamera::constructRay(int x, int y) const
 	return glm::normalize(glm::vec3(glm::inverse(view_matrix) * tmp));
 }
 
-glm::mat4 myCamera::projectionMatrix() const
+glm::mat4 Camera::projectionMatrix() const
 {
 	return glm::perspective(glm::radians(fovy), static_cast<float>(window_width) / static_cast<float>(window_height), zNear, zFar);
 }
 
-glm::mat4 myCamera::viewMatrix() const
+glm::mat4 Camera::viewMatrix() const
 {
 	return glm::lookAt(camera_eye, camera_eye + camera_forward, camera_up);
 }
 
-void myCamera::moveForward(float size)
+void Camera::moveForward(float size)
 {
 	camera_eye += size * camera_forward;
 }
 
-void myCamera::moveBack(float size)
+void Camera::moveBack(float size)
 {
 	camera_eye -= size * camera_forward;
 }
 
-void myCamera::turnLeft(float size)
+void Camera::turnLeft(float size)
 {
 	rotate(camera_forward, camera_up, size, true);
 }
 
-void myCamera::turnRight(float size)
+void Camera::turnRight(float size)
 {
 	rotate(camera_forward, camera_up, -size, true);
 }
 
-void myCamera::print() const
+void Camera::print() const
 {
 	std::cout << "Eye: (" << camera_eye.x << ", " << camera_eye.y << ", " << camera_eye.z << ")" << std::endl;
 	std::cout << "Forward: (" << camera_forward.x << ", " << camera_forward.y << ", " << camera_forward.z << ")" << std::endl;

@@ -1,5 +1,3 @@
-#include "myTexture.h"
-
 #include <map>
 #include <tuple>
 #include <stdint.h>
@@ -7,29 +5,30 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "STB/stb_image.h"
 
-#include "myShader.h"
+#include "Shader.h"
+#include "Texture.h"
 #include "helperFunctions.h"
 
-myTexture::myTexture()
+Texture::Texture()
 {
 	texture_id = 0;
 	texture_type = GL_TEXTURE_2D;
 }
 
-myTexture::myTexture(GLenum type)
+Texture::Texture(GLenum type)
 {
 	texture_id = 0;
 	texture_type = type;
 }
 
-myTexture::myTexture(const std::string& filename)
+Texture::Texture(const std::string& filename)
 {
 	texture_id = 0;
 	texture_type = GL_TEXTURE_2D;
 	readTexture2D(filename);
 }
 
-myTexture::myTexture(std::vector<std::string>& filenames)
+Texture::Texture(std::vector<std::string>& filenames)
 {
 	texture_id = 0;
 	texture_type = GL_TEXTURE_CUBE_MAP;
@@ -37,13 +36,13 @@ myTexture::myTexture(std::vector<std::string>& filenames)
 }
 
 
-myTexture::~myTexture()
+Texture::~Texture()
 {
 	glDeleteTextures(1, &texture_id);
 }
 
 
-void myTexture::empty() {
+void Texture::empty() {
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
 
 	width = 1, height = 1;
@@ -57,12 +56,12 @@ void myTexture::empty() {
 	//configTexture(texture_id);
 }
 
-bool myTexture::readTexture2D(const std::string& filename)
+bool Texture::readTexture2D(const std::string& filename)
 {
-	int size; GLubyte* mytexture;
+	int size; GLubyte* theTexture;
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
-	mytexture = stbi_load(filename.c_str(), &width, &height, &size, 0);
+	theTexture = stbi_load(filename.c_str(), &width, &height, &size, 0);
 
 	std::map<int, std::tuple<GLenum, GLenum>> map;
 
@@ -74,15 +73,15 @@ bool myTexture::readTexture2D(const std::string& filename)
 	std::tie(textureFormat, internalFormat) = map[size];
 
 	glTextureStorage2D(texture_id, 5, internalFormat, width, height);
-	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_UNSIGNED_BYTE, mytexture);
+	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_UNSIGNED_BYTE, theTexture);
 	
 	configTexture(texture_id);
 
-	stbi_image_free(mytexture);
+	stbi_image_free(theTexture);
 	return true;
 }
 
-bool myTexture::readTextureHDR(const std::string& filename) {
+bool Texture::readTextureHDR(const std::string& filename) {
 
 	std::map<int, std::tuple<GLint, GLenum>> map;
 
@@ -106,7 +105,7 @@ bool myTexture::readTextureHDR(const std::string& filename) {
 	return true;
 }
 
-void  myTexture::configTexture(GLuint theTexture) {
+void  Texture::configTexture(GLuint theTexture) {
 
 	GLfloat anisoFilterLevel;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisoFilterLevel);
@@ -120,7 +119,7 @@ void  myTexture::configTexture(GLuint theTexture) {
 	glGenerateTextureMipmap(theTexture);
 }
 
-void myTexture::readTextureCube(const std::vector<std::string>& filenames)
+void Texture::readTextureCube(const std::vector<std::string>& filenames)
 {
 	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &texture_id);
 
@@ -129,12 +128,12 @@ void myTexture::readTextureCube(const std::vector<std::string>& filenames)
 	for (auto f : {0, 1, 2, 3, 4, 5})
 	{
 		int size, width, height;
-		GLubyte *mytexture = stbi_load(filenames[f].c_str(), &width, &height, &size, 4);
+		GLubyte *theTexture = stbi_load(filenames[f].c_str(), &width, &height, &size, 4);
 		//glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + f, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
 		glTextureSubImage3D(texture_id, 0, 0, 0, f,
-			width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, mytexture);
+			width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, theTexture);
 		
-		delete[] mytexture;
+		delete[] theTexture;
 	}
 
 	glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -145,7 +144,7 @@ void myTexture::readTextureCube(const std::vector<std::string>& filenames)
 }
 
 
-void myTexture::bind(myShader *shader, const std::string& name, GLuint texture_offset)
+void Texture::bind(std::shared_ptr<Shader> const& shader, const std::string& name, GLuint texture_offset)
 {
 	glBindTextureUnit(texture_offset, texture_id);
 	shader->setUniform(name, static_cast<int>(texture_offset));

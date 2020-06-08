@@ -1,36 +1,36 @@
 #pragma once
-#include "myVAO.h"
+#include "VAO.h"
 #include <glm/glm.hpp>
 #include <unordered_map>
-#include "mySubObject.h"
-#include "myShader.h"
-#include "myMaterial.h"
-#include "myTexture.h"
+
+#include "Shader.h"
+#include "Texture.h"
+#include "Material.h"
+#include "MeshPart.h"
+
 #include <unordered_map>
 
-class myObject
+class MeshPack
 {
 public:
-	myObject();
-	~myObject();
+	MeshPack();
+	~MeshPack();
 	void clear();
 
-	void readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures);
+	void readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, Material *> & materials, std::unordered_map<std::string, Texture *> & textures);
 	bool readObjects(const std::string& filename, bool individualvertices_per_face = true, bool tonormalize = false, bool subgroup = false);
+	void createVAO();
 	void normalize();
 	void computeNormals();
-	void createmyVAO();
 
 	glm::mat3 normalMatrix(glm::mat4 view_matrix);
 
-	void displayObjects(myShader *, glm::mat4);
-	void displayObjects(myShader *shader, glm::mat4, const std::string& name);
-
-	void displayNormals(myShader *);
+	void displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4&);
+	void displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4&, const std::string& name);
 	
 	glm::vec3 closestVertex(glm::vec3 ray, glm::vec3 starting_point);
 	float closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t& picked_triangle);
-	float closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle, mySubObject * & picked_object);
+	float closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle, MeshPart * & picked_object);
 	
 	void scale(float x, float y, float z);
 	void translate(float x, float y, float z);
@@ -46,10 +46,10 @@ public:
 	
 	void computeTangents();
 	
-	void setTexture(myTexture *, Texture_Type);
+	void setTexture(std::shared_ptr<Texture> const& , Texture_Type);
 	void cleanTexture();
 	
-	myVAO *vao;
+	std::unique_ptr<VAO> vao;
 
 	std::vector<glm::ivec3> indices;
 	std::vector<glm::vec3> vertices;
@@ -62,6 +62,6 @@ public:
 	
 	std::string name;
 	glm::mat4 model_matrix;
-	std::unordered_multimap<std::string, mySubObject*> children;
+	std::unordered_multimap<std::string, MeshPart*> children;
 };
 

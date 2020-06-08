@@ -9,7 +9,9 @@
 #include <vector>
 #include <string>
 
-class myShader
+const static std::string shaderURI = "shaders/";
+
+class Shader
 {
 public:
 	GLuint vertex_shader = 0;
@@ -20,10 +22,11 @@ public:
 
 	std::map<std::string, GLint> text_to_id;
 
-	myShader(const std::string& file_vertexshader, const std::string& file_fragmentshader);
-	myShader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader);
+	Shader(const std::string& key);
+	Shader(const std::string& file_vertexshader, const std::string& file_fragmentshader);
+	Shader(const std::string& file_vertexshader, const std::string& file_geometryshader, const std::string& file_fragmentshader);
 
-	~myShader();
+	~Shader();
 
 	void clear();
 	void start() const;

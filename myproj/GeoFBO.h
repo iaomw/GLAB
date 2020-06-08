@@ -4,24 +4,24 @@
 #include <glm/gtx/hash.hpp>
 
 #include "FBO.h"
-#include "myTexture.h"
+#include "Texture.h"
 
-typedef std::unordered_map<glm::vec3, std::map<Texture_Type, myTexture*>> PosTextureMap;
+typedef std::unordered_map<glm::vec3, std::map<Texture_Type, std::shared_ptr<Texture>>> PosTextureMap;
 
 class GeoFBO: public FBO
 {
 public:
 
-	myTexture* gPosition;
-	myTexture* gNormal;
-	myTexture* gAlbedo;
+	std::shared_ptr<Texture> gPosition;
+	std::shared_ptr<Texture> gNormal;
+	std::shared_ptr<Texture> gAlbedo;
 
 	GeoFBO();
 	~GeoFBO();
 
 	virtual void reset();
 
-	void loopRender(myShader* shader, myObject* object, glm::mat4 view_matrix, PosTextureMap& textureMap) {
+	void loopRender(std::shared_ptr<Shader> const& shader, std::unique_ptr<MeshPack> &object, glm::mat4 view_matrix, PosTextureMap& textureMap) {
 
 		bind();
 		shader->start();

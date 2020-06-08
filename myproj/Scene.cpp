@@ -1,19 +1,18 @@
-#include "myScene.h"
+#include "Scene.h"
 #include <iostream>
 
-myScene::myScene()
+Scene::Scene()
 {
-	lights = nullptr;
+	lightList = nullptr;
 }
 
-myScene::~myScene()
+Scene::~Scene()
 {
 	for (unsigned int i = 0;i < all_objects.size();i++)
 		if (all_objects[i] != nullptr) delete all_objects[i];
-	if (lights != nullptr) delete lights;
 }
 
-void myScene::addObjects(myObject* obj, const std::string& name)
+void Scene::addObjects(MeshPack* obj, const std::string& name)
 {
 	if (obj == nullptr) 
 	{
@@ -25,7 +24,7 @@ void myScene::addObjects(myObject* obj, const std::string& name)
 	all_objects.push_back(obj);
 }
 
-myObject* & myScene::operator[](const std::string& name)
+MeshPack* & Scene::operator[](const std::string& name)
 {
 	size_t num = byname.count(name);
 	assert(num != 0);
@@ -36,19 +35,19 @@ myObject* & myScene::operator[](const std::string& name)
 	return all_objects[byname.find(name)->second];
 }
 
-myObject*& myScene::operator[](const unsigned int index)
+MeshPack*& Scene::operator[](const unsigned int index)
 {
 	assert(index >= 0 && index < all_objects.size());
 
 	return all_objects[index];
 }
 
-size_t myScene::size() const
+size_t Scene::size() const
 {
 	return all_objects.size();
 }
 
-float myScene::closestObject(glm::vec3 ray, glm::vec3 origin, myObject * & picked_object, size_t & picked_triangle_index)
+float Scene::closestObject(glm::vec3 ray, glm::vec3 origin, MeshPack * & picked_object, size_t & picked_triangle_index)
 {
 	float min_t = std::numeric_limits<float>::max();
 	
@@ -58,7 +57,7 @@ float myScene::closestObject(glm::vec3 ray, glm::vec3 origin, myObject * & picke
 
 	for (unsigned int i=0;i<all_objects.size();i++)
 	{
-		myObject *objs = all_objects[i];
+		MeshPack *objs = all_objects[i];
 
 		size_t curr_picked_triangle_index;
 		float curr_t = objs->closestTriangle(ray, origin, curr_picked_triangle_index);

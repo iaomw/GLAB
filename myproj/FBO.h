@@ -1,22 +1,22 @@
 #pragma once
-#include <functional>
 #include <GL/glew.h>
+#include <functional>
 
-#include "myObject.h"
-#include "myShader.h"
-#include "myTexture.h"
+#include "Shader.h"
+#include "Texture.h"
+#include "MeshPack.h"
 
 class FBO
 {
 public:
-	myTexture* colorTexture;
-	myTexture* extraTexture;
-	myTexture* depthTexture;
+	std::shared_ptr<Texture> colorTexture;
+	std::shared_ptr<Texture> extraTexture;
+	std::shared_ptr<Texture> depthTexture;
 
 	GLuint fboID;
 	int width, height;
 
-	void render(myShader* shader, myObject* object, glm::mat4 view_matrix,
+	void render(std::shared_ptr<Shader> const& shader, std::unique_ptr<MeshPack> const &object, glm::mat4 view_matrix,
 		std::function<void()>* before = nullptr, std::function<void()>* after = nullptr) {
 
 		bind();

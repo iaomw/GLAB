@@ -8,12 +8,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "FBO.h"
-#include "myTexture.h"
+#include "Texture.h"
 
 class CubeFBO: public FBO
 {
 public:
-	myTexture* envTexture;
+	std::shared_ptr<Texture> envTexture;
 
 	CubeFBO(bool shadow = false, GLenum textureFormat = GL_RGBA, GLenum internalFormat = GL_RGBA16F);
 	virtual ~CubeFBO();
@@ -36,7 +36,7 @@ public:
 		return captureViews;
 	}
 
-	void render(myShader* shader, myObject* object, 
+	void render(std::shared_ptr<Shader> const& shader, std::unique_ptr<MeshPack> const &object,
 				glm::vec3 lookFrom, glm::mat4 projection_matrix, unsigned int mipCount=1) {
 
 		auto& captureViews = configCamera(lookFrom);
@@ -81,7 +81,7 @@ public:
 		unbind();
 	}
 
-	void shadowMapping(myShader* shader, myObject* object, glm::vec3 lookFrom, glm::mat4 projection_matrix) {
+	void shadowMapping(std::shared_ptr<Shader> const &shader, std::unique_ptr<MeshPack> const &object, glm::vec3 &lookFrom, glm::mat4 &projection_matrix) {
 
 		auto& captureViews = configCamera(lookFrom);		
 

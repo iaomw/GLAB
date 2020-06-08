@@ -1,6 +1,6 @@
 #pragma once
 
-class myCamera
+class Camera
 {
 public:
 	//Camera positioning
@@ -17,8 +17,8 @@ public:
 	int window_width;
 	int window_height;
 
-	myCamera();
-	~myCamera();
+	Camera();
+	~Camera();
 	void reset();
 
 	void crystalball_rotateView(int dx, int dy);

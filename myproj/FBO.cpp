@@ -21,10 +21,6 @@ FBO::~FBO()
 void FBO::reset() {
 
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID); fboID = 0;
-
-	delete colorTexture; colorTexture = nullptr;
-	delete extraTexture; extraTexture = nullptr;
-	delete depthTexture; depthTexture = nullptr;
 }
 
 void FBO::initFBO(int WIDTH, int HEIGHT) 
@@ -34,8 +30,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
 	glCreateFramebuffers(1, &fboID);
 
-	delete colorTexture;
-	colorTexture = new myTexture();
+	colorTexture = std::make_shared<Texture>();
 
 	//GL_NEAREST_MIPMAP_NEAREST 
 	//GL_LINEAR_MIPMAP_NEAREST 
@@ -60,8 +55,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 
 	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, colorTexture->texture_id, 0);
 
-	delete depthTexture;
-	depthTexture = new myTexture();
+	depthTexture = std::make_shared<Texture>();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
 	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT32, width, height);
@@ -80,8 +74,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	}
 	else 
 	{
-		delete extraTexture;
-		extraTexture = new myTexture();
+		extraTexture = std::make_shared<Texture>();
 
 		glCreateTextures(GL_TEXTURE_2D, 1, &extraTexture->texture_id);
 		glTextureStorage2D(extraTexture->texture_id, 1, GL_RGBA16F, width, height);

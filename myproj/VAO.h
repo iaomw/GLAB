@@ -1,11 +1,15 @@
 #pragma once
-#include <GL/glew.h>
+
 #include <map>
 #include <vector>
-#include "myVBO.h"
+#include <memory>
+
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 
-class myVAO
+#include "VBO.h"
+
+class VAO
 {
 private:
 	enum struct Attribute { POSITION, NORMAL, TANGENT, TEXTURE_COORDINATE };
@@ -13,12 +17,12 @@ private:
 public:
 	GLuint id;
 
-	std::map<Attribute, myVBO *> attribute_buffers;
-	myVBO *indices_buffer;
+	std::map<Attribute, std::unique_ptr<VBO>> attribute_buffers;
+	std::unique_ptr<VBO> indices_buffer;
 	size_t num_triangles;
 
-	myVAO();
-	~myVAO();
+	VAO();
+	~VAO();
 
 	void clear();
 	
@@ -27,7 +31,7 @@ public:
 	void storeIndices(std::vector<glm::ivec3>&);
 	void storePositions(std::vector<glm::vec3>&, GLuint shader_location);
 	void storeNormals(std::vector<glm::vec3>&, GLuint shader_location);
-	void storeTexturecoordinates(std::vector<glm::vec2>&, GLuint shader_location);
+	void storeTexcoords(std::vector<glm::vec2>&, GLuint shader_location);
 	void storeTangents(std::vector<glm::vec3>&, GLuint shader_location);
 	
 	void draw();

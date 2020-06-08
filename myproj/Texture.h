@@ -1,11 +1,11 @@
 #pragma once
-#include <GL/glew.h>
+
 #include <string>
 #include <vector>
 
-class myShader;
+#include <GL/glew.h>
 
-class myTexture
+class Texture
 {
 public:
 	GLuint texture_id;
@@ -15,18 +15,18 @@ public:
 	GLenum internalFormat;
 	int width=0, height=0;
 
-	myTexture();
-	myTexture(GLenum type);
-	myTexture(const std::string& filename);
-	myTexture(std::vector<std::string>& filenames);
-	~myTexture();
+	Texture();
+	Texture(GLenum type);
+	Texture(const std::string& filename);
+	Texture(std::vector<std::string>& filenames);
+	~Texture();
 
 	void empty();
 	bool readTexture2D(const std::string& filename);
 	bool readTextureHDR(const std::string& filename);
 	void readTextureCube(const std::vector<std::string>& filenames);
 
-	void bind(myShader *shader, const std::string& name, GLuint texture_offset = 0);
+	void bind(std::shared_ptr<Shader> const& shader, const std::string& name, GLuint texture_offset = 0);
 
 private:
 	void configTexture(GLuint theTexture);

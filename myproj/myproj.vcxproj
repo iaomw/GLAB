@@ -29,7 +29,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -86,6 +86,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -117,28 +118,28 @@
     <None Include="shaders\texture-vertexshader.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="default_constants.h" />
-    <ClInclude Include="errors.h" />
     <ClInclude Include="GeoFBO.h" />
     <ClInclude Include="CubeFBO.h" />
-    <ClInclude Include="helperFunctions.h" />
+    <ClInclude Include="include\default_constants.h" />
+    <ClInclude Include="include\errors.h" />
+    <ClInclude Include="include\helperFunctions.h" />
     <ClInclude Include="include\imgui\imgui_impl_opengl3.h" />
     <ClInclude Include="include\imgui\imgui_impl_sdl.h" />
-    <ClInclude Include="magic_enum.hpp" />
-    <ClInclude Include="myCamera.h" />
+    <ClInclude Include="include\magic_enum.hpp" />
+    <ClInclude Include="include\resource.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="FBO.h" />
-    <ClInclude Include="myLight.h" />
-    <ClInclude Include="myLights.h" />
-    <ClInclude Include="myMaterial.h" />
-    <ClInclude Include="mySubObject.h" />
-    <ClInclude Include="myObject.h" />
-    <ClInclude Include="myScene.h" />
-    <ClInclude Include="myShader.h" />
-    <ClInclude Include="myShaders.h" />
-    <ClInclude Include="myTexture.h" />
-    <ClInclude Include="myVAO.h" />
-    <ClInclude Include="myVBO.h" />
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="Light.h" />
+    <ClInclude Include="LightList.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="MeshPart.h" />
+    <ClInclude Include="MeshPack.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderPack.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="VAO.h" />
+    <ClInclude Include="VBO.h" />
     <ClInclude Include="SSSS.h" />
   </ItemGroup>
   <ItemGroup>
@@ -151,23 +152,20 @@
     <ClCompile Include="include\imgui\imgui_impl_sdl.cpp" />
     <ClCompile Include="include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="myCamera.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="FBO.cpp" />
-    <ClCompile Include="myLight.cpp" />
-    <ClCompile Include="myLights.cpp" />
-    <ClCompile Include="myMaterial.cpp" />
-    <ClCompile Include="mySubObject.cpp" />
-    <ClCompile Include="myObject.cpp" />
-    <ClCompile Include="myScene.cpp" />
-    <ClCompile Include="myShader.cpp" />
-    <ClCompile Include="myShaders.cpp" />
-    <ClCompile Include="myTexture.cpp" />
-    <ClCompile Include="myVAO.cpp" />
-    <ClCompile Include="myVBO.cpp" />
+    <ClCompile Include="Light.cpp" />
+    <ClCompile Include="LightList.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="MeshPart.cpp" />
+    <ClCompile Include="MeshPack.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderPack.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="VAO.cpp" />
+    <ClCompile Include="VBO.cpp" />
     <ClCompile Include="SSSS.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="myproj.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

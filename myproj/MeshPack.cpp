@@ -1,8 +1,8 @@
-#include "myObject.h"
+#include "MeshPack.h"
 
-#include <iostream>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -15,25 +15,23 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
-#include "helperFunctions.h"
 #include "errors.h"
+#include "helperFunctions.h"
 
-myObject::myObject()
+MeshPack::MeshPack()
 {
 	model_matrix = glm::mat4(1.0f);
 	vao = nullptr;
 	name = "default";
 }
 
-myObject::~myObject()
+MeshPack::~MeshPack()
 {
 	clear();
 }
 
-void myObject::clear()
+void MeshPack::clear()
 {
-	if (vao) delete vao;
-
 	for (auto it = children.begin(); it != children.end(); ++it) {
 		delete it->second;
 	}
@@ -48,7 +46,7 @@ void myObject::clear()
 	indices.swap(empty_i);
 }
 
-void myObject::readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, myMaterial *> & materials, std::unordered_map<std::string, myTexture *> & textures)
+void MeshPack::readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, Material *> & materials, std::unordered_map<std::string, Texture *> & textures)
 {
 	std::ifstream mtlfin(mtlfilename);
 
@@ -60,7 +58,7 @@ void myObject::readMaterials(const std::string& mtlfilename, std::unordered_map<
 	}
 
 	std::string v;
-	myMaterial *curr_mat = nullptr;
+	Material *curr_mat = nullptr;
 
 	while (mtlfin >> v)
 	{
@@ -68,7 +66,7 @@ void myObject::readMaterials(const std::string& mtlfilename, std::unordered_map<
 		{
 			if (curr_mat != nullptr)
 				materials.emplace(curr_mat->mat_name, curr_mat);
-			curr_mat = new myMaterial();
+			curr_mat = new Material();
 			mtlfin >> curr_mat->mat_name;
 		}
 		else if (v == "Ns") mtlfin >> curr_mat->specular_coefficient;
@@ -80,13 +78,13 @@ void myObject::readMaterials(const std::string& mtlfilename, std::unordered_map<
 			std::string t;
 			mtlfin >> t;
 			size_t prefix = mtlfilename.find_last_of("/");
-			textures.emplace(curr_mat->mat_name, new myTexture(mtlfilename.substr(0, prefix) + "/" + t) );
+			textures.emplace(curr_mat->mat_name, new Texture(mtlfilename.substr(0, prefix) + "/" + t) );
 		}
 	}
 	mtlfin.close();
 }
 
-bool myObject::readObjects(const std::string& filename, bool allow_duplication, bool tonormalize, bool subgroup)
+bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, bool tonormalize, bool subgroup)
 {
 	clear();
 
@@ -98,10 +96,10 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 	size_t curr_start = 0, curr_end;
 	std::string curr_name = "noname";
-	myMaterial *curr_mat = nullptr;
-	myTexture *curr_texture = nullptr;
+	Material *curr_mat = nullptr;
+	Texture *curr_texture = nullptr;
 
-	std::unordered_map<std::string, myMaterial *> materials;
+	std::unordered_map<std::string, Material *> materials;
 	//std::unordered_map<std::string, myTexture *> textures;
 
 	std::vector<glm::vec3> tmp_vertices;
@@ -121,7 +119,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 		if (t == "g" || t == "o" || t == "s")
 		{
 			curr_end = indices.size();
-			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
+			MeshPart *o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
 			//o->setTexture(curr_texture, Texture_Type::colortex);
 			children.emplace(curr_name, o);
 
@@ -157,7 +155,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 		else if (t == "usemtl")
 		{
 			curr_end = indices.size();
-			mySubObject *o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
+			MeshPart *o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
 			//o->setTexture(curr_texture, Texture_Type::colortex);
 			children.emplace(curr_name, o);
 
@@ -260,13 +258,13 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 
 	if (subgroup) {
 
-		mySubObject* o = new mySubObject(curr_mat, curr_start, curr_end, curr_name);
+		MeshPart* o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
 		//o->setTexture(curr_texture, Texture_Type::colortex);
 		children.emplace(curr_name, o);
 	}
 	else {
 
-		mySubObject* o = new mySubObject(curr_mat, 0, indices.size(), curr_name);
+		MeshPart* o = new MeshPart(curr_mat, 0, indices.size(), curr_name);
 		//o->setTexture(curr_texture, Texture_Type::colortex);
 			children.clear();
 		children.emplace(curr_name, o);
@@ -281,7 +279,7 @@ bool myObject::readObjects(const std::string& filename, bool allow_duplication, 
 	return true;
 }
 
-void myObject::normalize()
+void MeshPack::normalize()
 {
 	unsigned int tmpxmin = 0, tmpymin = 0, tmpzmin = 0, tmpxmax = 0, tmpymax = 0, tmpzmax = 0;
 
@@ -314,7 +312,7 @@ void myObject::normalize()
 	}
 }
 
-void myObject::computeNormals()
+void MeshPack::computeNormals()
 {
 	face_normals.assign(indices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 	vertex_normals.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
@@ -355,24 +353,23 @@ void myObject::computeNormals()
 	}
 }
 
-void myObject::createmyVAO()
+void MeshPack::createVAO()
 {
-	delete vao;
-	vao = new myVAO();
+	vao = std::make_unique<VAO>();
 
 	if (indices.size()) vao->storeIndices(indices);
 	if (vertices.size()) vao->storePositions(vertices, 0);
 	if (vertex_normals.size()) vao->storeNormals(vertex_normals, 1);
-	if (texcoords.size()) vao->storeTexturecoordinates(texcoords, 2);
-
+	
+	if (texcoords.size()) vao->storeTexcoords(texcoords, 2);
 	if (tangents.size()) vao->storeTangents(tangents, 3);
 }
 
-glm::mat3 myObject::normalMatrix(glm::mat4 view_matrix) {
+glm::mat3 MeshPack::normalMatrix(glm::mat4 view_matrix) {
 	return glm::transpose(glm::inverse(glm::mat3(view_matrix) * glm::mat3(model_matrix)));
 }
 
-void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix)
+void MeshPack::displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4& view_matrix)
 {
 	myassert(vao != nullptr);
 
@@ -380,11 +377,11 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix)
 	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 
 	for (auto it = children.begin(); it != children.end(); ++it) {
-		it->second->displaySubObject(vao, shader);
+		it->second->display(vao, shader);
 	}
 }
 
-void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, const std::string& name)
+void MeshPack::displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4& view_matrix, const std::string& name)
 {
 	if (vao == nullptr)
 	{
@@ -396,15 +393,11 @@ void myObject::displayObjects(myShader *shader, glm::mat4 view_matrix, const std
 	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 
 	auto st = children.equal_range(name);
-	for (std::unordered_multimap<std::string, mySubObject *>::iterator it = st.first; it != st.second; ++it)
-		it->second->displaySubObject(vao, shader);
+	for (std::unordered_multimap<std::string, MeshPart *>::iterator it = st.first; it != st.second; ++it)
+		it->second->display(vao, shader);
 }
 
-void myObject::displayNormals(myShader *shader)
-{
-}
-
-glm::vec3 myObject::closestVertex(glm::vec3 ray, glm::vec3 starting_point)
+glm::vec3 MeshPack::closestVertex(glm::vec3 ray, glm::vec3 starting_point)
 {
 	float min = std::numeric_limits<float>::max();
 	unsigned int min_index = 0;
@@ -427,19 +420,19 @@ glm::vec3 myObject::closestVertex(glm::vec3 ray, glm::vec3 starting_point)
 }
 
 
-void myObject::translate(float x, float y, float z)
+void MeshPack::translate(float x, float y, float z)
 {
 	glm::mat4 tmp = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
 	model_matrix = tmp * model_matrix;
 }
 
-void myObject::scale(float x, float y, float z)
+void MeshPack::scale(float x, float y, float z)
 {
 	glm::mat4 tmp = glm::scale(glm::mat4(1.0f), glm::vec3(x, y, z));
 	model_matrix = tmp * model_matrix;
 }
 
-void myObject::rotate(float axis_x, float axis_y, float axis_z, float angle)
+void MeshPack::rotate(float axis_x, float axis_y, float axis_z, float angle)
 {
 	if (axis_x == 0.0f && axis_y == 0.0f && axis_z == 0.0f)
 	{
@@ -451,22 +444,22 @@ void myObject::rotate(float axis_x, float axis_y, float axis_z, float angle)
 	model_matrix = tmp * model_matrix;
 }
 
-void myObject::translate(glm::vec3 v)
+void MeshPack::translate(glm::vec3 v)
 {
 	translate(v.x, v.y, v.z);
 }
 
-void myObject::scale(glm::vec3 v)
+void MeshPack::scale(glm::vec3 v)
 {
 	scale(v.x, v.y, v.z);
 }
 
-void myObject::rotate(glm::vec3 v, float angle)
+void MeshPack::rotate(glm::vec3 v, float angle)
 {
 	rotate(v.x, v.y, v.z, angle);
 }
 
-void myObject::computeTexturecoordinates_plane()
+void MeshPack::computeTexturecoordinates_plane()
 {
 	texcoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
@@ -476,7 +469,7 @@ void myObject::computeTexturecoordinates_plane()
 	}
 }
 
-void myObject::computeTexturecoordinates_cylinder()
+void MeshPack::computeTexturecoordinates_cylinder()
 {
 	texcoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
@@ -490,7 +483,7 @@ void myObject::computeTexturecoordinates_cylinder()
 	}
 }
 
-void myObject::computeTexturecoordinates_sphere()
+void MeshPack::computeTexturecoordinates_sphere()
 {
 	texcoords.assign(vertices.size(), glm::vec2(0.0f, 0.0f));
 	for (unsigned int i = 0; i < vertices.size(); i++)
@@ -502,7 +495,7 @@ void myObject::computeTexturecoordinates_sphere()
 	}
 }
 
-void myObject::computeTangents()
+void MeshPack::computeTangents()
 {
 	tangents.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 	for (unsigned int i = 0; i < indices.size(); i++)
@@ -525,13 +518,13 @@ void myObject::computeTangents()
 }
 
 
-void myObject::setTexture(myTexture *tex, Texture_Type type)
+void MeshPack::setTexture(std::shared_ptr<Texture> const& tex, Texture_Type type)
 {
 	for (auto it = children.begin(); it != children.end(); ++it)
 		it->second->setTexture(tex, type);
 }
 
-void myObject::cleanTexture() {
+void MeshPack::cleanTexture() {
 
 	for (auto& sub : children) {
 		sub.second->textures.clear();
@@ -539,13 +532,13 @@ void myObject::cleanTexture() {
 }
 
 
-float myObject::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle)
+float MeshPack::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle)
 {
-	mySubObject *tmp;
+	MeshPart *tmp;
 	return closestTriangle(ray, origin, picked_triangle, tmp);
 }
 
-float myObject::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle, mySubObject * &picked_object)
+float MeshPack::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle, MeshPart * &picked_object)
 {
 	float min_t = std::numeric_limits<float>::max();
 	picked_triangle = 0;
@@ -553,7 +546,7 @@ float myObject::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked
 
 	for (auto it = children.begin(); it != children.end(); ++it)
 	{
-		mySubObject *obj = it->second;
+		MeshPart *obj = it->second;
 		for (size_t i = obj->start; i < obj->end; i++)
 		{
 			glm::vec3 intersection_point;

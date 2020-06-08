@@ -1,11 +1,11 @@
 #pragma once
 #include <GL/glew.h>
 
-class myVBO
+class VBO
 {
 public:
-	myVBO(GLenum);
-	~myVBO();
+	VBO(GLenum);
+	~VBO();
 
 	void bind() const;
 	void unbind() const;

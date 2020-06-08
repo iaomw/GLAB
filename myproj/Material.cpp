@@ -1,8 +1,7 @@
-#include "myMaterial.h"
+#include "Material.h"
 #include "default_constants.h"
 
-
-myMaterial::myMaterial()
+Material::Material()
 {
 	kd = DEFAULT_KD;
 	ks = DEFAULT_KS;
@@ -10,21 +9,21 @@ myMaterial::myMaterial()
 	specular_coefficient = DEFAULT_SPECULAR_COEFFICIENT;
 }
 
-myMaterial::myMaterial(glm::vec4 m_kd, glm::vec4 m_ks, glm::vec4 m_ka, float specular)
+Material::Material(glm::vec4 m_kd, glm::vec4 m_ks, glm::vec4 m_ka, float specular)
 	:kd(m_kd), ks(m_ks), ka(m_ka), specular_coefficient(specular)
 {
 }
 
-myMaterial::myMaterial(myMaterial *m)
-	:myMaterial(m->kd, m->ks, m->ka, m->specular_coefficient)
+Material::Material(Material *m)
+	:Material(m->kd, m->ks, m->ka, m->specular_coefficient)
 {}
 
 
-myMaterial::~myMaterial()
+Material::~Material()
 {
 }
 
-void myMaterial::setUniform(myShader* shader, const std::string& name)
+void Material::setUniform(std::shared_ptr<Shader> const& shader, const std::string& name)
 {
 	shader->setUniform(name + ".kd", kd);
 	shader->setUniform(name + ".ks", ks);

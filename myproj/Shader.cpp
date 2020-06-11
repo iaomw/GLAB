@@ -119,7 +119,7 @@ void Shader::_programErrors(const GLint program) {
 	GLint length;
 	GLchar * log;
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-	log = new GLchar[(GLint)1 + length];
+	log = new GLchar[(size_t)1 + length];
 	glGetProgramInfoLog(program, length, &length, log);
 	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
@@ -129,7 +129,7 @@ void Shader::_shaderErrors(const GLint shader) {
 	GLint length;
 	GLchar * log;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-	log = new GLchar[(GLint)1 + length];
+	log = new GLchar[(size_t)1 + length];
 	glGetShaderInfoLog(shader, length, &length, log);
 	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;

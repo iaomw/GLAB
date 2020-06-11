@@ -1,6 +1,6 @@
-#include <string>
 #include <vector>
 #include <memory>
+#include <string>
 #include <fstream>
 #include <iostream>
 
@@ -9,20 +9,14 @@
 #include <GL/GLU.h>
 #include <glm/glm.hpp>
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_sdl.h>
-#include <imgui/imgui_impl_opengl3.h>
-
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_main.h>
 #include <SDL2/SDL_opengl.h>
-#undef main
 
-#pragma comment(lib, "Shcore.lib")
-
-#include <ShellScalingAPI.h>
-#include <windows.h>
-#include <comdef.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_sdl.h>
+#include <imgui/imgui_impl_opengl3.h>
 
 #include "helperFunctions.h"
 #include "default_constants.h"
@@ -31,7 +25,7 @@
 #include "Shader.h"
 #include "MeshPack.h"
 
-#include "SSSS.h" 
+#include "SSSS.h"
 
 #include "Scene.h"
 #include "LightList.h"
@@ -232,7 +226,10 @@ GLenum glCheckError_(const char* file, int line)
 	}
 	return errorCode;
 }
+
+#ifdef _DEBUG
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
+#endif // _DEBUG
 
 enum class RenderPipeline {
 	PBR, SSSS, Debug
@@ -253,7 +250,7 @@ int main(int argc, char* argv[])
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+	//SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	auto flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// Create window
 	_window = SDL_CreateWindow("GLAB",
@@ -269,11 +266,13 @@ int main(int argc, char* argv[])
 	auto vsync = SDL_GL_SetSwapInterval(0);
 	auto errot = SDL_GetError();
 
+#ifdef _DEBUG
 	// During init, enable debug output
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(message_callback, nullptr);
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+#endif // _DEBUG
 
 	float scaledDPI, defaultDPI;
 	auto displayIndex = SDL_GetWindowDisplayIndex(_window);
@@ -283,9 +282,11 @@ int main(int argc, char* argv[])
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	ImGuiIO& io = ImGui::GetIO(); 
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	// https://github.com/ocornut/imgui/issues/2956
+	io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Arial.ttf", sacledRatio * 15.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -296,8 +297,10 @@ int main(int argc, char* argv[])
 	ImGui_ImplSDL2_InitForOpenGL(_window, context);
 	ImGui_ImplOpenGL3_Init("#version 330");
 
+
+	ImGui::GetIO().FontDefault->FontSize;
 	ImGui::GetIO().FontAllowUserScaling = true;
-	ImGui::GetIO().FontGlobalScale = sacledRatio;
+	ImGui::GetIO().FontGlobalScale = 1.0;// sacledRatio;
 	ImGui::GetStyle().ScaleAllSizes(sacledRatio);
 	ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.75;
 
@@ -603,7 +606,7 @@ int main(int argc, char* argv[])
 		auto framerate = ImGui::GetIO().Framerate;
 		auto frametime = 1000.0f / framerate;
 		frametime_cache.erase(frametime_cache.begin());
-		frametime_cache.push_back(frametime);
+		frametime_cache.emplace_back(frametime);
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -626,7 +629,7 @@ int main(int argc, char* argv[])
 
 		ImGui::BeginGroup();
 		ImGui::Text("%d * %d @ %.1f fps average %.1f ms", width, height, framerate, frametime);
-		ImGui::PlotLines("Frame Time", frametime_cache.data(), frametime_cache.size());
+		ImGui::PlotLines("Frame Time", frametime_cache.data(), (int)frametime_cache.size());
 		ImGui::EndGroup();
 
 		ImGui::Text("General");
@@ -638,9 +641,9 @@ int main(int argc, char* argv[])
 		ImGui::Checkbox("Tone mapping background", &tonemapping_background);
 		
 		ImGui::Text("Bloom light source");
-		ImGui::SliderFloat("Bloom Range", &bloomRange, 0.01, 0.11);
+		ImGui::SliderFloat("Bloom Range", &bloomRange, 0.01f, 0.11f);
 		ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
-		ImGui::SliderFloat("Lightball Size", &lightSize, 0.1, 100);
+		ImGui::SliderFloat("Lightball Size", &lightSize, 0.1f, 10.0f);
 
 		ImGui::Text("Render pipeline");
 		static ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;

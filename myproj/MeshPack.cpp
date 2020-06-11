@@ -130,19 +130,19 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 		{
 			float x, y, z;
 			myline >> x >> y >> z;
-			tmp_vertices.push_back(glm::vec3(x, y, z));
+			tmp_vertices.emplace_back(glm::vec3(x, y, z));
 		}
 		else if (t == "vn")
 		{
 			float x, y, z;
 			myline >> x >> y >> z;
-			tmp_normals.push_back(glm::vec3(x, y, z));
+			tmp_normals.emplace_back(glm::vec3(x, y, z));
 		}
 		else if (t == "vt")
 		{
 			float _s, _t;
 			myline >> _s >> _t;
-			tmp_coords.push_back(glm::vec2(_s, 1.0f - _t));
+			tmp_coords.emplace_back(glm::vec2(_s, 1.0f - _t));
 		}
 		else if (t == "mtllib")
 		{
@@ -194,11 +194,11 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 
 						if (n_idx < tmp_normals.size())
 							vertex_normals.push_back(tmp_normals[n_idx]);
-						else vertex_normals.push_back(glm::vec3(0, 0, 0));
+						else vertex_normals.emplace_back(glm::vec3(0, 0, 0));
 
 						if (t_idx < tmp_coords.size())
 							texcoords.push_back(tmp_coords[t_idx]);
-						else texcoords.push_back(glm::vec2(0, 0));
+						else texcoords.emplace_back(glm::vec2(0, 0));
 
 						return index;
 					};
@@ -207,7 +207,7 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 					auto cached_b = transfer(vertex_idx_b, texture_idx_b, normal_idx_b);
 					auto cached_c = transfer(vertex_idx_c, texture_idx_c, normal_idx_c);
 
-					indices.push_back(glm::ivec3(cached_a, cached_b, cached_c));
+					indices.emplace_back(glm::ivec3(cached_a, cached_b, cached_c));
 				}
 				else {
 
@@ -242,7 +242,7 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 					auto cached_b = cacheCheck(vertex_idx_b, texture_idx_b, normal_idx_b);
 					auto cached_c = cacheCheck(vertex_idx_c, texture_idx_c, normal_idx_c);
 
-					indices.push_back(glm::ivec3(cached_a, cached_b, cached_c));
+					indices.emplace_back(glm::ivec3(cached_a, cached_b, cached_c));
 				}
 
 				vertex_idx_b = vertex_idx_c;

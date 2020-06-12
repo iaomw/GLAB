@@ -369,7 +369,7 @@ glm::mat3 MeshPack::normalMatrix(glm::mat4 view_matrix) {
 	return glm::transpose(glm::inverse(glm::mat3(view_matrix) * glm::mat3(model_matrix)));
 }
 
-void MeshPack::displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4& view_matrix)
+void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& view_matrix)
 {
 	myassert(vao != nullptr);
 
@@ -381,7 +381,7 @@ void MeshPack::displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4& 
 	}
 }
 
-void MeshPack::displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4& view_matrix, const std::string& name)
+void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& view_matrix, const std::string& name)
 {
 	if (vao == nullptr)
 	{
@@ -393,7 +393,7 @@ void MeshPack::displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4& 
 	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 
 	auto st = children.equal_range(name);
-	for (std::unordered_multimap<std::string, MeshPart *>::iterator it = st.first; it != st.second; ++it)
+	for (auto it = st.first; it != st.second; ++it)
 		it->second->display(vao, shader);
 }
 
@@ -518,13 +518,14 @@ void MeshPack::computeTangents()
 }
 
 
-void MeshPack::setTexture(std::shared_ptr<Texture> const& tex, Texture_Type type)
+void MeshPack::setTexture(Texture* tex, Texture_Type type)
 {
-	for (auto it = children.begin(); it != children.end(); ++it)
+	for (auto it = children.begin(); it != children.end(); ++it) {
 		it->second->setTexture(tex, type);
+	}
 }
 
-void MeshPack::cleanTexture() {
+void MeshPack::clearTexture() {
 
 	for (auto& sub : children) {
 		sub.second->textures.clear();

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <GL/glew.h>
 #include <functional>
 
@@ -9,14 +10,15 @@
 class FBO
 {
 public:
-	std::shared_ptr<Texture> colorTexture;
-	std::shared_ptr<Texture> extraTexture;
-	std::shared_ptr<Texture> depthTexture;
+	std::unique_ptr<Texture> colorTexture;
+	std::unique_ptr<Texture> extraTexture;
+	std::unique_ptr<Texture> depthTexture;
 
 	GLuint fboID;
 	int width, height;
 
-	void render(std::shared_ptr<Shader> const& shader, std::unique_ptr<MeshPack> const &object, glm::mat4 view_matrix,
+	void render(std::unique_ptr<Shader> const& shader, 
+		std::unique_ptr<MeshPack> const &object, glm::mat4 view_matrix,
 		std::function<void()>* before = nullptr, std::function<void()>* after = nullptr) {
 
 		bind();
@@ -62,6 +64,8 @@ public:
 			}
 		}
 	}
+
+public:
 
 	virtual inline void bind() const
 	{

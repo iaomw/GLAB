@@ -26,8 +26,6 @@ public:
 	bool readTextureHDR(const std::string& filename);
 	void readTextureCube(const std::vector<std::string>& filenames);
 
-	void bind(std::shared_ptr<Shader> const& shader, const std::string& name, GLuint texture_offset = 0);
-
 private:
 	void configTexture(GLuint theTexture);
 };

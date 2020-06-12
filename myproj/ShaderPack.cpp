@@ -9,22 +9,22 @@ ShaderPack::~ShaderPack()
 {
 }
 
-void ShaderPack::add(std::shared_ptr<Shader> const& shader, const std::string& name)
+void ShaderPack::add(std::unique_ptr<Shader> shader, ShaderName type)
 {
 	if (shader == nullptr) return;
 
-	byname[name] = all_shaders.size();
-	all_shaders.push_back(shader);
+	byname[type] = all_shaders.size();
+	all_shaders.push_back(std::move(shader));
 }
 
-std::shared_ptr<Shader> const& ShaderPack::operator[](const std::string& name)
+std::unique_ptr<Shader> const& ShaderPack::operator[](ShaderName type)
 {
-	assert(byname.count(name) != 0);
+	assert(byname.count(type) != 0);
 	
-	return all_shaders[byname[name]];
+	return all_shaders[byname[type]];
 }
 
-std::shared_ptr<Shader> const& ShaderPack::operator[](const unsigned int index)
+std::unique_ptr<Shader> const& ShaderPack::operator[](const unsigned int index)
 {
 	assert(index >= 0 && index < size());
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Shader.h"
-#include "LightList.h"
+//#include "LightList.h"
 
 #include "MeshPack.h"
 #include "Camera.h"

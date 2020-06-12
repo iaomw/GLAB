@@ -23,7 +23,7 @@ Material::~Material()
 {
 }
 
-void Material::setUniform(std::shared_ptr<Shader> const& shader, const std::string& name)
+void Material::setUniform(std::unique_ptr<Shader> const& shader, const std::string& name)
 {
 	shader->setUniform(name + ".kd", kd);
 	shader->setUniform(name + ".ks", ks);

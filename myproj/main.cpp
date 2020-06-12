@@ -22,14 +22,13 @@
 #include "default_constants.h"
 
 #include "Camera.h"
-#include "Shader.h"
 #include "MeshPack.h"
+#include "ShaderPack.h"
 
 #include "SSSS.h"
 
 #include "Scene.h"
-#include "LightList.h"
-#include "ShaderPack.h"
+//#include "LightList.h"
 
 #include "FBO.h"
 #include "GeoFBO.h"
@@ -333,6 +332,14 @@ int main(int argc, char* argv[])
 	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7) )));
 	glCheckError();
 
+	std::vector<std::unique_ptr<CubeFBO>> shadowList;
+	
+	for (size_t i = 0; i < scene.lightList->list.size(); ++i) {
+		auto shadowFBO = std::make_unique<CubeFBO>(true);
+		shadowFBO->initFBO(1024, 1024);
+		shadowList.push_back(std::move(shadowFBO));
+	}
+
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
 
@@ -364,24 +371,21 @@ int main(int argc, char* argv[])
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 	ShaderPack shaderPack;
 
-	shaderPack.add(std::make_shared<Shader>("geo_buffer"), "geo_buffer");
-	shaderPack.add(std::make_shared<Shader>("pbr_buffer"), "pbr_buffer");
+	shaderPack.add(std::make_unique<Shader>("geo_buffer"), ShaderName::geo_buffer);
+	shaderPack.add(std::make_unique<Shader>("pbr_buffer"), ShaderName::pbr_buffer);
 
-	shaderPack.add(std::make_shared<Shader>("skycube"), "shader_skycube");
-	shaderPack.add(std::make_shared<Shader>("basic"), "basicx");
+	shaderPack.add(std::make_unique<Shader>("skycube"), ShaderName::skycube);
+	shaderPack.add(std::make_unique<Shader>("basic"), ShaderName::basic);
 
-	auto shaderCapture = std::make_shared<Shader>("equirectangular");
-	auto shaderIrradiance = std::make_shared<Shader>("irradiance");
-	auto shaderPrefilter = std::make_shared<Shader>("prefilter");
-	auto shaderBRDF = std::make_shared<Shader>("brdf");
+	auto shaderCapture = std::make_unique<Shader>(literial(ShaderName::equirectangular));
+	auto shaderIrradiance = std::make_unique<Shader>(literial(ShaderName::irradiance));
+	auto shaderPrefilter = std::make_unique<Shader>(literial(ShaderName::prefilter));
+	auto shaderBRDF = std::make_unique<Shader>( literial(ShaderName::brdf) );
 	
-	auto postprocessShader = std::make_shared<Shader>("postprocess");
-	shaderPack.add(postprocessShader, "postprocess");
+	shaderPack.add(std::make_unique<Shader>("postprocess"), ShaderName::postprocess);
+	shaderPack.add(std::make_unique<Shader>("blur"), ShaderName::blur);
 
-	auto shaderBlur = std::make_shared<Shader>("blur");
-	shaderPack.add(shaderBlur, "blurShader");
-
-	auto shadowShader = std::make_shared<Shader>("point_shadow");
+	auto shadowShader = std::make_unique<Shader>("point_shadow");
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
@@ -389,7 +393,7 @@ int main(int argc, char* argv[])
 	cube->readObjects("models/skycube.obj", true, false);
 	cube->createVAO();
 
-	auto hdrTexture = std::make_shared<Texture>();
+	auto hdrTexture = std::make_unique<Texture>();
 	hdrTexture->readTextureHDR("textures/envirment/vulture_hide_4k.hdr");
 
 	// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
@@ -407,15 +411,15 @@ int main(int argc, char* argv[])
 
 	// pbr: convert HDR equirectangular environment map to cubemap equivalent
 	// -------------------------------------------w-------------------------
-	cube->setTexture(hdrTexture, Texture_Type::colortex);
+	cube->setTexture(hdrTexture.get(), Texture_Type::colortex);
 	cFBO->render(shaderCapture, cube, glm::vec3(0.0f), captureProjection);
 	glCheckError();
 
-	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+	cube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
 	iFBO->render(shaderIrradiance, cube, glm::vec3(0.0f), captureProjection);
 	glCheckError();
 
-	cube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+	cube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
 	pFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, 5);
 	glCheckError();
 
@@ -430,7 +434,7 @@ int main(int argc, char* argv[])
 	auto skycube = std::make_unique<MeshPack>();
 	skycube->readObjects("models/skycube.obj", true, false);
 	skycube->createVAO();
-	skycube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+	skycube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
 	skycube->scale(glm::vec3(2048));
 	glCheckError();
 
@@ -449,49 +453,49 @@ int main(int argc, char* argv[])
 	shaderball->createVAO();
 	glCheckError();
 
-	auto texAlbedo_A = std::make_shared<Texture>("textures/rustediron/albedo.png");
-	auto texAO_A = std::make_shared<Texture>("textures/rustediron/ao.png");
-	auto texMetallic_A = std::make_shared<Texture>("textures/rustediron/metalness.png");
-	auto texNormal_A = std::make_shared<Texture>("textures/rustediron/normal.png");
-	auto texRoughness_A = std::make_shared<Texture>("textures/rustediron/roughness.png");
+	auto texAlbedo_A = std::make_unique<Texture>("textures/rustediron/albedo.png");
+	auto texAO_A = std::make_unique<Texture>("textures/rustediron/ao.png");
+	auto texMetallic_A = std::make_unique<Texture>("textures/rustediron/metalness.png");
+	auto texNormal_A = std::make_unique<Texture>("textures/rustediron/normal.png");
+	auto texRoughness_A = std::make_unique<Texture>("textures/rustediron/roughness.png");
 	glCheckError();
 
-	auto texAlbedo_B = std::make_shared<Texture>("textures/aluminum/basecolor.png");
-	auto texAO_B = std::make_shared<Texture>("textures/aluminum/ao.png");
-	auto texMetallic_B = std::make_shared<Texture>("textures/aluminum/metallic.png");
-	auto texNormal_B = std::make_shared<Texture>("textures/aluminum/normal.png");
-	auto texRoughness_B = std::make_shared<Texture>("textures/aluminum/roughness.png");
+	auto texAlbedo_B = std::make_unique<Texture>("textures/aluminum/basecolor.png");
+	auto texAO_B = std::make_unique<Texture>("textures/aluminum/ao.png");
+	auto texMetallic_B = std::make_unique<Texture>("textures/aluminum/metallic.png");
+	auto texNormal_B = std::make_unique<Texture>("textures/aluminum/normal.png");
+	auto texRoughness_B = std::make_unique<Texture>("textures/aluminum/roughness.png");
 	glCheckError();
 
-	auto texAlbedo_X = std::make_shared<Texture>("textures/coatedball/albedo.png");
-	auto texAO_X = std::make_shared<Texture>("textures/coatedball/ao.png");
-	auto texMetallic_X = std::make_shared<Texture>("textures/coatedball/metalness.png");
-	auto texNormal_X = std::make_shared<Texture>("textures/coatedball/normal.png");
-	auto texRoughness_X = std::make_shared<Texture>("textures/coatedball/roughness.png");
+	auto texAlbedo_X = std::make_unique<Texture>("textures/coatedball/albedo.png");
+	auto texAO_X = std::make_unique<Texture>("textures/coatedball/ao.png");
+	auto texMetallic_X = std::make_unique<Texture>("textures/coatedball/metalness.png");
+	auto texNormal_X = std::make_unique<Texture>("textures/coatedball/normal.png");
+	auto texRoughness_X = std::make_unique<Texture>("textures/coatedball/roughness.png");
 	glCheckError();
 
 	auto posTextureMap = PosTextureMap {
 
-			{ glm::vec3(-15, 0, -10), std::map<Texture_Type, std::shared_ptr<Texture>> {
-				{ Texture_Type::texAO, texAO_A },
-				{ Texture_Type::texAlbedo, texAlbedo_A },
-				{ Texture_Type::texMetal, texMetallic_A },
-				{ Texture_Type::texNormal, texNormal_A },
-				{ Texture_Type::texRough, texRoughness_A }
+			{ glm::vec3(-15, 0, -10), std::map<Texture_Type, Texture*> {
+				{ Texture_Type::texAO, texAO_A.get() },
+				{ Texture_Type::texAlbedo, texAlbedo_A.get() },
+				{ Texture_Type::texMetal, texMetallic_A.get() },
+				{ Texture_Type::texNormal, texNormal_A.get() },
+				{ Texture_Type::texRough, texRoughness_A.get() }
 			} },
-			{ glm::vec3(15, 0, -10), std::map<Texture_Type, std::shared_ptr<Texture>> {
-				{ Texture_Type::texAO, texAO_B },
-				{ Texture_Type::texAlbedo, texAlbedo_B},
-				{ Texture_Type::texMetal, texMetallic_B },
-				{ Texture_Type::texNormal, texNormal_B },
-				{ Texture_Type::texRough, texRoughness_B }
+			{ glm::vec3(15, 0, -10), std::map<Texture_Type, Texture*> {
+				{ Texture_Type::texAO, texAO_B.get() },
+				{ Texture_Type::texAlbedo, texAlbedo_B.get()},
+				{ Texture_Type::texMetal, texMetallic_B.get() },
+				{ Texture_Type::texNormal, texNormal_B.get() },
+				{ Texture_Type::texRough, texRoughness_B.get() }
 			} },
-			{ glm::vec3(0, 0, 0), std::map<Texture_Type, std::shared_ptr<Texture>> {
-				{ Texture_Type::texAO, texAO_X },
-				{ Texture_Type::texAlbedo, texAlbedo_X},
-				{ Texture_Type::texMetal, texMetallic_X },
-				{ Texture_Type::texNormal, texNormal_X },
-				{ Texture_Type::texRough, texRoughness_X }
+			{ glm::vec3(0, 0, 0), std::map<Texture_Type, Texture*> {
+				{ Texture_Type::texAO, texAO_X.get() },
+				{ Texture_Type::texAlbedo, texAlbedo_X.get()},
+				{ Texture_Type::texMetal, texMetallic_X.get() },
+				{ Texture_Type::texNormal, texNormal_X.get() },
+				{ Texture_Type::texRough, texRoughness_X.get() }
 			} }
 	};
 
@@ -511,20 +515,16 @@ int main(int argc, char* argv[])
 	headObject->createVAO();
 	glCheckError();
 	
-	auto skinTexture = std::make_shared<Texture>("lpshead/albedo.png");
-	headObject->setTexture(skinTexture, Texture_Type::texAlbedo);
+	auto skinTexture = std::make_unique<Texture>("lpshead/albedo.png");
+	headObject->setTexture(skinTexture.get(), Texture_Type::texAlbedo);
 	glCheckError();
 
-	auto skinNormal = std::make_shared<Texture>("lpshead/normal.png");
-	headObject->setTexture(skinNormal, Texture_Type::texNormal);
+	auto skinNormal = std::make_unique<Texture>("lpshead/normal.png");
+	headObject->setTexture(skinNormal.get(), Texture_Type::texNormal);
 	glCheckError();
 
-	auto ssssPhongShader = std::make_shared<Shader>("shaders/ssss.phong.vs.glsl", "shaders/ssss.phong.fs.glsl");
-	auto ssssBlurShader = std::make_shared<Shader>("shaders/ssss.blur.vs.glsl", "shaders/ssss.blur.fs.glsl");
-	glCheckError();
-
-	shaderPack.add(ssssPhongShader, "ssssPhongShader");
-	shaderPack.add(ssssBlurShader,  "ssssBlurShader");
+	shaderPack.add(std::make_unique<Shader>("ssss_phong"), ShaderName::ssss_phong);
+	shaderPack.add(std::make_unique<Shader>("ssss_blur"), ShaderName::ssss_blur);
 	glCheckError();
 
 	auto ssssLightFBO = std::make_shared<FBO>(true);
@@ -545,7 +545,6 @@ int main(int argc, char* argv[])
 	glCheckError();
 
 	// display loop
-	std::shared_ptr<Shader> current_shader;
 	float delta = (float)M_PI / 1000.0f;
 
 	float gamma = 2.2f;
@@ -758,7 +757,7 @@ int main(int argc, char* argv[])
 		//Setting uniform variables for each shader
 		for (unsigned int i = 0; i < shaderPack.size(); i++)
 		{
-			current_shader = shaderPack[i]; current_shader->start();
+			auto& current_shader = shaderPack[i]; current_shader->start();
 
 			current_shader->setUniform("projection_matrix", projection_matrix);
 			current_shader->setUniform("view_matrix", view_matrix);
@@ -770,21 +769,22 @@ int main(int argc, char* argv[])
 
 			current_shader->setUniform("exposure", exposure);
 			current_shader->setUniform("gamma", gamma);
-			
-			scene.lightList->setUniform(current_shader, "lights");
+
+			current_shader->setLightList(scene.lightList, "lights");
 			current_shader->stop();
 		}
 
-		skycube->setTexture(cFBO->envTexture, Texture_Type::cubetex);
+		skycube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
 
 		environmentFBO->multi_render(
 			&std::function<void()>([&] {
-				current_shader = shaderPack["shader_skycube"];
-				current_shader->start();
-					skycube->displayObjects(current_shader, view_matrix);
-				current_shader->stop();
 
-				current_shader = shaderPack["basicx"];
+					auto& the_shader = shaderPack[ShaderName::skycube];
+					the_shader->start();
+						skycube->displayObjects(the_shader, view_matrix);
+					the_shader->stop();
+
+				auto& current_shader = shaderPack[ShaderName::basic];
 				current_shader->start();
 				for (auto& light : scene.lightList->list) {
 					current_shader->setUniform("color", light->color);
@@ -807,7 +807,7 @@ int main(int argc, char* argv[])
 			})
 		); glCheckError();
 
-		the_canvas->setTexture(environmentFBO->colorTexture, Texture_Type::colortex);
+		the_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::colortex);
 		//the_canvas->setTexture(environmentFBO->depthTexture, Texture_Type::depthtex);
 		glCheckError();
 
@@ -819,6 +819,7 @@ int main(int argc, char* argv[])
 
 			glm::vec2 direction = (blurIndex == 0) ? glm::vec2(1, 0) : glm::vec2(0, 1);
 
+			auto& shaderBlur = shaderPack[ShaderName::blur];
 			auto lambda = std::function<void()>([&] {
 				shaderBlur->setUniform("range", bloomRange);
 				shaderBlur->setUniform("direction", direction);
@@ -826,38 +827,41 @@ int main(int argc, char* argv[])
 			});
 
 			currentFBO->render(shaderBlur, the_canvas, captureViews[0], &lambda);	
-			the_canvas->setTexture(currentFBO->colorTexture, Texture_Type::colortex);
+			the_canvas->setTexture(currentFBO->colorTexture.get(), Texture_Type::colortex);
 			++count; blurIndex = !blurIndex;
 
 		}; glCheckError();
 
 		if (RenderPipeline::PBR == current_pipeline) {
 
-			current_shader = shaderPack["geo_buffer"];
+			auto& current_shader = shaderPack[ShaderName::geo_buffer];
 			shaderball->rotate(0.0f, 1.0f, 0.0f, delta);
 			geometryFBO->loopRender(current_shader, shaderball, view_matrix, posTextureMap);
 			glCheckError();
 			
-			pbr_canvas->setTexture(geometryFBO->gPosition, Texture_Type::gPosition);
-			pbr_canvas->setTexture(geometryFBO->gAlbedo, Texture_Type::gAlbedo);
-			pbr_canvas->setTexture(geometryFBO->gNormal, Texture_Type::gNormal);
+			pbr_canvas->setTexture(geometryFBO->gPosition.get(), Texture_Type::gPosition);
+			pbr_canvas->setTexture(geometryFBO->gAlbedo.get(), Texture_Type::gAlbedo);
+			pbr_canvas->setTexture(geometryFBO->gNormal.get(), Texture_Type::gNormal);
 
-			pbr_canvas->setTexture(iFBO->envTexture, Texture_Type::gIrradiance);
-			pbr_canvas->setTexture(pFBO->envTexture, Texture_Type::gPrefilter);
-			pbr_canvas->setTexture(bFBO->colorTexture, Texture_Type::BRDF_LUT);
+			pbr_canvas->setTexture(iFBO->envTexture.get(), Texture_Type::gIrradiance);
+			pbr_canvas->setTexture(pFBO->envTexture.get(), Texture_Type::gPrefilter);
+			pbr_canvas->setTexture(bFBO->colorTexture.get(), Texture_Type::BRDF_LUT);
 
-			lightingFBO->render(shaderPack["pbr_buffer"], pbr_canvas, view_matrix);
+			lightingFBO->render(shaderPack[ShaderName::pbr_buffer], pbr_canvas, view_matrix);
 			glCheckError();
 
 		} else if (RenderPipeline::SSSS == current_pipeline) {
 
-			for (auto& light : scene.lightList->list) {
+			//for (auto& light : scene.lightList->list) {
 
-				light->shadowFBO->shadowMapping(shadowShader, headObject, light->position, captureProjection);
+				//shadowList[i]->shadowMapping(shadowShader, headObject, light->position, captureProjection);
 
-			} glCheckError();
+			//} glCheckError();
 
-			headObject->setTexture(scene.lightList->list[0]->shadowFBO->envTexture, Texture_Type::shadowCube);
+			shadowList[0]->shadowMapping(shadowShader, headObject, scene.lightList->list[0]->position, captureProjection);
+			headObject->setTexture(shadowList[0]->envTexture.get(), Texture_Type::shadowCube);
+
+				auto& ssssPhongShader = shaderPack[ShaderName::ssss_phong];
 
 				auto lambda = std::function<void()>([&] {
 					
@@ -874,8 +878,10 @@ int main(int argc, char* argv[])
 				ssssLightFBO->render(ssssPhongShader, headObject, view_matrix, &lambda);
 				glCheckError();
 
-				ssss_canvas->setTexture(ssssLightFBO->colorTexture, Texture_Type::gAlbedo);
-				ssss_canvas->setTexture(ssssLightFBO->extraTexture, Texture_Type::gExtra);
+				ssss_canvas->setTexture(ssssLightFBO->colorTexture.get(), Texture_Type::gAlbedo);
+				ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
+
+				auto& ssssBlurShader = shaderPack[ShaderName::ssss_blur];
 
 				lambda = std::function<void()>([&] {
 
@@ -895,8 +901,8 @@ int main(int argc, char* argv[])
 				ssssBlurFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
 				glCheckError();
 
-				ssss_canvas->setTexture(ssssBlurFBO->colorTexture, Texture_Type::gAlbedo);
-				ssss_canvas->setTexture(ssssLightFBO->extraTexture, Texture_Type::gExtra);
+				ssss_canvas->setTexture(ssssBlurFBO->colorTexture.get(), Texture_Type::gAlbedo);
+				ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
 
 				lambda = std::function<void()>([&] {
 					ssssBlurShader->setUniform("direction", glm::vec2(0, 1));
@@ -908,22 +914,22 @@ int main(int argc, char* argv[])
 
 		if (RenderPipeline::PBR == current_pipeline) {
 
-			final_canvas->setTexture(lightingFBO->colorTexture, Texture_Type::colortex);
-			final_canvas->setTexture(emptyTexture, Texture_Type::gExtra);
+			final_canvas->setTexture(lightingFBO->colorTexture.get(), Texture_Type::colortex);
+			final_canvas->setTexture(emptyTexture.get(), Texture_Type::gExtra);
 
 		}
 		else if (RenderPipeline::SSSS == current_pipeline) {
 
-			final_canvas->setTexture(ssssRulbFBO->colorTexture, Texture_Type::colortex);
-			final_canvas->setTexture(ssssLightFBO->extraTexture, Texture_Type::gExtra);
+			final_canvas->setTexture(ssssRulbFBO->colorTexture.get(), Texture_Type::colortex);
+			final_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
 		}
 
-		final_canvas->setTexture(environmentFBO->colorTexture, Texture_Type::gEnv);
-		final_canvas->setTexture(rulbFBO->colorTexture, Texture_Type::gBloom);
+		final_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::gEnv);
+		final_canvas->setTexture(rulbFBO->colorTexture.get(), Texture_Type::gBloom);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			current_shader = postprocessShader;
+			auto& current_shader = shaderPack[ShaderName::postprocess];
 			current_shader->start();
 			current_shader->setUniform("background", background);
 			current_shader->setUniform("tonemapping_object", tonemapping_object);

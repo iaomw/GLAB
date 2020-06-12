@@ -260,6 +260,4 @@ paket-files/
 __pycache__/
 *.pyc
 .vscode/settings.json
-myproj/imgui.ini
-myproj/imgui.ini
-myproj/imgui.ini
+*.ini

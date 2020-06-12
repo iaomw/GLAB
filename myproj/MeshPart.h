@@ -34,7 +34,7 @@ public:
 	size_t start, end;
 	std::unique_ptr<Material> material;
 
-	std::map<Texture_Type, std::shared_ptr<Texture>> textures;
+	std::map<Texture_Type, Texture*> textures;
 
 	std::string name;
 
@@ -43,7 +43,7 @@ public:
 	
 	~MeshPart();
 
-	void setTexture(std::shared_ptr<Texture> const& tex, Texture_Type);
+	void setTexture(Texture* tex, Texture_Type type);
 
-	void display(std::unique_ptr<VAO> const &vao, std::shared_ptr<Shader> const &shader);
+	void display(std::unique_ptr<VAO> const &vao, std::unique_ptr<Shader> const &shader);
 };

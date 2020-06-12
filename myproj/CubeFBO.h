@@ -1,18 +1,17 @@
 #pragma once
 
+#include "FBO.h"
+
 #include <iostream>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "FBO.h"
-#include "Texture.h"
-
 class CubeFBO: public FBO
 {
 public:
-	std::shared_ptr<Texture> envTexture;
+	std::unique_ptr<Texture> envTexture;
 
 	CubeFBO(bool shadow = false, GLenum textureFormat = GL_RGBA, GLenum internalFormat = GL_RGBA16F);
 	virtual ~CubeFBO();
@@ -35,12 +34,12 @@ public:
 		return captureViews;
 	}
 
-	void render(std::shared_ptr<Shader> const& shader, std::unique_ptr<MeshPack> const &object,
+	void render(std::unique_ptr<Shader> const& shader, std::unique_ptr<MeshPack> const &object,
 				glm::vec3 lookFrom, glm::mat4 projection_matrix, unsigned int mipCount=1) {
 
 		auto& captureViews = configCamera(lookFrom);
 
-		bind();
+		this->bind();
 		shader->start();
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -77,10 +76,10 @@ public:
 		}
 
 		shader->stop();
-		unbind();
+		this->unbind();
 	}
 
-	void shadowMapping(std::shared_ptr<Shader> const &shader, std::unique_ptr<MeshPack> const &object, glm::vec3 &lookFrom, glm::mat4 &projection_matrix) {
+	void shadowMapping(std::unique_ptr<Shader> const &shader, std::unique_ptr<MeshPack> const &object, glm::vec3 &lookFrom, glm::mat4 &projection_matrix) {
 
 		auto& captureViews = configCamera(lookFrom);		
 
@@ -89,7 +88,7 @@ public:
 
 		glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, near_plane, far_plane);
 
-		bind();
+		this->bind();
 		shader->start();
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -107,7 +106,7 @@ public:
 		object->displayObjects(shader, captureViews[0]);
 
 		shader->stop();
-		unbind();
+		this->unbind();
 	}
 
 private:

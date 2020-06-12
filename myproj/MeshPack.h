@@ -1,4 +1,5 @@
 #pragma once
+
 #include "VAO.h"
 #include <glm/glm.hpp>
 #include <unordered_map>
@@ -17,16 +18,17 @@ public:
 	~MeshPack();
 	void clear();
 
-	void readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, Material *> & materials, std::unordered_map<std::string, Texture *> & textures);
+	void readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, Material*>& materials, std::unordered_map<std::string, Texture*>& textures);
 	bool readObjects(const std::string& filename, bool individualvertices_per_face = true, bool tonormalize = false, bool subgroup = false);
+
 	void createVAO();
 	void normalize();
 	void computeNormals();
 
 	glm::mat3 normalMatrix(glm::mat4 view_matrix);
 
-	void displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4&);
-	void displayObjects(std::shared_ptr<Shader> const& shader, glm::mat4&, const std::string& name);
+	void displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4&);
+	void displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4&, const std::string& name);
 	
 	glm::vec3 closestVertex(glm::vec3 ray, glm::vec3 starting_point);
 	float closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t& picked_triangle);
@@ -46,8 +48,8 @@ public:
 	
 	void computeTangents();
 	
-	void setTexture(std::shared_ptr<Texture> const& , Texture_Type);
-	void cleanTexture();
+	void setTexture(Texture*, Texture_Type);
+	void clearTexture();
 	
 	std::unique_ptr<VAO> vao;
 

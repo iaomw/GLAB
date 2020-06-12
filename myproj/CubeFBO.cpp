@@ -15,6 +15,8 @@ CubeFBO::~CubeFBO()
 		glDeleteFramebuffers(1, &fboID); 
 		fboID = 0;
 	}
+
+	envTexture.reset();
 }
 
 void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT)
@@ -23,7 +25,7 @@ void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT)
 	glCreateFramebuffers(1, &fboID);
 	width = WIDTH; height = HEIGHT;
 
-	envTexture = std::make_shared<Texture>(GL_TEXTURE_CUBE_MAP);
+	envTexture = std::make_unique<Texture>(GL_TEXTURE_CUBE_MAP);
 	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &(envTexture->texture_id));
 
 	if (shadow) {

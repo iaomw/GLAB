@@ -13,6 +13,8 @@
 #include <glm/gtc/type_ptr.hpp>  
 #include <glm/gtc/matrix_transform.hpp> 
 
+const static std::string shaderURI = "shaders/";
+
 Shader::Shader(const std::string& key) {
 
 	text_to_id.clear();
@@ -198,21 +200,21 @@ void Shader::setUniform(const std::string& name, int val)
 	glUniform1i(location, val);
 }
 
-void Shader::setUniform(const std::string& name, glm::vec2 vec)
+void Shader::setUniform(const std::string& name, glm::vec2& vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform2fv(location, 1, glm::value_ptr(vec));
 }
 
-void Shader::setUniform(const std::string& name, glm::vec3 vec)
+void Shader::setUniform(const std::string& name, glm::vec3& vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
 	glUniform3fv(location, 1, glm::value_ptr(vec));
 }
 
-void Shader::setUniform(const std::string& name, glm::vec4 vec)
+void Shader::setUniform(const std::string& name, glm::vec4& vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }
@@ -238,4 +240,34 @@ void Shader::setUniform(const std::string& name, std::vector<glm::vec4>& input_a
 		if (-1 == location) { return; }
 		glUniform4fv(location, 1, &input_array[i][0]);
 	}
+}
+
+void Shader::setTex(const std::string& name, GLuint texture_id, GLuint texture_offset)
+{
+	glBindTextureUnit(texture_offset, texture_id);
+	this->setUniform(name, static_cast<int>(texture_offset));
+}
+
+void Shader::setLight(std::unique_ptr<Light> const& light, const std::string& lightvariable_in_shader)
+{
+	auto type_i = magic_enum::enum_integer(light->type);
+	this->setUniform(lightvariable_in_shader + ".type", type_i);
+	this->setUniform(lightvariable_in_shader + ".color", light->color);
+	this->setUniform(lightvariable_in_shader + ".position", light->position);
+	this->setUniform(lightvariable_in_shader + ".direction", light->direction);
+	this->setUniform(lightvariable_in_shader + ".intensity", light->intensity);
+}
+
+void Shader::setLightList(std::unique_ptr<LightList> const& lightList, const std::string& lightvariable_in_shader)
+{
+	auto& list = lightList->list;
+
+	for (unsigned int i = 0; i < list.size(); ++i) {
+
+		auto shaderString = lightvariable_in_shader + "[" + std::to_string(i) + "]";
+
+		this->setLight(list[i], shaderString);
+	}
+
+	this->setUniform("num_lights", static_cast<int>(list.size()));
 }

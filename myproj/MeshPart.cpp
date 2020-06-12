@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp> 
 #include <glm/gtc/type_ptr.hpp>    
 
-#include "Light.h"
 #include "Shader.h"
 #include "MeshPart.h"
 
@@ -28,7 +27,7 @@ MeshPart::MeshPart(Material *m, size_t s, size_t e, const std::string& n = "nona
 
 MeshPart::MeshPart(size_t s, size_t e, const std::string& n) : MeshPart(nullptr, s, e, n) { }
 
-void MeshPart::setTexture(std::shared_ptr<Texture> const& tex, Texture_Type type)
+void MeshPart::setTexture(Texture* tex, Texture_Type type)
 {
 	textures[type] = tex;
 }
@@ -37,7 +36,7 @@ MeshPart::~MeshPart()
 {
 }
 
-void MeshPart::display(std::unique_ptr<VAO> const &vao, std::shared_ptr<Shader> const &shader)
+void MeshPart::display(std::unique_ptr<VAO> const &vao, std::unique_ptr<Shader> const &shader)
 {
 	if (end <= start) return;
 
@@ -50,7 +49,7 @@ void MeshPart::display(std::unique_ptr<VAO> const &vao, std::shared_ptr<Shader> 
 		auto texName = magic_enum::enum_name(type);
 		auto texIndex = magic_enum::enum_integer(type);
 
-		tex->bind(shader, std::string(texName), texIndex);
+		shader->setTex(std::string(texName), tex->texture_id, texIndex);
 	}
 	
 	if (vao != nullptr) vao->draw(start, end);

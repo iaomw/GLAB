@@ -1,13 +1,13 @@
 #pragma once
 
+#include "VBO.h"
+
 #include <map>
 #include <vector>
 #include <memory>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-
-#include "VBO.h"
 
 class VAO
 {

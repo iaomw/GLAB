@@ -5,13 +5,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "STB/stb_image.h"
 
-#include "Shader.h"
 #include "Texture.h"
 #include "helperFunctions.h"
 
-Texture::Texture() : Texture(GL_TEXTURE_2D)
-{
-}
+Texture::Texture() : Texture(GL_TEXTURE_2D) {}
 
 Texture::Texture(GLenum type)
 {
@@ -141,11 +138,4 @@ void Texture::readTextureCube(const std::vector<std::string>& filenames)
 	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-}
-
-
-void Texture::bind(std::shared_ptr<Shader> const& shader, const std::string& name, GLuint texture_offset)
-{
-	glBindTextureUnit(texture_offset, texture_id);
-	shader->setUniform(name, static_cast<int>(texture_offset));
 }

@@ -1,8 +1,4 @@
 #include "VAO.h"
-#include "errors.h"
-
-#include <iostream>
-#include <glm/vec3.hpp>
 
 VAO::VAO()
 {

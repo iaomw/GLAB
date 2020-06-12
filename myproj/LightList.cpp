@@ -1,5 +1,4 @@
 #include "LightList.h"
-#include <string>
 
 LightList::LightList()
 {

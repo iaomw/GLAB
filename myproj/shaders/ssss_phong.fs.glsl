@@ -5,8 +5,6 @@ uniform sampler2D texNormal;
 
 uniform samplerCube shadowCube;
 
-//layout(location = 0)
-
 uniform mat4 weiv_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;

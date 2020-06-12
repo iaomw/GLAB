@@ -17,7 +17,6 @@ in vec3 mynormal;
 in vec2 texcoord;
 
 layout (location = 0) out vec4 gColor;
-//layout (location = 1) out vec4 gExtra;
 
 void main (void)
 {   
@@ -26,5 +25,4 @@ void main (void)
     vec3 N = normalize(normal_matrix * mynormal);
     float NdotV = max(dot(N, V), 0.5);
 	gColor = vec4(pow(color*NdotV, vec3(1.0/gamma)), pos.z);
-	//gExtra.w = LinearizeDepth(gl_FragCoord.z);
 }

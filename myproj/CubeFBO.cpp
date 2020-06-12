@@ -1,5 +1,4 @@
 #include "CubeFBO.h"
-#include <iostream>
 
 CubeFBO::CubeFBO(bool shadow, GLenum textureFormat, GLenum internalFormat) : FBO()
 {

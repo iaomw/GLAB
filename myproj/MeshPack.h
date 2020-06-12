@@ -1,15 +1,14 @@
 #pragma once
 
-#include "VAO.h"
+#include <fstream>
 #include <glm/glm.hpp>
 #include <unordered_map>
 
+#include "VAO.h"
 #include "Shader.h"
 #include "Texture.h"
 #include "Material.h"
 #include "MeshPart.h"
-
-#include <unordered_map>
 
 class MeshPack
 {

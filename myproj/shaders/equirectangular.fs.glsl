@@ -3,7 +3,6 @@
 in vec3 WorldPos;
 
 layout (location = 0) out vec4 gColor;
-layout (location = 1) out vec4 gExtra;
 
 uniform sampler2D colortex;
 
@@ -22,5 +21,4 @@ void main()
     vec3 color = pow(texture(colortex, uv).rgb, vec3(1.0));
 
     gColor = vec4(color, 1.0);
-    gExtra = vec4(color, 1.0);
 }

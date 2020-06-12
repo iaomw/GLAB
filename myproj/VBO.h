@@ -15,4 +15,3 @@ public:
 	GLuint buffer_id;
 	GLenum buffer_type;
 };
-

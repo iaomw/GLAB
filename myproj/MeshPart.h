@@ -1,11 +1,11 @@
 #pragma once
 
+#include <map>
 #include <vector>
 #include <string>
-#include <map>
 
-#include "magic_enum.hpp"
 #include <glm/glm.hpp>
+#include "magic_enum.hpp"
 
 #include "VAO.h"
 #include "Texture.h"

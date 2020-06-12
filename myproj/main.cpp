@@ -26,9 +26,7 @@
 #include "ShaderPack.h"
 
 #include "SSSS.h"
-
 #include "Scene.h"
-//#include "LightList.h"
 
 #include "FBO.h"
 #include "GeoFBO.h"
@@ -228,6 +226,8 @@ GLenum glCheckError_(const char* file, int line)
 
 #ifdef _DEBUG
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
+#else
+#define glCheckError()
 #endif // _DEBUG
 
 enum class RenderPipeline {

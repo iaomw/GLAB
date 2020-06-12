@@ -1,10 +1,9 @@
 #pragma once
 
-#include "FBO.h"
-
-#include <GL/glew.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+
+#include "FBO.h"
 
 typedef std::unordered_map<glm::vec3, std::map<Texture_Type, Texture*>> PosTextureMap;
 

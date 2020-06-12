@@ -1,17 +1,8 @@
 #include "Shader.h"
 
-#include <map>
-#include <vector>
-#include <string>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
-
-#include <GL/glew.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>  
-#include <glm/gtc/matrix_transform.hpp> 
 
 const static std::string shaderURI = "shaders/";
 

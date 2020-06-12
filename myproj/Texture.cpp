@@ -1,12 +1,7 @@
-#include <map>
-#include <tuple>
-#include <stdint.h>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "STB/stb_image.h"
 
 #include "Texture.h"
-#include "helperFunctions.h"
 
 Texture::Texture() : Texture(GL_TEXTURE_2D) {}
 

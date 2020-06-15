@@ -1,15 +1,18 @@
 #version 330 core
 
-layout (location = 0) out vec4 gColor;
-//layout (location = 1) out vec4 gExtra;
-
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
+
+layout (location = 0) out vec4 gColor;
 
 uniform mat4 weiv_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform mat3 normal_matrix;
 uniform mat4 projection_matrix;
+
+uniform float fovY;
+uniform float farZ;
+uniform float nearZ;
 
 in vec4 myvertex;
 in vec3 mynormal;
@@ -38,16 +41,6 @@ uniform sampler2D BRDF_LUT;
 float saturate(float f)
 {
     return clamp(f, 0.0f, 1.0f);
-}
-
-float Fd90(float NoL, float roughness)
-{
-    return (2.0f * NoL * roughness) + 0.4f;
-}
-
-float kDisneyTerm(float NoL, float NoV, float roughness)
-{
-    return (1.0f + Fd90(NoL, roughness) * pow(1.0f - NoL, 5.0f)) * (1.0f + Fd90(NoV, roughness) * pow(1.0f - NoV, 5.0f));
 }
 
 vec3 FresnelSchlick(float NdotV, vec3 F0)
@@ -86,31 +79,48 @@ float SmithGeometryGGX(float NdotL, float NdotV, float roughness)
     return ggxL * ggxV;
 }
 
+bool bad(vec3 value) {
+
+    bvec3 result = isinf(value); 
+
+    if (result.x || result.y || result.z) {
+        return true;
+    }
+    
+    result = isnan(value);
+    if (result.x || result.y || result.z) {
+        return true;
+    }
+
+    return false;
+}
+
 void main()
 {             
     // retrieve data from gbuffer
     vec4 tPosition = texture(gPosition, texCoords);
     if (0 == tPosition.z && 1.0 == tPosition.a) { 
         gColor.a = 1.0;
-        return; //discard; 
+        //discard; 
+        return; 
     }
 
-    vec3 tAlbedo = texture(gAlbedo, texCoords).rgb;
-    vec3 tNormal = texture(gNormal, texCoords).rgb;
+    vec3 texAlbedo = texture(gAlbedo, texCoords).rgb;
+    vec3 texNormal = texture(gNormal, texCoords).rgb;
 
     float roughness = texture(gAlbedo, texCoords).a;
     float metalness = texture(gNormal, texCoords).a;
     float ao = texture(gPosition, texCoords).a;
 
-    vec3 V = normalize(vec3(0.0) - tPosition.rgb);
-    vec3 N = normalize(tNormal);
+    vec3 V = normalize(vec3(0.0) - tPosition.xyz);
+    vec3 N = normalize(texNormal);
     vec3 R = reflect(-V, N);
 
     float NdotV = max(dot(N, V), 0.0001f);
     vec3 materialF0 = vec3(0.04f); // for non-metal
 
     // Fresnel (Schlick) computation (F term)
-    vec3 F0 = mix(materialF0, tAlbedo, metalness);
+    vec3 F0 = mix(materialF0, texAlbedo, metalness);
     vec3 F = FresnelRoughness(NdotV, F0, roughness);
 
     // Energy conservation
@@ -123,49 +133,49 @@ void main()
     vec3 diffuse = vec3(0.0f);  
     vec3 specular = vec3(0.0f);
     
-    float c2p = distance(vec3(0.0), tPosition.xyz); // view space 
+    float c2f = distance(vec3(0.0), tPosition.xyz); // view space 
     for (int i = 0; i < num_lights; i++) // treate them as point lights
     {
         vec4 light_pos = view_matrix * vec4(lights[i].position, 1.0); // world space to view space
-        vec3 direction = (light_pos-tPosition).rgb;
+        vec3 direction = (light_pos-tPosition).xyz;
         vec3 L = normalize(direction);
         vec3 H = normalize(L + V);
 
         vec3 lightColor = lights[i].color; 
         vec3 intensity = lights[i].intensity;
-        float l2p = distance(light_pos.rgb, tPosition.rgb);
-        vec3 remain = intensity * max((1-(l2p+c2p) * atten), 0.0); 
+        float l2f = distance(light_pos.rgb, tPosition.rgb);
 
+        atten = 1.0 / l2f; //based on distance
         // Light source dependent BRDF term(s)
         float NdotL = saturate(dot(N, L));
-        diffuse = tAlbedo / PI; // Lambertian
-        diffuse *= kDisneyTerm(NdotL, NdotV, roughness);
+        diffuse = texAlbedo / PI; // Lambertian
+        //diffuse *= kDisneyTerm(NdotL, NdotV, roughness);
         
         float D = DistributionGGX(N, H, roughness);
         float G = SmithGeometryGGX(NdotL, NdotV, roughness);
 
-        specular = (D * F * G) / (4.0f * NdotL * NdotV + 0.0001f);
-        color += (diffuse * kD + specular * kS) * lightColor * remain * NdotL; 
+        vec3 FS = FresnelSchlick(max(0.0, dot(H, V)), F0);
+
+        specular = (D * FS * G) / (4.0f * NdotL * NdotV + 0.0001f);
+        color += (diffuse * kD + specular) * lightColor * atten * NdotL; 
      }
 
     vec4 world_N = weiv_matrix * vec4(N, 0);
     vec4 world_R = weiv_matrix * vec4(R, 0);
 
     vec3 irradiance = texture(gIrradiance, world_N.xyz).rgb;
-    vec3 value_diffuse = irradiance * tAlbedo;
+    vec3 value_diffuse = irradiance * texAlbedo;
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    const float MAX_REFLECTION_LOD = 4.0;
+    const float MAX_REFLECTION_LOD = 5.0;
     float mip_level = roughness * MAX_REFLECTION_LOD;
     vec2 value_BRDF = texture(BRDF_LUT, vec2(NdotV, roughness)).rg;
     vec3 value_prefilter = textureLod(gPrefilter, world_R.xyz, mip_level).rgb; 
     vec3 value_specular = value_prefilter * (F * value_BRDF.x + value_BRDF.y);
        
-    vec3 ambient = (kD * value_diffuse + kS * value_specular) * ao;
+    vec3 ambient = (kD * value_diffuse + value_specular) * ao;
 
+    //gColor.rgb = value_prefilter; 
     gColor.rgb = color + ambient;
-    //gColor.rgb = specularX;
-    //gColor.rgb = diffuseX;
     gColor.a = tPosition.z;
-    //gExtra = tPosition;
 }

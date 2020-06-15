@@ -13,8 +13,10 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - [x] Wavefront.obj
 - [ ] Bindless Texture
 - [ ] Batch Rendering
+- [ ] Approaching Zero Driver Overhead
 - [x] Deferred Rendering
 - [ ] Quaternion Rotation
+- [ ] Cascaded Shadow Maps
 - [x] Point light
     - [x] Bloom
     - [ ] Volumetric Effects

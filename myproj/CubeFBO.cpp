@@ -68,10 +68,10 @@ void CubeFBO::initFBO(const int& WIDTH, const int& HEIGHT)
 		glTextureParameteri(envTexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTextureParameteri(envTexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		glTextureStorage2D(envTexture->texture_id, 5, internalFormat, WIDTH, HEIGHT); //Safe GL_RGBA16
-		glGenerateTextureMipmap(envTexture->texture_id); // random garbage color when using GL_RGBA16F
-
+		glTextureStorage2D(envTexture->texture_id, mipmap_level, internalFormat, WIDTH, HEIGHT); 
+		// When mipmap_level is smaller than 6, there will be random garbage color in mipmap;
 		glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, envTexture->texture_id, 0);
+		//glGenerateTextureMipmap(envTexture->texture_id);
 	}
 
 	// Check if the framebuffer is complete before continuing

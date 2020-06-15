@@ -361,6 +361,7 @@ void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& 
 {
 	myassert(vao != nullptr);
 
+	shader->setUniform("view_matrix", view_matrix);
 	shader->setUniform("model_matrix", model_matrix);
 	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 

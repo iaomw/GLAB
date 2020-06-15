@@ -1,9 +1,11 @@
 #version 330 core
+
 out vec4 FragColor;
-in vec3 WorldPos;
+in vec4 world_pos;
 
 uniform samplerCube cubetex;
 uniform float roughness;
+uniform vec3 lookFrom;
 
 const float PI = 3.14159265359;
 // ----------------------------------------------------------------------------
@@ -63,7 +65,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness)
 // ----------------------------------------------------------------------------
 void main()
 {		
-    vec3 N = normalize(WorldPos);
+    vec3 N = normalize(world_pos.xyz-lookFrom.xyz);
     
     // make the simplyfying assumption that V equals R equals the normal 
     vec3 R = N;

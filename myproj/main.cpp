@@ -42,8 +42,8 @@ SDL_GLContext context;
 // Camera parameters.
 std::unique_ptr<Camera> mainCam;
 
-int mouse_position[2];
-bool mouse_pressed = false;
+glm::ivec2 mouse_position;
+bool mouse_pressing = false;
 
 bool quit = false;
 bool renderloop_paused = false;
@@ -51,7 +51,7 @@ bool windowsize_changed = true;
 bool crystalball_viewing = false;
 float movement_stepsize = DEFAULT_KEY_MOVEMENT_STEPSIZE;
 
-//Triangle to draw to illustrate picking
+//Triangle to draw for illustrated picking
 size_t picked_triangle_index = 0;
 MeshPack* picked_object = nullptr;
 
@@ -60,78 +60,67 @@ void processEvents(SDL_Event current_event)
 {
 	switch (current_event.type)
 	{
-		// window close button is pressed
+	// window close button is pressed
 	case SDL_QUIT:
 	{
-		quit = true;
-		break;
+		quit = true; break;
 	}
 	case SDL_KEYDOWN:
 	{
-		if (current_event.key.keysym.sym == SDLK_ESCAPE)
-			quit = true;
-		if (current_event.key.keysym.sym == SDLK_r)
-			mainCam->reset();
-		if (current_event.key.keysym.sym == SDLK_UP || current_event.key.keysym.sym == SDLK_w)
-			mainCam->moveForward(movement_stepsize);
-		if (current_event.key.keysym.sym == SDLK_DOWN || current_event.key.keysym.sym == SDLK_s)
-			mainCam->moveBack(movement_stepsize);
-		if (current_event.key.keysym.sym == SDLK_LEFT || current_event.key.keysym.sym == SDLK_a)
-			mainCam->turnLeft(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE);
-		if (current_event.key.keysym.sym == SDLK_RIGHT || current_event.key.keysym.sym == SDLK_d)
-			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE);
-		if (current_event.key.keysym.sym == SDLK_v)
-			crystalball_viewing = !crystalball_viewing;
-		if (current_event.key.keysym.sym == SDLK_SPACE)
-			renderloop_paused = !renderloop_paused;
-		if (current_event.key.keysym.sym == SDLK_o)
+		switch (current_event.key.keysym.sym)
 		{
-			//nfdchar_t *outPath = NULL;
-			//nfdresult_t result = NFD_OpenDialog("obj", NULL, &outPath);
-			//if (result != NFD_OKAY) return;
-
-			//myObject *obj_tmp = new myObject();
-			//if (!obj_tmp->readObjects(outPath))
-			//{
-			//	delete obj_tmp;
-			//	return;
-			//}
-			//delete obj1;
-			//obj1 = obj_tmp;
-		}
-		break;
+		case SDLK_ESCAPE: 
+			quit = true; break;
+		case SDLK_r:
+			mainCam->reset(); break;
+		case SDLK_UP: case SDLK_w:
+			mainCam->moveForward(movement_stepsize); break;
+		case SDLK_DOWN: case SDLK_s:
+			mainCam->moveBack(movement_stepsize); break;
+		case SDLK_LEFT: case SDLK_a:
+			mainCam->turnLeft(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
+		case SDLK_RIGHT: case SDLK_d:
+			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
+		case SDLK_v:
+			crystalball_viewing = !crystalball_viewing; break;
+		case SDLK_SPACE:
+			renderloop_paused = !renderloop_paused; break;
+		case SDLK_o:
+			{ 
+				// Open something with NFD
+			}
+		}	break;
 	}
 	case SDL_MOUSEBUTTONDOWN:
 	{
-		mouse_position[0] = current_event.button.x;
-		mouse_position[1] = current_event.button.y;
-		mouse_pressed = true;
+		mouse_position.x = current_event.button.x;
+		mouse_position.y = current_event.button.y;
+		mouse_pressing = true;
 
 		const Uint8* state = SDL_GetKeyboardState(nullptr);
 		if (state[SDL_SCANCODE_LCTRL])
 		{
-			glm::vec3 ray = mainCam->constructRay(mouse_position[0], mouse_position[1]);
+			glm::vec3 ray = mainCam->constructRay(mouse_position.x, mouse_position.y);
 			scene.closestObject(ray, mainCam->camera_eye, picked_object, picked_triangle_index);
 		}
 		break;
 	}
 	case SDL_MOUSEBUTTONUP:
 	{
-		mouse_pressed = false;
-		break;
+		mouse_pressing = false; break;
 	}
 	case SDL_MOUSEMOTION:
 	{
 		int x = current_event.motion.x;
 		int y = current_event.motion.y;
 
-		int dx = x - mouse_position[0];
-		int dy = y - mouse_position[1];
+		int dx = x - mouse_position.x;
+		int dy = y - mouse_position.y;
 
-		mouse_position[0] = x;
-		mouse_position[1] = y;
+		mouse_position.x = x;
+		mouse_position.y = y;
 
-		if ((dx == 0 && dy == 0) || !mouse_pressed) return;
+		if ((dx == 0 && dy == 0) || !mouse_pressing) return;
 
 		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalball_viewing)
 			mainCam->crystalball_rotateView(dx, dy);
@@ -281,7 +270,7 @@ int main(int argc, char* argv[])
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); 
+	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	// https://github.com/ocornut/imgui/issues/2956
@@ -307,12 +296,13 @@ int main(int argc, char* argv[])
 	bool show_another_window = false;
 
 	glClearColor(0, 0, 0, 1.0);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 
-	glEnable(GL_MULTISAMPLE);   
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
@@ -324,16 +314,15 @@ int main(int argc, char* argv[])
 	SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
 
 	mainCam->zFar = 5000; mainCam->zNear = 0.5; mainCam->fovy = 45;
-	 
+
 	/**************************INITIALIZING LIGHTS ***************************/
 	scene.lightList = std::make_unique<LightList>();
-	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.7, 0.1, 0.1) )));
-	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1) )));
-	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7) )));
-	glCheckError();
+	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.7, 0.1, 0.1))));
+	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1))));
+	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7))));
 
 	std::vector<std::unique_ptr<CubeFBO>> shadowList;
-	
+
 	for (size_t i = 0; i < scene.lightList->list.size(); ++i) {
 		auto shadowFBO = std::make_unique<CubeFBO>(true);
 		shadowFBO->initFBO(1024, 1024);
@@ -360,7 +349,7 @@ int main(int argc, char* argv[])
 	bFBO->initFBO(512, 512);
 
 	auto cFBO = std::make_unique<CubeFBO>();
-	cFBO->initFBO(1024, 1024);
+	cFBO->initFBO(2048, 2048);
 
 	auto pFBO = std::make_unique<CubeFBO>();
 	pFBO->initFBO(1024, 1024);
@@ -380,8 +369,8 @@ int main(int argc, char* argv[])
 	auto shaderCapture = std::make_unique<Shader>(literial(ShaderName::equirectangular));
 	auto shaderIrradiance = std::make_unique<Shader>(literial(ShaderName::irradiance));
 	auto shaderPrefilter = std::make_unique<Shader>(literial(ShaderName::prefilter));
-	auto shaderBRDF = std::make_unique<Shader>( literial(ShaderName::brdf) );
-	
+	auto shaderBRDF = std::make_unique<Shader>(literial(ShaderName::brdf));
+
 	shaderPack.add(std::make_unique<Shader>("postprocess"), ShaderName::postprocess);
 	shaderPack.add(std::make_unique<Shader>("blur"), ShaderName::blur);
 
@@ -420,7 +409,7 @@ int main(int argc, char* argv[])
 	glCheckError();
 
 	cube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
-	pFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, 5);
+	pFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, true);
 	glCheckError();
 
 	auto the_canvas = std::make_unique<MeshPack>();
@@ -474,7 +463,7 @@ int main(int argc, char* argv[])
 	auto texRoughness_X = std::make_unique<Texture>("textures/coatedball/roughness.png");
 	glCheckError();
 
-	auto posTextureMap = PosTextureMap {
+	auto posTextureMap = PosTextureMap{
 
 			{ glm::vec3(-15, 0, -10), std::map<Texture_Type, Texture*> {
 				{ Texture_Type::texAO, texAO_A.get() },
@@ -500,7 +489,7 @@ int main(int argc, char* argv[])
 	};
 
 	auto lightSize = 2.0f;
-	auto lightball = std::make_unique<MeshPack>(); 
+	auto lightball = std::make_unique<MeshPack>();
 	lightball->readObjects("models/sphere.obj", true, true);
 	lightball->scale(glm::vec3(lightSize));
 	lightball->createVAO();
@@ -514,7 +503,7 @@ int main(int argc, char* argv[])
 	headObject->translate(0, 5, 0);
 	headObject->createVAO();
 	glCheckError();
-	
+
 	auto skinTexture = std::make_unique<Texture>("lpshead/albedo.png");
 	headObject->setTexture(skinTexture.get(), Texture_Type::texAlbedo);
 	glCheckError();
@@ -531,16 +520,16 @@ int main(int argc, char* argv[])
 	ssssLightFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
 	auto ssssBlurFBO = std::make_shared<FBO>(false);
-	ssssBlurFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	ssssBlurFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
 	auto ssssRulbFBO = std::make_shared<FBO>(false);
-	ssssRulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	ssssRulbFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
 
 	auto ssss_canvas = std::make_unique<MeshPack>();
 	ssss_canvas->readObjects("models/plane.obj", true, false);
 	ssss_canvas->createVAO();
 	glCheckError();
 
-	auto emptyTexture = std::make_shared<Texture>();
+	auto emptyTexture = std::make_unique<Texture>();
 	emptyTexture->empty();
 	glCheckError();
 
@@ -566,7 +555,7 @@ int main(int argc, char* argv[])
 
 	float translucency = 0.02f;
 	float luminance_threshold = 0.1f;
-	
+
 	float depthtest_coefficient = 1.0f;
 
 	float ssss_width = 0.012f;
@@ -579,6 +568,21 @@ int main(int argc, char* argv[])
 
 		geometryFBO->initFBO(WIDTH, HEIGHT);
 		lightingFBO->initFBO(WIDTH, HEIGHT);
+		glCheckError();
+
+		pbr_canvas->setTexture(geometryFBO->gPosition.get(), Texture_Type::gPosition);
+		pbr_canvas->setTexture(geometryFBO->gAlbedo.get(), Texture_Type::gAlbedo);
+		pbr_canvas->setTexture(geometryFBO->gNormal.get(), Texture_Type::gNormal);
+		glCheckError();
+
+		pbr_canvas->setTexture(iFBO->envTexture.get(), Texture_Type::gIrradiance);
+		pbr_canvas->setTexture(pFBO->envTexture.get(), Texture_Type::gPrefilter);
+		pbr_canvas->setTexture(bFBO->colorTexture.get(), Texture_Type::BRDF_LUT);
+		glCheckError();
+
+		final_canvas->setTexture(lightingFBO->colorTexture.get(), Texture_Type::colortex);
+		final_canvas->setTexture(emptyTexture.get(), Texture_Type::gExtra);
+		glCheckError();
 	};
 
 	std::function<void(int, int)> ssss_pipeline_init = [&](int WIDTH, int HEIGHT) {
@@ -586,6 +590,9 @@ int main(int argc, char* argv[])
 		ssssLightFBO->initFBO(WIDTH, HEIGHT);
 		ssssBlurFBO->initFBO(WIDTH, HEIGHT);
 		ssssRulbFBO->initFBO(WIDTH, HEIGHT);
+
+		final_canvas->setTexture(ssssRulbFBO->colorTexture.get(), Texture_Type::colortex);
+		final_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
 	};
 
 	auto current_pipeline = RenderPipeline::SSSS;
@@ -597,8 +604,6 @@ int main(int argc, char* argv[])
 	bool pipeline_changed = true;
 
 	std::vector<std::shared_ptr<FBO>> FBOs = { environmentFBO, blurFBO, rulbFBO, geometryFBO, lightingFBO, ssssLightFBO, ssssBlurFBO, ssssRulbFBO };
-
-	auto a = std::make_shared<FBO>(); auto b = std::make_shared<CubeFBO>(); auto c = std::make_shared<GeoFBO>();
 
 	std::function<void(bool)> ui_pipeline_work = [&](bool paused) {
 
@@ -638,7 +643,7 @@ int main(int argc, char* argv[])
 
 		ImGui::Checkbox("Tone mapping object", &tonemapping_object);
 		ImGui::Checkbox("Tone mapping background", &tonemapping_background);
-		
+
 		ImGui::Text("Bloom light source");
 		ImGui::SliderFloat("Bloom Range", &bloomRange, 0.01f, 0.11f);
 		ImGui::SliderInt("Bloom Strength", &bloomStrength, 2, 16);
@@ -674,7 +679,7 @@ int main(int argc, char* argv[])
 
 				ImGui::SliderFloat("Shadow Bias", &shadow_bias, 0.0f, 1.0f);
 				ImGui::SliderFloat("Distance Scale", &distance_scale, 0.0f, 1.0f);
-				
+
 				ImGui::Text("Gaussian pass for SSSS");
 				ImGui::SliderFloat("SSSS Width", &ssss_width, 0.0f, 2.0f);
 
@@ -682,7 +687,7 @@ int main(int argc, char* argv[])
 				ImGui::ColorEdit3("SSSS Strength", (float*)&ssss_strength);
 
 				ImGui::SliderFloat("Luminance Threshold", &luminance_threshold, 0.0f, 1.0f);
-				ImGui::SliderFloat("Depthtest Coefficient", &depthtest_coefficient, 0.1f, 2.0f);     
+				ImGui::SliderFloat("Depthtest Coefficient", &depthtest_coefficient, 0.1f, 2.0f);
 
 				ImGui::EndTabItem();
 			}
@@ -696,7 +701,7 @@ int main(int argc, char* argv[])
 			}
 			ImGui::EndTabBar();
 		} glCheckError();
-		
+
 		ImGui::End();
 		glCheckError();
 
@@ -710,7 +715,7 @@ int main(int argc, char* argv[])
 		glCheckError();
 
 		SDL_Event current_event; glCheckError();
-		if (!paused) {SDL_GL_SwapWindow(_window);}
+		if (!paused) { SDL_GL_SwapWindow(_window); }
 		glCheckError(); auto error = SDL_GetError();
 
 		while (SDL_PollEvent(&current_event) != 0) {
@@ -726,24 +731,23 @@ int main(int argc, char* argv[])
 
 	while (!quit)
 	{
-		if (renderloop_paused) {   
+		if (renderloop_paused) {
 			ui_pipeline_work(true);
-			continue; 
+			continue;
 		}
 
 		if (windowsize_changed || pipeline_changed)
-		{   
+		{
 			SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
 			windowsize_changed = false; pipeline_changed = false;
 
 			for (auto& fbo : FBOs) { fbo->reset(); }
 
 			environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
-			blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
-			rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+			blurFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
+			rulbFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
 
 			(*pipeline_init)(mainCam->window_width, mainCam->window_height);
-
 			glCheckError();
 		}
 
@@ -762,7 +766,7 @@ int main(int argc, char* argv[])
 			current_shader->setUniform("projection_matrix", projection_matrix);
 			current_shader->setUniform("view_matrix", view_matrix);
 			current_shader->setUniform("weiv_matrix", weiv_matrix);
-			
+
 			current_shader->setUniform("nearZ", mainCam->zNear);
 			current_shader->setUniform("farZ", mainCam->zFar);
 			current_shader->setUniform("fovY", mainCam->fovy);
@@ -779,17 +783,17 @@ int main(int argc, char* argv[])
 		environmentFBO->multi_render(
 			&std::function<void()>([&] {
 
-					auto& the_shader = shaderPack[ShaderName::skycube];
-					the_shader->start();
-						skycube->displayObjects(the_shader, view_matrix);
-					the_shader->stop();
+				auto& the_shader = shaderPack[ShaderName::skycube];
+				the_shader->start();
+				skycube->displayObjects(the_shader, view_matrix);
+				the_shader->stop();
 
 				auto& current_shader = shaderPack[ShaderName::basic];
 				current_shader->start();
 				for (auto& light : scene.lightList->list) {
 					current_shader->setUniform("color", light->color);
 					lightball->translate(light->position);
-						lightball->displayObjects(current_shader, view_matrix);
+					lightball->displayObjects(current_shader, view_matrix);
 					lightball->translate(-light->position);
 
 					auto randX = (float)rand() / RAND_MAX;
@@ -804,139 +808,125 @@ int main(int argc, char* argv[])
 					light->position = glm::vec3(newpos.x, newpos.y, newpos.z);
 				}
 				current_shader->stop();
-			})
+				})
 		); glCheckError();
 
-		the_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::colortex);
-		//the_canvas->setTexture(environmentFBO->depthTexture, Texture_Type::depthtex);
-		glCheckError();
-
-		int blurIndex = 0; int count = 0;
-		static std::vector<std::shared_ptr<FBO>> blurList = { blurFBO, rulbFBO };
-
-		while (count < bloomStrength) {
-			auto currentFBO = blurList[blurIndex];
-
-			glm::vec2 direction = (blurIndex == 0) ? glm::vec2(1, 0) : glm::vec2(0, 1);
-
-			auto& shaderBlur = shaderPack[ShaderName::blur];
-			auto lambda = std::function<void()>([&] {
-				shaderBlur->setUniform("range", bloomRange);
-				shaderBlur->setUniform("direction", direction);
-				shaderBlur->setUniform("lightSize", lightSize);
-			});
-
-			currentFBO->render(shaderBlur, the_canvas, captureViews[0], &lambda);	
-			the_canvas->setTexture(currentFBO->colorTexture.get(), Texture_Type::colortex);
-			++count; blurIndex = !blurIndex;
-
-		}; glCheckError();
-
-		if (RenderPipeline::PBR == current_pipeline) {
-
-			auto& current_shader = shaderPack[ShaderName::geo_buffer];
-			shaderball->rotate(0.0f, 1.0f, 0.0f, delta);
-			geometryFBO->loopRender(current_shader, shaderball, view_matrix, posTextureMap);
-			glCheckError();
-			
-			pbr_canvas->setTexture(geometryFBO->gPosition.get(), Texture_Type::gPosition);
-			pbr_canvas->setTexture(geometryFBO->gAlbedo.get(), Texture_Type::gAlbedo);
-			pbr_canvas->setTexture(geometryFBO->gNormal.get(), Texture_Type::gNormal);
-
-			pbr_canvas->setTexture(iFBO->envTexture.get(), Texture_Type::gIrradiance);
-			pbr_canvas->setTexture(pFBO->envTexture.get(), Texture_Type::gPrefilter);
-			pbr_canvas->setTexture(bFBO->colorTexture.get(), Texture_Type::BRDF_LUT);
-
-			lightingFBO->render(shaderPack[ShaderName::pbr_buffer], pbr_canvas, view_matrix);
-			glCheckError();
-
-		} else if (RenderPipeline::SSSS == current_pipeline) {
-
-			//for (auto& light : scene.lightList->list) {
-
-				//shadowList[i]->shadowMapping(shadowShader, headObject, light->position, captureProjection);
-
-			//} glCheckError();
-
-			shadowList[0]->shadowMapping(shadowShader, headObject, scene.lightList->list[0]->position, captureProjection);
-			headObject->setTexture(shadowList[0]->envTexture.get(), Texture_Type::shadowCube);
-
-				auto& ssssPhongShader = shaderPack[ShaderName::ssss_phong];
-
-				auto lambda = std::function<void()>([&] {
-					
-					ssssPhongShader->setUniform("kD", ssss_kD);
-					ssssPhongShader->setUniform("kS", ssss_kS);
-
-					ssssPhongShader->setUniform("ambient", ambient);
-					ssssPhongShader->setUniform("translucency", translucency);
-
-					ssssPhongShader->setUniform("shadow_bias", shadow_bias);
-					ssssPhongShader->setUniform("distance_scale", distance_scale);
-				});
-
-				ssssLightFBO->render(ssssPhongShader, headObject, view_matrix, &lambda);
+				the_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::colortex);
+				//the_canvas->setTexture(environmentFBO->depthTexture, Texture_Type::depthtex);
 				glCheckError();
 
-				ssss_canvas->setTexture(ssssLightFBO->colorTexture.get(), Texture_Type::gAlbedo);
-				ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
+				int blurIndex = 0; int count = 0;
+				static std::vector<std::shared_ptr<FBO>> blurList = { blurFBO, rulbFBO };
 
-				auto& ssssBlurShader = shaderPack[ShaderName::ssss_blur];
+				while (count < bloomStrength) {
+					auto currentFBO = blurList[blurIndex];
 
-				lambda = std::function<void()>([&] {
+					glm::vec2 direction = (blurIndex == 0) ? glm::vec2(1, 0) : glm::vec2(0, 1);
 
-					ssssBlurShader->setUniform("direction", glm::vec2(1, 0));
+					auto& shaderBlur = shaderPack[ShaderName::blur];
+					auto lambda = std::function<void()>([&] {
+						shaderBlur->setUniform("range", bloomRange);
+						shaderBlur->setUniform("direction", direction);
+						shaderBlur->setUniform("lightSize", lightSize);
+						});
 
-					ssssBlurShader->setUniform("ssss_width", ssss_width);
-					ssssBlurShader->setUniform("ssss_falloff", ssss_falloff);
-					ssssBlurShader->setUniform("ssss_strength", ssss_strength);
-					
-					ssssBlurShader->setUniform("luminance_threshold", luminance_threshold);
-					ssssBlurShader->setUniform("depthtest_coefficient", depthtest_coefficient);
+					currentFBO->render(shaderBlur, the_canvas, captureViews[0], &lambda);
+					the_canvas->setTexture(currentFBO->colorTexture.get(), Texture_Type::colortex);
+					++count; blurIndex = !blurIndex;
 
-					ssssBlurShader->setUniform("kernel", kernelSSSS);
-					ssssBlurShader->setUniform("kernelSize", (int)kernelSSSS.size());
-				});
+				}; glCheckError();
 
-				ssssBlurFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
-				glCheckError();
+				if (RenderPipeline::PBR == current_pipeline) {
 
-				ssss_canvas->setTexture(ssssBlurFBO->colorTexture.get(), Texture_Type::gAlbedo);
-				ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
+					shaderball->rotate(0.0f, 1.0f, 0.0f, delta);
+					geometryFBO->loopRender(shaderPack[ShaderName::geo_buffer], shaderball, view_matrix, posTextureMap);
+					glCheckError();
 
-				lambda = std::function<void()>([&] {
-					ssssBlurShader->setUniform("direction", glm::vec2(0, 1));
-				});
+					lightingFBO->render(shaderPack[ShaderName::pbr_buffer], pbr_canvas, view_matrix, 
+						&std::function<void()> ([]() {
+							glCheckError();
+						}), 
+						&std::function<void()> ([]() {
+							glCheckError();
+						}) );
+					glCheckError();
 
-				ssssRulbFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
-				glCheckError();
-		}
+				}
+				else if (RenderPipeline::SSSS == current_pipeline) {
 
-		if (RenderPipeline::PBR == current_pipeline) {
+					//for (auto& light : scene.lightList->list) {
 
-			final_canvas->setTexture(lightingFBO->colorTexture.get(), Texture_Type::colortex);
-			final_canvas->setTexture(emptyTexture.get(), Texture_Type::gExtra);
+						//shadowList[i]->shadowMapping(shadowShader, headObject, light->position, captureProjection);
 
-		}
-		else if (RenderPipeline::SSSS == current_pipeline) {
+					//} glCheckError();
 
-			final_canvas->setTexture(ssssRulbFBO->colorTexture.get(), Texture_Type::colortex);
-			final_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
-		}
+					shadowList[0]->shadowMapping(shadowShader, headObject, scene.lightList->list[0]->position, captureProjection);
+					headObject->setTexture(shadowList[0]->envTexture.get(), Texture_Type::shadowCube);
 
-		final_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::gEnv);
-		final_canvas->setTexture(rulbFBO->colorTexture.get(), Texture_Type::gBloom);
+					auto& ssssPhongShader = shaderPack[ShaderName::ssss_phong];
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			auto& current_shader = shaderPack[ShaderName::postprocess];
-			current_shader->start();
-			current_shader->setUniform("background", background);
-			current_shader->setUniform("tonemapping_object", tonemapping_object);
-			current_shader->setUniform("tonemapping_background", tonemapping_background);
+					auto lambda = std::function<void()>([&] {
+
+						ssssPhongShader->setUniform("kD", ssss_kD);
+						ssssPhongShader->setUniform("kS", ssss_kS);
+
+						ssssPhongShader->setUniform("ambient", ambient);
+						ssssPhongShader->setUniform("translucency", translucency);
+
+						ssssPhongShader->setUniform("shadow_bias", shadow_bias);
+						ssssPhongShader->setUniform("distance_scale", distance_scale);
+						});
+
+					ssssLightFBO->render(ssssPhongShader, headObject, view_matrix, &lambda);
+					glCheckError();
+
+					ssss_canvas->setTexture(ssssLightFBO->colorTexture.get(), Texture_Type::gAlbedo);
+					ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
+
+					auto& ssssBlurShader = shaderPack[ShaderName::ssss_blur];
+
+					lambda = std::function<void()>([&] {
+
+						ssssBlurShader->setUniform("direction", glm::vec2(1, 0));
+
+						ssssBlurShader->setUniform("ssss_width", ssss_width);
+						ssssBlurShader->setUniform("ssss_falloff", ssss_falloff);
+						ssssBlurShader->setUniform("ssss_strength", ssss_strength);
+
+						ssssBlurShader->setUniform("luminance_threshold", luminance_threshold);
+						ssssBlurShader->setUniform("depthtest_coefficient", depthtest_coefficient);
+
+						ssssBlurShader->setUniform("kernel", kernelSSSS);
+						ssssBlurShader->setUniform("kernelSize", (int)kernelSSSS.size());
+						});
+
+					ssssBlurFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
+					glCheckError();
+
+					ssss_canvas->setTexture(ssssBlurFBO->colorTexture.get(), Texture_Type::gAlbedo);
+					ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
+
+					lambda = std::function<void()>([&] {
+						ssssBlurShader->setUniform("direction", glm::vec2(0, 1));
+					});
+
+					ssssRulbFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
+					glCheckError();
+				}
+
+				final_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::gEnv);
+				final_canvas->setTexture(rulbFBO->colorTexture.get(), Texture_Type::gBloom);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				auto& current_shader = shaderPack[ShaderName::postprocess];
+				current_shader->start();
+				current_shader->setUniform("background", background);
+				current_shader->setUniform("tonemapping_object", tonemapping_object);
+				current_shader->setUniform("tonemapping_background", tonemapping_background);
 				final_canvas->displayObjects(current_shader, view_matrix);
-			current_shader->stop(); 
-		glCheckError();
+				current_shader->stop();
+				glCheckError();
 	}
 
 	// Cleanup ImGui

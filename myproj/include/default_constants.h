@@ -1,8 +1,8 @@
 #pragma once
 #include "glm/glm.hpp"
 
-const glm::vec3 DEFAULT_CAMERA_EYE = glm::vec3(0.0f, 0.0f, 2.0f);
 const glm::vec3 DEFAULT_CAMERA_UP = glm::vec3(0.0f, 1.0f, 0.0f);
+const glm::vec3 DEFAULT_CAMERA_EYE = glm::vec3(0.0f, 0.0f, 1.0f);
 const glm::vec3 DEFAULT_CAMERA_FORWARD = glm::vec3(0.0f, 0.0f, -1.0f);
 
 const float DEFAULT_FOVY = 45.0f;

@@ -509,8 +509,8 @@ void MeshPack::computeTangents()
 
 void MeshPack::setTexture(Texture* tex, Texture_Type type)
 {
-	for (auto it = children.begin(); it != children.end(); ++it) {
-		it->second->setTexture(tex, type);
+	for (auto& sub : children) {
+		sub.second->setTexture(tex, type);
 	}
 }
 

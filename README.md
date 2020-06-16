@@ -11,9 +11,13 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 ## Features
 - [ ] C++ 11~17
 - [x] Wavefront.obj
-- [ ] Bindless Texture
+- [ ] Modern OpenGL AZDO
+    - [ ] Bindless Texture
+    - [ ] Indirect rendering
+    - [x] Direct State Access
+    - [ ] Uniform Buffer Object
+    - [ ] Shader Storage Buffer Object
 - [ ] Batch Rendering
-- [ ] Approaching Zero Driver Overhead
 - [x] Deferred Rendering
 - [ ] Quaternion Rotation
 - [ ] Cascaded Shadow Maps
@@ -46,7 +50,6 @@ I will continue improving it for fun. But it's weird for me to continue the Open
 - Light source should be brighter.
 - Adjust bloom range based on depth.
 - Redone the pipeline, reduce VRAM cost.
-- After switching raw pointer to smart pointer, the code runs noticeable slower.
 
 ## Dependencies
 - [GLEW](http://glew.sourceforge.net/) - OpenGL loading library

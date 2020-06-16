@@ -570,6 +570,8 @@ int main(int argc, char* argv[])
 		lightingFBO->initFBO(WIDTH, HEIGHT);
 		glCheckError();
 
+		pbr_canvas->clearTexture();
+
 		pbr_canvas->setTexture(geometryFBO->gPosition.get(), Texture_Type::gPosition);
 		pbr_canvas->setTexture(geometryFBO->gAlbedo.get(), Texture_Type::gAlbedo);
 		pbr_canvas->setTexture(geometryFBO->gNormal.get(), Texture_Type::gNormal);
@@ -588,8 +590,8 @@ int main(int argc, char* argv[])
 	std::function<void(int, int)> ssss_pipeline_init = [&](int WIDTH, int HEIGHT) {
 
 		ssssLightFBO->initFBO(WIDTH, HEIGHT);
-		ssssBlurFBO->initFBO(WIDTH, HEIGHT);
-		ssssRulbFBO->initFBO(WIDTH, HEIGHT);
+		ssssBlurFBO->initFBO(WIDTH/2, HEIGHT/2);
+		ssssRulbFBO->initFBO(WIDTH/2, HEIGHT/2);
 
 		final_canvas->setTexture(ssssRulbFBO->colorTexture.get(), Texture_Type::colortex);
 		final_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
@@ -736,6 +738,8 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
+		ui_pipeline_work(false);
+
 		if (windowsize_changed || pipeline_changed)
 		{
 			SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
@@ -756,7 +760,6 @@ int main(int argc, char* argv[])
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
 		glm::mat4 weiv_matrix = glm::inverse(view_matrix);
-		ui_pipeline_work(false);
 
 		//Setting uniform variables for each shader
 		for (unsigned int i = 0; i < shaderPack.size(); i++)
@@ -918,6 +921,7 @@ int main(int argc, char* argv[])
 				final_canvas->setTexture(rulbFBO->colorTexture.get(), Texture_Type::gBloom);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glViewport(0, 0, mainCam->window_width, mainCam->window_height);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				auto& current_shader = shaderPack[ShaderName::postprocess];
 				current_shader->start();

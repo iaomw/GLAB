@@ -1,37 +1,47 @@
-#version 330 core
-
-uniform sampler2D texAlbedo;
-uniform sampler2D texNormal;
-
-uniform samplerCube shadowCube;
-
-uniform mat4 weiv_matrix;
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform mat3 normal_matrix;
-uniform mat4 projection_matrix;
+#version 460 core 
+#extension GL_ARB_bindless_texture: require   
+                         
+uniform sampler2D colortex;
+uniform sampler2D normaltex;
 
 smooth in vec2 texcoord;
 smooth in vec3 normal_vs;
 smooth in vec4 vertex_vs;
 
-uniform float gamma;
-
 layout (location = 0) out vec4 gColor;
 layout (location = 1) out vec4 gExtra;
 
-struct Light {
-    int type;
-    vec3 color;
-    vec3 position;
-    vec3 intensity;	
-    vec3 direction;
-	//samplerCube shadow;
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
+
+	float exposure;
+	float gamma;
 };
 
-uniform int num_lights;
-const int NR_LIGHTS = 32;
-uniform Light lights[NR_LIGHTS];
+struct Light {
+    uvec2 type; 
+	uvec2 shadow_handle; 
+
+    vec4 color;
+    vec4 position;
+    vec4 intensity;	
+    vec4 direction;
+	mat4 model_matrix;
+};
+
+layout(std430) buffer Light_Pack
+{
+	uint lightCount;
+	Light lightList[];
+};
 
 uniform float kD;
 uniform float kS;
@@ -64,7 +74,7 @@ PhongResult phongColor(vec3 lightpos, vec3 lightcolor, vec3 normal, vec3 mypos)
 	return result;
 }
 
-vec3 richNormal(vec3 normal_vspace, vec3 pos_vspace, vec3 texNormal)
+vec3 richNormal(vec3 normal_vspace, vec3 pos_vspace, vec3 normaltex)
 { 
     vec3 dPosX  = dFdx(pos_vspace.xyz);
     vec3 dPosY  = dFdy(pos_vspace.xyz);
@@ -76,7 +86,7 @@ vec3 richNormal(vec3 normal_vspace, vec3 pos_vspace, vec3 texNormal)
     vec3 binormal = -normalize(cross(normal, tangent));
     mat3 TBN = mat3(tangent, binormal, normal);
 
-    return normalize(TBN * texNormal);
+    return normalize(TBN * normaltex);
 }
 
 // array of offset direction for sampling
@@ -97,9 +107,10 @@ struct ShadowResult {
 ShadowResult shadowCalculation(vec3 fragPos, vec3 lightPos, samplerCube depthMap)
 {
     // get vector between fragment position and light position
-    vec3 fragToLight = fragPos - lightPos;
+    vec3 fragToLight = (fragPos - lightPos);
 
 	fragToLight = ( weiv_matrix * vec4(fragToLight, 0.0) ).xyz;
+	//fragToLight = ( inverse(view_matrix) * vec4(fragToLight, 0.0) ).xyz;
 
     float currentDepth = length(fragToLight);
 
@@ -142,36 +153,38 @@ vec3 T(float s) { // It doesn't matter, positive or negative value.
 
 void main (void)
 {   
-	vec3 texColor = texture(texAlbedo, texcoord).rgb; 
+	vec3 texColor = texture(colortex, texcoord).rgb; 
 	texColor = pow(texColor, vec3(gamma));
 
-	float mark =  texture(texAlbedo, texcoord).a;
+	float mark =  texture(colortex, texcoord).a;
 	vec3 frag_pos = vertex_vs.xyz;
 
-	vec3 texNormal = texture(texNormal, texcoord).rgb; 
+	vec3 texNormal = texture(normaltex, texcoord).rgb; 
 	texNormal = normalize(texNormal * 2.0 - 1.0);   
 	texNormal = richNormal(normal_vs, frag_pos, texNormal);
-	//frag_pos = frag_pos - 0.005 * texNormal;
+	//frag_pos = frag_pos - 0.005 * normaltex;
 
 	vec3 diffuse = vec3(0.0);
 	vec3 specular = vec3(0.0);
 	vec3 transmit = vec3(0.0);
 	
-	for (int i=0; i<1; i++) {
+	for (int i=0; i<lightCount; ++i) {
 
-		vec3 light_pos = (view_matrix * vec4(lights[i].position, 1.0)).xyz;
+		vec3 light_pos = (view_matrix * vec4(lightList[i].position.xyz, 1.0)).xyz;
 		vec3 light_dir = normalize(frag_pos - light_pos); 
 		//lightdir = -light_pos;
 
-		ShadowResult sr = shadowCalculation(frag_pos, light_pos, shadowCube);               
+		uvec2 shadow_handle = lightList[i].shadow_handle;
+
+		ShadowResult sr = shadowCalculation(frag_pos, light_pos, samplerCube(shadow_handle));     
 
 		float S = sr.delta * distance_scale;
 		float irradiance = max(0.3 + dot(texNormal, light_dir), 0.0);
-		vec3 transmittance = T(S) * lights[i].color * translucency * irradiance;
+		vec3 transmittance = T(S) * lightList[i].color.rgb * translucency * irradiance;
 
 		transmit += transmittance;
 		
-	    PhongResult phong = phongColor(light_pos, lights[i].color, texNormal, frag_pos);
+	    PhongResult phong = phongColor(light_pos, lightList[i].color.rgb, texNormal, frag_pos);
 
 		diffuse += (1.0 - sr.shadow) * mark * phong.diffuse;
 		specular += (1.0 - sr.shadow) * mark * phong.specular;
@@ -180,6 +193,7 @@ void main (void)
 	//gColor.rgb = ambient * texColor;
 	gColor.rgb += (ambient + diffuse) * texColor;
 	gExtra.rgb += (transmit + specular) * texColor;
+	//gColor.rgb = texNormal.rgb;
 
 	gColor.a = frag_pos.z;
 	gExtra.a = mark;

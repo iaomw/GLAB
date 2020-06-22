@@ -9,8 +9,6 @@ Texture::Texture(GLenum type)
 {
 	texture_id = 0;
 	texture_type = type;
-
-	//internalFormat = 0;
 }
 
 Texture::Texture(const std::string& filename)
@@ -27,12 +25,32 @@ Texture::Texture(std::vector<std::string>& filenames)
 	readTextureCube(filenames);
 }
 
-
 Texture::~Texture()
 {
+	if (texture_handle) {
+		glMakeTextureHandleNonResidentARB(texture_handle);
+	}
+
 	glDeleteTextures(1, &texture_id);
 }
 
+GLuint64 Texture::getHandle() {
+
+	if (texture_handle == 0) {	
+		texture_handle = glGetTextureHandleARB(texture_id);
+		glMakeTextureHandleResidentARB(texture_handle);
+	}
+
+	return texture_handle;
+}
+
+inline void Texture::bind() {
+	glBindTexture(texture_type, texture_id);
+}
+
+inline void Texture::unbind() {
+	glBindTexture(texture_type, 0);
+}
 
 void Texture::empty() {
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
@@ -97,7 +115,7 @@ bool Texture::readTextureHDR(const std::string& filename) {
 	return true;
 }
 
-void  Texture::configTexture(GLuint theTexture) {
+void Texture::configTexture(GLuint theTexture) {
 
 	GLfloat anisoFilterLevel;
 	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisoFilterLevel);
@@ -107,6 +125,9 @@ void  Texture::configTexture(GLuint theTexture) {
 	glTextureParameteri(theTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(theTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(theTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	texture_handle = glGetTextureHandleARB(texture_id);
+	glMakeTextureHandleResidentARB(texture_handle);
 
 	glGenerateTextureMipmap(theTexture);
 }

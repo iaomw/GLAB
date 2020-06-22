@@ -1,29 +1,41 @@
-#version 330 core
+#version 460 core
 
-layout(location = 0) in vec4 vertex_modelspace;
-layout(location = 1) in vec3 normal_modelspace;
-layout(location = 2) in vec2 texcoord_modelspace;
+layout(location = 0) in vec4 vertex_ms;
+layout(location = 1) in vec3 normal_ms;
+layout(location = 2) in vec2 texcoord_ms;
 
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform mat3 normal_matrix;
-uniform mat4 projection_matrix;
+layout(location = 3) in uint drawid;
+layout(location = 4) in mat4 model_matrix;
+layout(location = 8) in mat4 normal_matrix;
 
-out vec4 vertex_viewspace;
-out vec3 normal_viewspace;
+flat out uint drawID;
 
-out vec4 myvertex;
-out vec3 mynormal;
-out vec2 texCoord;
+out vec4 vertex_vs;
+out vec3 normal_vs;
+out vec2 texcoord;
+
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
+
+	float exposure;
+	float gamma;
+};
 
 void main() {
-	
-	myvertex = vertex_modelspace;
-	mynormal = normal_modelspace;
-	texCoord = texcoord_modelspace;
 
-	normal_viewspace = normal_matrix * mynormal.xyz;
-	mat4 vmMatrix = view_matrix * model_matrix;
-	vertex_viewspace = vmMatrix * vertex_modelspace;
-    gl_Position = projection_matrix * vertex_viewspace; 
+	drawID = drawid;
+	
+	normal_vs = (normal_matrix * vec4(normal_ms, 0.0)).xyz;
+	texcoord = texcoord_ms;
+
+	vertex_vs = view_matrix * model_matrix * vertex_ms;
+    gl_Position = projection_matrix * vertex_vs; 
 }

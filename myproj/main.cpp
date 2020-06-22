@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GL/GLU.h>
+#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 #define SDL_MAIN_HANDLED
@@ -24,6 +25,7 @@
 #include "Camera.h"
 #include "MeshPack.h"
 #include "ShaderPack.h"
+#include "LightList.h"
 
 #include "SSSS.h"
 #include "Scene.h"
@@ -313,21 +315,15 @@ int main(int argc, char* argv[])
 	mainCam = std::make_unique<Camera>(); mainCam->camera_eye = glm::vec3(0, 0, 32);
 	SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
 
-	mainCam->zFar = 5000; mainCam->zNear = 0.5; mainCam->fovy = 45;
+	mainCam->farZ = 5000; mainCam->nearZ = 0.5; mainCam->fovY = 45;
 
 	/**************************INITIALIZING LIGHTS ***************************/
-	scene.lightList = std::make_unique<LightList>();
-	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.7, 0.1, 0.1))));
-	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1))));
-	scene.lightList->addLight(std::move(std::make_unique<Light>(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7))));
 
-	std::vector<std::unique_ptr<CubeFBO>> shadowList;
+	LightList lightList;
 
-	for (size_t i = 0; i < scene.lightList->list.size(); ++i) {
-		auto shadowFBO = std::make_unique<CubeFBO>(true);
-		shadowFBO->initFBO(1024, 1024);
-		shadowList.push_back(std::move(shadowFBO));
-	}
+	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.7, 0.1, 0.1)) );
+	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1)) );
+	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7)) );
 
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
@@ -337,6 +333,7 @@ int main(int argc, char* argv[])
 
 	auto lightingFBO = std::make_shared<FBO>(false, false);
 	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	 
 	auto environmentFBO = std::make_shared<FBO>(false, true);
 	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 
@@ -358,7 +355,14 @@ int main(int argc, char* argv[])
 	iFBO->initFBO(256, 256);
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
+
 	ShaderPack shaderPack;
+
+	for (int i = 0; i < lightList.list.size(); ++i) {
+		shaderPack.light_pack.lightList[i] = lightList.list[i];
+	}
+
+	shaderPack.light_pack.lightCount = lightList.list.size();
 
 	shaderPack.add(std::make_unique<Shader>("geo_buffer"), ShaderName::geo_buffer);
 	shaderPack.add(std::make_unique<Shader>("pbr_buffer"), ShaderName::pbr_buffer);
@@ -416,8 +420,12 @@ int main(int argc, char* argv[])
 	the_canvas->readObjects("models/plane.obj", true, false);
 	the_canvas->createVAO();
 
-	bFBO->render(shaderBRDF, the_canvas, captureViews[0]);
+	bFBO->monoDraw(shaderBRDF, the_canvas, captureViews[0]);
 	glCheckError();
+
+	shaderPack.pbr_pass.irradiance = iFBO->envTexture->texture_handle;
+	shaderPack.pbr_pass.prefilter = pFBO->envTexture->texture_handle;
+	shaderPack.pbr_pass.brdf = bFBO->colorTexture->texture_handle;
 
 	//enviornment mapped object
 	auto skycube = std::make_unique<MeshPack>();
@@ -463,29 +471,34 @@ int main(int argc, char* argv[])
 	auto texRoughness_X = std::make_unique<Texture>("textures/coatedball/roughness.png");
 	glCheckError();
 
-	auto posTextureMap = PosTextureMap{
+	shaderPack.pbr_pack.list[0] = {
+		texAO_A->texture_handle,
+		texAlbedo_A->texture_handle,
+		texMetallic_A->texture_handle,
+		texNormal_A->texture_handle,
+		texRoughness_A->texture_handle
+	};
 
-			{ glm::vec3(-15, 0, -10), std::map<Texture_Type, Texture*> {
-				{ Texture_Type::texAO, texAO_A.get() },
-				{ Texture_Type::texAlbedo, texAlbedo_A.get() },
-				{ Texture_Type::texMetal, texMetallic_A.get() },
-				{ Texture_Type::texNormal, texNormal_A.get() },
-				{ Texture_Type::texRough, texRoughness_A.get() }
-			} },
-			{ glm::vec3(15, 0, -10), std::map<Texture_Type, Texture*> {
-				{ Texture_Type::texAO, texAO_B.get() },
-				{ Texture_Type::texAlbedo, texAlbedo_B.get()},
-				{ Texture_Type::texMetal, texMetallic_B.get() },
-				{ Texture_Type::texNormal, texNormal_B.get() },
-				{ Texture_Type::texRough, texRoughness_B.get() }
-			} },
-			{ glm::vec3(0, 0, 0), std::map<Texture_Type, Texture*> {
-				{ Texture_Type::texAO, texAO_X.get() },
-				{ Texture_Type::texAlbedo, texAlbedo_X.get()},
-				{ Texture_Type::texMetal, texMetallic_X.get() },
-				{ Texture_Type::texNormal, texNormal_X.get() },
-				{ Texture_Type::texRough, texRoughness_X.get() }
-			} }
+	shaderPack.pbr_pack.list[1] = {
+		texAO_B->texture_handle,
+		texAlbedo_B->texture_handle,
+		texMetallic_B->texture_handle,
+		texNormal_B->texture_handle,
+		texRoughness_B->texture_handle
+	};
+
+	shaderPack.pbr_pack.list[2] = {
+		texAO_X->texture_handle,
+		texAlbedo_X->texture_handle,
+		texMetallic_X->texture_handle,
+		texNormal_X->texture_handle,
+		texRoughness_X->texture_handle
+	};
+	
+	std::vector<glm::vec3> pos_list = {
+		glm::vec3(-15, 0, -10),
+		glm::vec3(15, 0, -10),
+		glm::vec3(0, 0, 0)
 	};
 
 	auto lightSize = 2.0f;
@@ -505,11 +518,11 @@ int main(int argc, char* argv[])
 	glCheckError();
 
 	auto skinTexture = std::make_unique<Texture>("lpshead/albedo.png");
-	headObject->setTexture(skinTexture.get(), Texture_Type::texAlbedo);
+	headObject->setTexture(skinTexture.get(), Texture_Type::colortex);
 	glCheckError();
 
 	auto skinNormal = std::make_unique<Texture>("lpshead/normal.png");
-	headObject->setTexture(skinNormal.get(), Texture_Type::texNormal);
+	headObject->setTexture(skinNormal.get(), Texture_Type::normaltex);
 	glCheckError();
 
 	shaderPack.add(std::make_unique<Shader>("ssss_phong"), ShaderName::ssss_phong);
@@ -540,17 +553,17 @@ int main(int argc, char* argv[])
 	float exposure = 1.0f;
 	float background = 1.0f;
 
-	bool tonemapping_object = false;
-	bool tonemapping_background = true;
+	bool tone_object = true;
+	bool tone_background = true;
 
 	static float bloomRange = 0.01f;
 	static int bloomStrength = 8;
 
-	float ambient = 0.5f;
+	float ambient = 0.3f;
 	float ssss_kD = 0.1f;
 	float ssss_kS = 0.1f;
 
-	float shadow_bias = 0.75;
+	float shadow_bias = 0.8;
 	float distance_scale = 1.0;
 
 	float translucency = 0.02f;
@@ -568,23 +581,12 @@ int main(int argc, char* argv[])
 
 		geometryFBO->initFBO(WIDTH, HEIGHT);
 		lightingFBO->initFBO(WIDTH, HEIGHT);
-		glCheckError();
 
-		pbr_canvas->clearTexture();
-
-		pbr_canvas->setTexture(geometryFBO->gPosition.get(), Texture_Type::gPosition);
-		pbr_canvas->setTexture(geometryFBO->gAlbedo.get(), Texture_Type::gAlbedo);
-		pbr_canvas->setTexture(geometryFBO->gNormal.get(), Texture_Type::gNormal);
-		glCheckError();
-
-		pbr_canvas->setTexture(iFBO->envTexture.get(), Texture_Type::gIrradiance);
-		pbr_canvas->setTexture(pFBO->envTexture.get(), Texture_Type::gPrefilter);
-		pbr_canvas->setTexture(bFBO->colorTexture.get(), Texture_Type::BRDF_LUT);
-		glCheckError();
+		shaderPack.pbr_pass.albedo = geometryFBO->texAlbedo->texture_handle;
+		shaderPack.pbr_pass.complex = geometryFBO->texNormal->texture_handle;
 
 		final_canvas->setTexture(lightingFBO->colorTexture.get(), Texture_Type::colortex);
 		final_canvas->setTexture(emptyTexture.get(), Texture_Type::gExtra);
-		glCheckError();
 	};
 
 	std::function<void(int, int)> ssss_pipeline_init = [&](int WIDTH, int HEIGHT) {
@@ -643,8 +645,8 @@ int main(int argc, char* argv[])
 		ImGui::SliderFloat("Exposure", &exposure, 0.2f, 2.0f);
 		ImGui::SliderFloat("Background", &background, 0.0f, 1.0f);
 
-		ImGui::Checkbox("Tone mapping object", &tonemapping_object);
-		ImGui::Checkbox("Tone mapping background", &tonemapping_background);
+		ImGui::Checkbox("Tone mapping object", &tone_object);
+		ImGui::Checkbox("Tone mapping background", &tone_background);
 
 		ImGui::Text("Bloom light source");
 		ImGui::SliderFloat("Bloom Range", &bloomRange, 0.01f, 0.11f);
@@ -733,12 +735,13 @@ int main(int argc, char* argv[])
 
 	while (!quit)
 	{
-		if (renderloop_paused) {
-			ui_pipeline_work(true);
-			continue;
+		if (renderloop_paused) { 
+			ui_pipeline_work(true); 
+			continue; 
 		}
-
-		ui_pipeline_work(false);
+		else {
+			ui_pipeline_work(false);
+		}
 
 		if (windowsize_changed || pipeline_changed)
 		{
@@ -746,6 +749,8 @@ int main(int argc, char* argv[])
 			windowsize_changed = false; pipeline_changed = false;
 
 			for (auto& fbo : FBOs) { fbo->reset(); }
+
+			shaderPack.complex.XdY = mainCam->window_width / mainCam->window_height;
 
 			environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 			blurFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
@@ -759,27 +764,20 @@ int main(int argc, char* argv[])
 		glViewport(0, 0, mainCam->window_width, mainCam->window_height);
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
-		glm::mat4 weiv_matrix = glm::inverse(view_matrix);
+		glm::mat4 weiv_matrix = mainCam->weivMatrix();
 
-		//Setting uniform variables for each shader
-		for (unsigned int i = 0; i < shaderPack.size(); i++)
-		{
-			auto& current_shader = shaderPack[i]; current_shader->start();
+		shaderPack.complex.projection_matrix = projection_matrix;
+		shaderPack.complex.view_matrix = view_matrix;
+		shaderPack.complex.weiv_matrix = weiv_matrix;
 
-			current_shader->setUniform("projection_matrix", projection_matrix);
-			current_shader->setUniform("view_matrix", view_matrix);
-			current_shader->setUniform("weiv_matrix", weiv_matrix);
+		shaderPack.complex.nearZ = mainCam->nearZ;
+		shaderPack.complex.farZ = mainCam->farZ;
+		shaderPack.complex.fovY = mainCam->fovY;
 
-			current_shader->setUniform("nearZ", mainCam->zNear);
-			current_shader->setUniform("farZ", mainCam->zFar);
-			current_shader->setUniform("fovY", mainCam->fovy);
+		shaderPack.complex.exposure = exposure;
+		shaderPack.complex.gamma = gamma;
 
-			current_shader->setUniform("exposure", exposure);
-			current_shader->setUniform("gamma", gamma);
-
-			current_shader->setLightList(scene.lightList, "lights");
-			current_shader->stop();
-		}
+		shaderPack.syncSSBO();
 
 		skycube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
 
@@ -788,35 +786,38 @@ int main(int argc, char* argv[])
 
 				auto& the_shader = shaderPack[ShaderName::skycube];
 				the_shader->start();
-				skycube->displayObjects(the_shader, view_matrix);
+					skycube->displayObjects(the_shader, view_matrix);
 				the_shader->stop();
 
+				lightball->modelMatrixList.clear();
 				auto& current_shader = shaderPack[ShaderName::basic];
 				current_shader->start();
-				for (auto& light : scene.lightList->list) {
-					current_shader->setUniform("color", light->color);
-					lightball->translate(light->position);
-					lightball->displayObjects(current_shader, view_matrix);
-					lightball->translate(-light->position);
+
+				for (auto& light : shaderPack.light_pack.lightList) {
+
+					lightball->translate(light.position);
+						lightball->batch();
+					light.model_matrix = lightball->model_matrix;
+					lightball->translate(-light.position);
 
 					auto randX = (float)rand() / RAND_MAX;
 					auto randY = (float)rand() / RAND_MAX;
 					auto randZ = (float)rand() / RAND_MAX;
-					//https://gamedev.stackexchange.com/questions/115032/how-should-i-rotate-vertices-around-the-origin-on-the-cpu
-					glm::vec3 v3RotAxis(randX, randY, randZ);
 
-					glm::quat quatRot = glm::angleAxis(delta, v3RotAxis);
+					glm::vec3 axisRot(randX, randY, randZ);
+					glm::quat quatRot = glm::angleAxis(delta, axisRot);
 					glm::mat4x4 matRot = glm::mat4_cast(quatRot);
-					glm::vec4 newpos = (matRot * glm::vec4(light->position, 1.0));
-					light->position = glm::vec3(newpos.x, newpos.y, newpos.z);
+					glm::vec4 newpos = (matRot * glm::vec4(light.position, 1.0));
+					light.position = glm::vec3(newpos);
 				}
+
+				lightball->displayObjects(current_shader, view_matrix);
 				current_shader->stop();
-				})
+
+			})
 		); glCheckError();
 
 				the_canvas->setTexture(environmentFBO->colorTexture.get(), Texture_Type::colortex);
-				//the_canvas->setTexture(environmentFBO->depthTexture, Texture_Type::depthtex);
-				glCheckError();
 
 				int blurIndex = 0; int count = 0;
 				static std::vector<std::shared_ptr<FBO>> blurList = { blurFBO, rulbFBO };
@@ -833,7 +834,7 @@ int main(int argc, char* argv[])
 						shaderBlur->setUniform("lightSize", lightSize);
 						});
 
-					currentFBO->render(shaderBlur, the_canvas, captureViews[0], &lambda);
+					currentFBO->monoDraw(shaderBlur, the_canvas, captureViews[0], &lambda);
 					the_canvas->setTexture(currentFBO->colorTexture.get(), Texture_Type::colortex);
 					++count; blurIndex = !blurIndex;
 
@@ -841,30 +842,17 @@ int main(int argc, char* argv[])
 
 				if (RenderPipeline::PBR == current_pipeline) {
 
-					shaderball->rotate(0.0f, 1.0f, 0.0f, delta);
-					geometryFBO->loopRender(shaderPack[ShaderName::geo_buffer], shaderball, view_matrix, posTextureMap);
-					glCheckError();
-
-					lightingFBO->render(shaderPack[ShaderName::pbr_buffer], pbr_canvas, view_matrix, 
-						&std::function<void()> ([]() {
-							glCheckError();
-						}), 
-						&std::function<void()> ([]() {
-							glCheckError();
-						}) );
-					glCheckError();
-
+					glm::vec3 axis(0, 1, 0);
+					shaderball->rotate(axis, delta);
+					geometryFBO->multiDraw(shaderPack[ShaderName::geo_buffer], shaderball, view_matrix, pos_list);
+					lightingFBO->monoDraw(shaderPack[ShaderName::pbr_buffer], pbr_canvas, view_matrix);
 				}
 				else if (RenderPipeline::SSSS == current_pipeline) {
 
-					//for (auto& light : scene.lightList->list) {
-
-						//shadowList[i]->shadowMapping(shadowShader, headObject, light->position, captureProjection);
-
-					//} glCheckError();
-
-					shadowList[0]->shadowMapping(shadowShader, headObject, scene.lightList->list[0]->position, captureProjection);
-					headObject->setTexture(shadowList[0]->envTexture.get(), Texture_Type::shadowCube);
+					for (size_t i = 0; i < lightList.list.size(); ++i) {
+						auto& light = shaderPack.light_pack.lightList[i];
+						lightList.shadowList[i]->shadowMapping(shadowShader, headObject, light.position, captureProjection);
+					} glCheckError();
 
 					auto& ssssPhongShader = shaderPack[ShaderName::ssss_phong];
 
@@ -878,10 +866,11 @@ int main(int argc, char* argv[])
 
 						ssssPhongShader->setUniform("shadow_bias", shadow_bias);
 						ssssPhongShader->setUniform("distance_scale", distance_scale);
-						});
+					});
 
-					ssssLightFBO->render(ssssPhongShader, headObject, view_matrix, &lambda);
-					glCheckError();
+					headObject->batch();
+
+					ssssLightFBO->monoDraw(ssssPhongShader, headObject, view_matrix, &lambda);
 
 					ssss_canvas->setTexture(ssssLightFBO->colorTexture.get(), Texture_Type::gAlbedo);
 					ssss_canvas->setTexture(ssssLightFBO->extraTexture.get(), Texture_Type::gExtra);
@@ -901,9 +890,9 @@ int main(int argc, char* argv[])
 
 						ssssBlurShader->setUniform("kernel", kernelSSSS);
 						ssssBlurShader->setUniform("kernelSize", (int)kernelSSSS.size());
-						});
+					});
 
-					ssssBlurFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
+					ssssBlurFBO->monoDraw(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
 					glCheckError();
 
 					ssss_canvas->setTexture(ssssBlurFBO->colorTexture.get(), Texture_Type::gAlbedo);
@@ -913,7 +902,7 @@ int main(int argc, char* argv[])
 						ssssBlurShader->setUniform("direction", glm::vec2(0, 1));
 					});
 
-					ssssRulbFBO->render(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
+					ssssRulbFBO->monoDraw(ssssBlurShader, ssss_canvas, view_matrix, &lambda);
 					glCheckError();
 				}
 
@@ -926,8 +915,8 @@ int main(int argc, char* argv[])
 				auto& current_shader = shaderPack[ShaderName::postprocess];
 				current_shader->start();
 				current_shader->setUniform("background", background);
-				current_shader->setUniform("tonemapping_object", tonemapping_object);
-				current_shader->setUniform("tonemapping_background", tonemapping_background);
+				current_shader->setUniform("tone_object", tone_object);
+				current_shader->setUniform("tone_background", tone_background);
 				final_canvas->displayObjects(current_shader, view_matrix);
 				current_shader->stop();
 				glCheckError();

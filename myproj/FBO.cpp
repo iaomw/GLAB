@@ -70,6 +70,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	glNamedFramebufferTexture(fboID, GL_DEPTH_ATTACHMENT, depthTexture->texture_id, 0);
+	colorTexture->getHandle();
 
 	if (!needExtra)
 	{
@@ -89,6 +90,7 @@ void FBO::initFBO(int WIDTH, int HEIGHT)
 		glTextureParameteri(extraTexture->texture_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT1, extraTexture->texture_id, 0);
+		extraTexture->getHandle();
 
 		unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 		glNamedFramebufferDrawBuffers(fboID, 2, attachments);

@@ -7,11 +7,10 @@
 #include <Functional>
 
 #include <GL/glew.h>
+#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>  
 
-//#include "Light.h"
-#include "LightList.h"
 #include "magic_enum.hpp"
 
 class Shader
@@ -41,13 +40,11 @@ public:
 	void setUniform(const std::string& name, std::vector<glm::vec4>& input_array);
 
 	void setTex(const std::string& name, GLuint texture_id, GLuint texture_offset);
-
-	void setLight(std::unique_ptr<Light> const& light, const std::string& lightvariable_in_shader);
-	void setLightList(std::unique_ptr<LightList> const& lightList, const std::string& lightvariable_in_shader);
 	
-private:
 	GLuint shaderprogram;
 
+private:
+	
 	GLuint vertex_shader = 0;
 	GLuint geometry_shader = 0;
 	GLuint fragment_shader = 0;

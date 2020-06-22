@@ -1,12 +1,25 @@
 #version 460 core
 
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform mat3 normal_matrix;
-uniform mat4 projection_matrix;
-
 uniform sampler2D gAlbedo; 
 uniform sampler2D gExtra;
+
+uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
+
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
+
+	float exposure;
+	float gamma;
+};
 
 uniform int kernelSize;
 uniform vec4 kernel[32];
@@ -23,11 +36,6 @@ uniform float luminance_threshold;
 uniform float depthtest_coefficient;
 //uniform float ssssMaxOffset;
 //uniform float ssssTranslucency;
-
-uniform float fovY;
-uniform float farZ;
-uniform float nearZ;
-uniform float gamma;
 
 layout (location = 0) out vec4 gColor;
 //layout (location = 1) out vec4 gExtra;

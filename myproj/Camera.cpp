@@ -1,3 +1,4 @@
+#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 #include "Camera.h"
@@ -6,14 +7,14 @@
 
 Camera::Camera()
 {
-	camera_eye = DEFAULT_CAMERA_EYE;
 	camera_up = DEFAULT_CAMERA_UP;
+	camera_eye = DEFAULT_CAMERA_EYE;
 	camera_forward = DEFAULT_CAMERA_FORWARD;
 
-	fovy = DEFAULT_FOVY;
-	zNear = DEFAULT_zNEAR;
-	zFar = DEFAULT_zFAR;
-
+	fovY = DEFAULT_FOVY;
+	farZ = DEFAULT_zFAR;
+	nearZ = DEFAULT_zNEAR;
+	
 	window_width = DEFAULT_WINDOW_WIDTH;
 	window_height = DEFAULT_WINDOW_HEIGHT;
 }
@@ -24,13 +25,13 @@ Camera::~Camera()
 
 void Camera::reset()
 {
-	camera_eye = DEFAULT_CAMERA_EYE;
 	camera_up = DEFAULT_CAMERA_UP;
+	camera_eye = DEFAULT_CAMERA_EYE;
 	camera_forward = DEFAULT_CAMERA_FORWARD;
 
-	fovy = DEFAULT_FOVY;
-	zNear = DEFAULT_zNEAR;
-	zFar = DEFAULT_zFAR;
+	fovY = DEFAULT_FOVY;
+	farZ = DEFAULT_zFAR;
+	nearZ = DEFAULT_zNEAR;
 }
 
 void Camera::crystalball_rotateView(int dx, int dy)
@@ -50,6 +51,8 @@ void Camera::crystalball_rotateView(int dx, int dy)
 	rotate(camera_forward, rotation_axis, theta, true);
 	rotate(camera_up, rotation_axis, theta, true);
 	rotate(camera_eye, rotation_axis, theta, false);
+
+	outdate();
 }
 
 void Camera::firstperson_rotateView(int dx, int dy)
@@ -68,6 +71,8 @@ void Camera::firstperson_rotateView(int dx, int dy)
 
 	rotate(camera_forward, rotation_axis, theta, true);
 	//rotate(camera_up, rotation_axis, theta, true);
+
+	outdate();
 }
 
 void Camera::panView(int dx, int dy)
@@ -81,6 +86,8 @@ void Camera::panView(int dx, int dy)
 	glm::vec3 tomovein_direction = -camera_right * vx + -camera_up * vy;
 
 	camera_eye += 1.6f * tomovein_direction;
+
+	outdate();
 }
 
 glm::vec3 Camera::constructRay(int x, int y) const
@@ -102,32 +109,53 @@ glm::vec3 Camera::constructRay(int x, int y) const
 
 glm::mat4 Camera::projectionMatrix() const
 {
-	return glm::perspective(glm::radians(fovy), static_cast<float>(window_width) / static_cast<float>(window_height), zNear, zFar);
+	if (project_outdated) {
+		project_matrix = glm::perspective(glm::radians(fovY), static_cast<float>(window_width) / static_cast<float>(window_height), nearZ, farZ);
+		project_outdated = false;
+	}
+	return project_matrix;
 }
 
 glm::mat4 Camera::viewMatrix() const
 {
-	return glm::lookAt(camera_eye, camera_eye + camera_forward, camera_up);
+	if (view_outdated) {
+		view_matrix = glm::lookAt(camera_eye, camera_eye + camera_forward, camera_up);
+		view_outdated = false;
+	}
+	return view_matrix;
+}
+
+glm::mat4 Camera::weivMatrix() const
+{
+	if (weiv_outdated) {
+		weiv_matrix = glm::inverse(viewMatrix());
+		weiv_outdated = false;
+	}
+	return weiv_matrix;
 }
 
 void Camera::moveForward(float size)
 {
 	camera_eye += size * camera_forward;
+	outdate();
 }
 
 void Camera::moveBack(float size)
 {
 	camera_eye -= size * camera_forward;
+	outdate();
 }
 
 void Camera::turnLeft(float size)
 {
 	rotate(camera_forward, camera_up, size, true);
+	outdate();
 }
 
 void Camera::turnRight(float size)
 {
 	rotate(camera_forward, camera_up, -size, true);
+	outdate();
 }
 
 void Camera::print() const
@@ -137,3 +165,8 @@ void Camera::print() const
 	std::cout << "Up: (" << camera_up.x << ", " << camera_up.y << ", " << camera_up.z << ")" << std::endl;
 }
 
+inline void Camera::outdate() {
+	project_outdated = true;
+	view_outdated = true;
+	weiv_outdated = true;
+}

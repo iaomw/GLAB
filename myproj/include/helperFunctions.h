@@ -2,8 +2,8 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp> 
 #include <glm/gtc/type_ptr.hpp>  
+#include <glm/gtc/matrix_transform.hpp> 
 
 #include <GL/glew.h>  
 #include <SDL2/SDL.h>
@@ -155,14 +155,14 @@ static void checkOpenGLInfo(bool toprint = false)
 
 	std::vector<std::tuple<int, std::string>> int_params =
 	{
-		//make_tuple(GL_RED_BITS, "Red bits"),
-		//make_tuple(GL_GREEN_BITS, "Green bits"),
-		//make_tuple(GL_BLUE_BITS, "Blue bits"),
-		//make_tuple(GL_ALPHA_BITS, "Alpha bits"),
-		//make_tuple(GL_DEPTH_BITS, "Depth bits"),
-		//make_tuple(GL_STENCIL_BITS, "Stencil bits")
-		//make_tuple(GL_MAX_TEXTURE_SIZE, "Max texture size"),
-		//make_tuple(GL_MAX_CLIP_PLANES, "Max clip planes")
+		std::make_tuple(GL_RED_BITS, "Red bits"),
+		std::make_tuple(GL_GREEN_BITS, "Green bits"),
+		std::make_tuple(GL_BLUE_BITS, "Blue bits"),
+		std::make_tuple(GL_ALPHA_BITS, "Alpha bits"),
+		std::make_tuple(GL_DEPTH_BITS, "Depth bits"),
+		std::make_tuple(GL_STENCIL_BITS, "Stencil bits"),
+		std::make_tuple(GL_MAX_TEXTURE_SIZE, "Max texture size"),
+		std::make_tuple(GL_MAX_CLIP_PLANES, "Max clip planes")
 	};
 
 	output << "End OpenGL Information.\n\n";
@@ -187,4 +187,18 @@ static void SDL_GetDisplayDPIRatio(int displayIndex, float* dpi, float* defaultD
 	}
 
 	if (defaultDpi)* defaultDpi = kSysDefaultDpi;
+}
+
+static int hammingWeight(uint32_t n) {
+	int res = 0;
+	while (n != 0) {
+		n = n & (n - 1);
+		res++;
+	}
+	return res;
+}
+
+static bool isPowerOfTwo(int n) {
+	if (n <= 0) return false;
+	return (n & (n - 1)) == 0;
 }

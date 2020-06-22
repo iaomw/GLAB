@@ -1,39 +1,68 @@
-#version 330 core
+#version 460 core
+#extension GL_ARB_bindless_texture: require
 
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform mat3 normal_matrix;
-uniform mat4 projection_matrix;
+layout (location = 0) out vec4 outAlbedo;
+layout (location = 1) out vec4 outNormal;
 
-in vec4 vertex_viewspace;
-in vec3 normal_viewspace;
+flat in uint drawID;
 
-in vec4 myvertex;
-in vec3 mynormal;
-in vec2 texCoord;
+in vec4 vertex_vs;
+in vec3 normal_vs;
+in vec2 texcoord;
 
-layout (location = 0) out vec4 gPosition;
-layout (location = 1) out vec4 gAlbedo;
-layout (location = 2) out vec4 gNormal;
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
 
-uniform sampler2D texAO;
-uniform sampler2D texAlbedo;
-uniform sampler2D texMetal;
-uniform sampler2D texNormal;
-uniform sampler2D texRough;
+	float exposure;
+	float gamma;
+};
 
-uniform float fovY;
-uniform float farZ;
-uniform float nearZ;
-uniform float gamma;
+struct Light {
+    uvec2 type; 
+	uvec2 shadow_handle; 
+
+    vec4 color;
+    vec4 position;
+    vec4 intensity;	
+    vec4 direction;
+	mat4 model_matrix;
+};
+
+layout(std430) buffer Light_Pack
+{
+	uint lightCount;
+	Light lightList[];
+};
+
+struct PBR_Unit {
+	uvec2 ao;
+	uvec2 base;
+	uvec2 metalness;
+	uvec2 normal;
+	uvec2 roughness;
+};
+
+layout(std430) buffer PBR_Pack 
+{
+    uint pbr_pack_size;
+    PBR_Unit pbr_pack[];
+};
 
 // Calculation in view space
 vec3 detailedTexNormal(vec3 normal_vspace, vec3 tNormal, vec3 position)
 { 
     vec3 dPosX  = dFdx(position.xyz);
     vec3 dPosY  = dFdy(position.xyz);
-    vec2 dTexX = dFdx(texCoord);
-    vec2 dTexY = dFdy(texCoord);
+    vec2 dTexX = dFdx(texcoord);
+    vec2 dTexY = dFdy(texcoord);
 
     vec3 normal = normalize(normal_vspace);
     vec3 tangent = normalize(dPosX * dTexY.t - dPosY * dTexX.t);
@@ -49,16 +78,38 @@ float LinearizeDepth(float depth)
     return (2.0f * nearZ * farZ) / (farZ + nearZ - z * (farZ - nearZ));
 }
 
+vec2 encode (vec3 n)
+{
+    float f = sqrt(8*n.z+8);
+    return n.xy / f + 0.5;
+}
+
+vec3 decode (vec2 enc)
+{
+    vec2 fenc = enc*4-2;
+    float f = dot(fenc,fenc);
+    float g = sqrt(1-f/4);
+    vec3 n;
+    n.xy = fenc*g;
+    n.z = 1-f/2;
+    return n;
+}
+
 void main (void)
 {   
-	gPosition.rgb = vertex_viewspace.xyz;
-	gPosition.a = texture(texAO, texCoord.st).r;
-    //gPosition.z = LinearizeDepth(gl_FragCoord.z);
+    //sampler2D texAO = sampler2D(pbr_pack[drawID].ao);
+    sampler2D texBase = sampler2D(pbr_pack[drawID].base);
+    sampler2D texMetal = sampler2D(pbr_pack[drawID].metalness);
+    sampler2D texNormal = sampler2D(pbr_pack[drawID].normal);
+    sampler2D texRough = sampler2D(pbr_pack[drawID].roughness);
 
-	gAlbedo.rgb = pow(texture(texAlbedo, texCoord.st).rgb, vec3(gamma));
-	gAlbedo.a = texture(texRough, texCoord.st).r;
+	outAlbedo.rgb = pow(texture(texBase, texcoord.st).rgb, vec3(gamma));
+	outAlbedo.a = texture(texRough, texcoord.st).r;
 
-	vec3 tNormal = normalize(texture(texNormal, texCoord.st).rgb * 2.0f - 1.0f);
-	gNormal.rgb = detailedTexNormal(normal_viewspace.xyz, tNormal, vertex_viewspace.xyz);
-	gNormal.a = texture(texMetal, texCoord.st).r;
+	vec3 tNormal = normalize(texture(texNormal, texcoord.st).xyz * 2.0f - 1.0f);
+	outNormal.rgb = detailedTexNormal(normal_vs.xyz, tNormal, vertex_vs.xyz);
+	outNormal.a = texture(texMetal, texcoord.st).r;
+
+	outNormal.rg = encode(outNormal.rgb);
+	outNormal.b = vertex_vs.z;
 }

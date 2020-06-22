@@ -16,7 +16,7 @@ public:
 	GLuint fboID;
 	int width, height;
 
-	void render(std::unique_ptr<Shader> const& shader, 
+	void monoDraw(std::unique_ptr<Shader> const& shader, 
 		std::unique_ptr<MeshPack> const &object, glm::mat4 view_matrix,
 		std::function<void()>* before = nullptr, std::function<void()>* after = nullptr) {
 
@@ -66,6 +66,20 @@ public:
 
 public:
 
+	FBO(bool extra = false, bool mipmap = false);
+	virtual ~FBO();
+
+	void initFBO(int width, int height);
+	virtual void reset();
+
+	int getWidth() { return width; }
+	int getHeight() { return height; }
+
+private:
+	bool needExtra;
+	bool needMipmap;
+
+public:
 	virtual inline void bind() const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -83,18 +97,5 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		unbind();
 	}
-
-	int getWidth() { return width; }
-	int getHeight() { return height; }
-
-	FBO(bool extra = false, bool mipmap = false);
-	virtual ~FBO();
-	
-	void initFBO(int width, int height);
-	virtual void reset();
-
-private:
-	bool needExtra;
-	bool needMipmap;
 };
 

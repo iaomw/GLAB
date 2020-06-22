@@ -29,7 +29,7 @@ void MeshPart::display(std::unique_ptr<VAO> const &vao, std::unique_ptr<Shader> 
 {
 	if (end <= start) return;
 
-	if (material != nullptr) material->setUniform(shader, "material");
+	//if (material != nullptr) material->setUniform(shader, "material");
 
 	for (const auto& [type, tex] : textures) {
 
@@ -42,4 +42,25 @@ void MeshPart::display(std::unique_ptr<VAO> const &vao, std::unique_ptr<Shader> 
 	}
 	
 	if (vao != nullptr) vao->draw(start, end);
+}
+
+void MeshPart::display(std::unique_ptr<VAO> const& vao, 
+					   std::unique_ptr<Shader> const& shader, 
+					   std::vector<glm::mat4>& modelMatrixList, 
+					   std::vector<glm::mat4>& normalMatrixList) {
+	
+	if (end <= start) return;
+	if (nullptr == vao) return;
+
+	for (const auto& [type, tex] : textures) {
+
+		if (nullptr == tex) { continue; }
+
+		auto texName = magic_enum::enum_name(type);
+		auto texIndex = magic_enum::enum_integer(type);
+
+		shader->setTex(std::string(texName), tex->texture_id, texIndex);
+	}
+
+	vao->draw(start, end, modelMatrixList, normalMatrixList);
 }

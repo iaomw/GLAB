@@ -1,20 +1,16 @@
 #version 330 core
 
-layout(location = 0) in vec4 vertex_modelspace;
-layout(location = 1) in vec3 normal_modelspace;
-layout(location = 2) in vec2 texcoord_modelspace;
-
-uniform mat4 projection_matrix;
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
+layout(location = 0) in vec4 vertex_ms;
+layout(location = 1) in vec3 normal_ms;
+layout(location = 2) in vec2 texcoord_ms;
 
 out vec4 myvertex;
 out vec3 mynormal;
 out vec2 texCoords;
 
 void main() {
-    gl_Position = model_matrix * vertex_modelspace; 
-	myvertex = vertex_modelspace;
-	mynormal = normal_modelspace;
-	texCoords = texcoord_modelspace;
+    gl_Position = vertex_ms; 
+	myvertex = vertex_ms;
+	mynormal = normal_ms;
+	texCoords = texcoord_ms;
 }

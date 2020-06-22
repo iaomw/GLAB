@@ -1,15 +1,17 @@
 #pragma once
-
-#include "Light.h"
 #include <vector>
 #include <memory>
+
+#include "Light.h"
+#include "CubeFBO.h"
 
 class LightList
 {
 public:
-	std::vector<std::unique_ptr<Light>> list;
+	std::vector<Light> list;
+	std::vector<std::unique_ptr<CubeFBO>> shadowList;
 
-	void addLight(std::unique_ptr<Light> light);
+	void addLight(Light& light);
 
 	LightList();
 	~LightList();

@@ -1,42 +1,53 @@
-#version 330 core
+#version 460 core
+#extension GL_ARB_bindless_texture: require
 
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
-layout (location = 0) out vec4 gColor;
+layout(location = 0) out vec4 gColor;
 
-uniform mat4 weiv_matrix;
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform mat3 normal_matrix;
-uniform mat4 projection_matrix;
+in vec2 texcoord;
 
-uniform float fovY;
-uniform float farZ;
-uniform float nearZ;
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
 
-in vec4 myvertex;
-in vec3 mynormal;
-in vec2 texCoords;
-
-struct Light {
-    int type;
-    vec3 color;
-    vec3 position;
-    vec3 intensity;	
-    vec3 direction;
+	float exposure;
+	float gamma;
 };
 
-uniform int num_lights;
-const int NR_LIGHTS = 32;
-uniform Light lights[NR_LIGHTS];
+layout(std430) buffer PBR_Pass {
+   
+    uvec2 texIrradiance;
+	uvec2 texPrefilter;
+	uvec2 texBRDF;
 
-uniform sampler2D gPosition;
-uniform sampler2D gAlbedo;
-uniform sampler2D gNormal;
+    uvec2 complex;
+    uvec2 albedo;
+};
 
-uniform samplerCube gIrradiance;
-uniform samplerCube gPrefilter;
-uniform sampler2D BRDF_LUT;
+struct Light {
+    uvec2 type; 
+	uvec2 shadow_handle; 
+
+    vec4 color;
+    vec4 position;
+    vec4 intensity;	
+    vec4 direction;
+	mat4 model_matrix;
+};
+
+layout(std430) buffer Light_Pack
+{
+	uint lightCount;
+	Light lightList[];
+};
 
 float saturate(float f)
 {
@@ -79,48 +90,63 @@ float SmithGeometryGGX(float NdotL, float NdotV, float roughness)
     return ggxL * ggxV;
 }
 
-bool bad(vec3 value) {
+vec2 encode (vec3 n)
+{
+    float f = sqrt(8*n.z+8);
+    return n.xy / f + 0.5;
+}
 
-    bvec3 result = isinf(value); 
-
-    if (result.x || result.y || result.z) {
-        return true;
-    }
-    
-    result = isnan(value);
-    if (result.x || result.y || result.z) {
-        return true;
-    }
-
-    return false;
+vec3 decode (vec2 enc)
+{
+    vec2 fenc = enc*4-2;
+    float f = dot(fenc,fenc);
+    float g = sqrt(1-f/4);
+    vec3 n;
+    n.xy = fenc*g;
+    n.z = 1-f/2;
+    return n;
 }
 
 void main()
 {             
-    // retrieve data from gbuffer
-    vec4 tPosition = texture(gPosition, texCoords);
-    if (0 == tPosition.z && 1.0 == tPosition.a) { 
+    vec4 texAlbedo = texture(sampler2D(albedo), texcoord).rgba;
+    vec4 texNormal = texture(sampler2D(complex), texcoord).rgba;
+
+    float mark = texAlbedo.a;
+    float texDepth = texNormal.z;
+
+    if (1.0 == mark && 0 == texDepth) { 
         gColor.a = 1.0;
-        //discard; 
-        return; 
+        return; //discard; 
     }
 
-    vec3 texAlbedo = texture(gAlbedo, texCoords).rgb;
-    vec3 texNormal = texture(gNormal, texCoords).rgb;
+    float roughness = texAlbedo.a;
+    float metalness = texNormal.a;
 
-    float roughness = texture(gAlbedo, texCoords).a;
-    float metalness = texture(gNormal, texCoords).a;
-    float ao = texture(gPosition, texCoords).a;
+    vec4 tPosition = vec4(1.0);
+
+    vec2 offset = 2.0f * texcoord - vec2(1.0f);
+    float unit = -texDepth * tan(fovY/2);
+
+    offset.x = offset.x * unit * XdY;
+    offset.y = offset.y * unit;
+    
+    tPosition.xy = offset.xy; 
+    tPosition.z = texDepth;
+
+    vec3 theNormal = decode(texNormal.rg);
+
+    float ao = 1.0; //texture(ao, texcoord).a;
 
     vec3 V = normalize(vec3(0.0) - tPosition.xyz);
-    vec3 N = normalize(texNormal);
+    vec3 N = normalize(theNormal);
     vec3 R = reflect(-V, N);
 
     float NdotV = max(dot(N, V), 0.0001f);
     vec3 materialF0 = vec3(0.04f); // for non-metal
 
     // Fresnel (Schlick) computation (F term)
-    vec3 F0 = mix(materialF0, texAlbedo, metalness);
+    vec3 F0 = mix(materialF0, texAlbedo.rgb, metalness);
     vec3 F = FresnelRoughness(NdotV, F0, roughness);
 
     // Energy conservation
@@ -134,21 +160,21 @@ void main()
     vec3 specular = vec3(0.0f);
     
     float c2f = distance(vec3(0.0), tPosition.xyz); // view space 
-    for (int i = 0; i < num_lights; i++) // treate them as point lights
+    for (int i = 0; i < lightCount; i++) // treate them as point lights
     {
-        vec4 light_pos = view_matrix * vec4(lights[i].position, 1.0); // world space to view space
+        vec4 light_pos = view_matrix * vec4(lightList[i].position.xyz, 1.0); // world space to view space
         vec3 direction = (light_pos-tPosition).xyz;
         vec3 L = normalize(direction);
         vec3 H = normalize(L + V);
 
-        vec3 lightColor = lights[i].color; 
-        vec3 intensity = lights[i].intensity;
-        float l2f = distance(light_pos.rgb, tPosition.rgb);
+        vec3 lightColor = lightList[i].color.rgb; 
+        vec3 intensity = lightList[i].intensity.rgb;
+        float l2f = distance(light_pos.xyz, tPosition.xyz);
 
         atten = 1.0 / l2f; //based on distance
         // Light source dependent BRDF term(s)
         float NdotL = saturate(dot(N, L));
-        diffuse = texAlbedo / PI; // Lambertian
+        diffuse = texAlbedo.rgb / PI; // Lambertian
         //diffuse *= kDisneyTerm(NdotL, NdotV, roughness);
         
         float D = DistributionGGX(N, H, roughness);
@@ -163,14 +189,14 @@ void main()
     vec4 world_N = weiv_matrix * vec4(N, 0);
     vec4 world_R = weiv_matrix * vec4(R, 0);
 
-    vec3 irradiance = texture(gIrradiance, world_N.xyz).rgb;
-    vec3 value_diffuse = irradiance * texAlbedo;
+    vec3 irradiance = texture(samplerCube(texIrradiance), world_N.xyz).rgb;
+    vec3 value_diffuse = irradiance * texAlbedo.rgb;
 
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 5.0;
     float mip_level = roughness * MAX_REFLECTION_LOD;
-    vec2 value_BRDF = texture(BRDF_LUT, vec2(NdotV, roughness)).rg;
-    vec3 value_prefilter = textureLod(gPrefilter, world_R.xyz, mip_level).rgb; 
+    vec2 value_BRDF = texture(sampler2D(texBRDF), vec2(NdotV, roughness)).rg;
+    vec3 value_prefilter = textureLod(samplerCube(texPrefilter), world_R.xyz, mip_level).rgb; 
     vec3 value_specular = value_prefilter * (F * value_BRDF.x + value_BRDF.y);
        
     vec3 ambient = (kD * value_diffuse + value_specular) * ao;

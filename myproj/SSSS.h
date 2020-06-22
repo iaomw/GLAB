@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iostream>
 
+#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 static std::vector<glm::vec4> kernelSSSS = {

@@ -1,22 +1,25 @@
 #pragma once
 
+#include <GL/glew.h>
+#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 enum class LightType { POINTLIGHT, SPOTLIGHT, DIRECTIONALLIGHT };
 
-class Light
+class alignas(16) Light
+//class Light
 {
 public:
 
-	LightType type;
-
-	glm::vec3 color;
-	glm::vec3 position;
-	glm::vec3 intensity;
-	glm::vec3 direction;
+	GLuint64 type;
+	GLuint64 shadow_handle;
+	
+	glm::vec3 color;      float __paddingA;
+	glm::vec3 position;   float __paddingB;
+	glm::vec3 intensity;  float __paddingC;
+	glm::vec3 direction;  float __paddingD;
 
 	glm::mat4 model_matrix;
-	//std::unique_ptr<CubeFBO> shadowFBO;
 	
 	Light();
 	~Light();

@@ -1,9 +1,9 @@
 #include "VBO.h"
 
-VBO::VBO(GLenum type)
+VBO::VBO(GLenum type, GLenum usage)
 {
-	buffer_type = type;
-	//glGenBuffers(1, &buffer_id);
+	this->usage = usage;
+	this->buffer_type = type;
 	glCreateBuffers(1, &buffer_id);
 }
 
@@ -25,5 +25,12 @@ void VBO::unbind() const
 void VBO::setData(GLvoid * data, size_t size_in_bytes)
 {
 	//glBufferData(buffer_type, size_in_bytes, data, GL_STATIC_DRAW);
-	glNamedBufferData(buffer_id, size_in_bytes, data, GL_STATIC_DRAW);
+
+	if (size_in_bytes != previous_size) {
+		glNamedBufferData(buffer_id, size_in_bytes, data, this->usage);
+		previous_size = size_in_bytes;
+	}
+	else {
+		glNamedBufferSubData(buffer_id, 0, size_in_bytes, data);
+	}
 }

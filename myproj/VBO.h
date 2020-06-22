@@ -5,7 +5,7 @@
 class VBO
 {
 public:
-	VBO(GLenum);
+	VBO(GLenum type, GLenum usage = GL_STATIC_DRAW);
 	~VBO();
 
 	void bind() const;
@@ -14,4 +14,8 @@ public:
 
 	GLuint buffer_id;
 	GLenum buffer_type;
+
+private:
+	GLenum usage;
+	size_t previous_size = 0;
 };

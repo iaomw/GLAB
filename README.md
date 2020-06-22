@@ -4,19 +4,18 @@
 ![Preview image](/capture/Capture.F.JPG)
 ![Preview image](/capture/Capture.H.JPG)
 
-This serves as my final project for **Computer Graphics** course **2017 Fall**.
+This serves as my final project for **Computer Graphics** course during **2017 Fall**.
 
 I will continue improving it for fun. But it's weird for me to continue the OpenGL project on Windows. Meanwhile, it's possible migrating it to Mac/Linux, since it's not using any Windows API. Considering CMake. 
 
 ## Features
-- [ ] C++ 11~17
+- [x] C++ 11~17
 - [x] Wavefront.obj
-- [ ] Modern OpenGL AZDO
-    - [ ] Bindless Texture
-    - [ ] Indirect rendering
+- [x] Modern OpenGL AZDO
+    - [x] Bindless Texture
+    - [x] Indirect rendering
     - [x] Direct State Access
-    - [ ] Uniform Buffer Object
-    - [ ] Shader Storage Buffer Object
+    - [x] Shader Storage Buffer
 - [ ] Batch Rendering
 - [x] Deferred Rendering
 - [ ] Quaternion Rotation

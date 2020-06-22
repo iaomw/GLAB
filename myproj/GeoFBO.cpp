@@ -6,9 +6,8 @@ GeoFBO::GeoFBO(): FBO()
 	fboID = 0;
 	width = 0; height = 0;
 
-	gPosition = nullptr;
-	gAlbedo = nullptr;
-	gNormal = nullptr;
+	texAlbedo = nullptr;
+	texNormal = nullptr;
 }
 
 GeoFBO::~GeoFBO()
@@ -22,9 +21,8 @@ void GeoFBO::reset() {
 		fboID = 0;
 	}
 
-	gPosition.reset();
-	gAlbedo.reset(); 
-	gNormal.reset();
+	texAlbedo.reset(); 
+	texNormal.reset();
 }
 
 void GeoFBO::initFBO(int WIDTH, int HEIGHT)
@@ -34,52 +32,38 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	if (fboID != 0) glDeleteFramebuffers(1, &fboID);
 	glCreateFramebuffers(1, &fboID);
 
-	// Position + AO
-	gPosition = std::make_unique<Texture>();
-
-	glCreateTextures(GL_TEXTURE_2D, 1, &gPosition->texture_id);
-	glTextureStorage2D(gPosition->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
-
-	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTextureParameteri(gPosition->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, gPosition->texture_id, 0);
-	//glGenerateTextureMipmap(gPosition->texture_id);
-
 	// Albedo + Roughness
-	gAlbedo = std::make_unique<Texture>();
+	texAlbedo = std::make_unique<Texture>(GL_TEXTURE_2D);
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &gAlbedo->texture_id);
-	glTextureStorage2D(gAlbedo->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
+	glCreateTextures(GL_TEXTURE_2D, 1, &texAlbedo->texture_id);
+	glTextureStorage2D(texAlbedo->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
 
-	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTextureParameteri(gAlbedo->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(texAlbedo->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texAlbedo->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texAlbedo->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTextureParameteri(texAlbedo->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT1, gAlbedo->texture_id, 0);
-	//glGenerateTextureMipmap(gAlbedo->texture_id);
+	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT0, texAlbedo->texture_id, 0);
+	texAlbedo->getHandle();
 
 	// Normals + Metalness
-	gNormal = std::make_unique<Texture>();
+	texNormal = std::make_unique<Texture>(GL_TEXTURE_2D);
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &gNormal->texture_id);
-	glTextureStorage2D(gNormal->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
+	glCreateTextures(GL_TEXTURE_2D, 1, &texNormal->texture_id);
+	glTextureStorage2D(texNormal->texture_id, 1, GL_RGBA16F, WIDTH, HEIGHT);
 
-	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTextureParameteri(gNormal->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(texNormal->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texNormal->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texNormal->texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTextureParameteri(texNormal->texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT2, gNormal->texture_id, 0);
-	//glGenerateTextureMipmap(gNormal->texture_id);
+	glNamedFramebufferTexture(fboID, GL_COLOR_ATTACHMENT1, texNormal->texture_id, 0);
+	texNormal->getHandle();
 
 	depthTexture = std::make_unique<Texture>();
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &depthTexture->texture_id);
-	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT32, width, height);
+	glTextureStorage2D(depthTexture->texture_id, 1, GL_DEPTH_COMPONENT16, WIDTH, HEIGHT);
 
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -87,9 +71,9 @@ void GeoFBO::initFBO(int WIDTH, int HEIGHT)
 	glTextureParameteri(depthTexture->texture_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	glNamedFramebufferTexture(fboID, GL_DEPTH_ATTACHMENT, depthTexture->texture_id, 0);
-
-	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-	glNamedFramebufferDrawBuffers(fboID, 3, attachments);
+	
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glNamedFramebufferDrawBuffers(fboID, 2, attachments);
 
 	// finally check if framebuffer is complete
 	if (glCheckNamedFramebufferStatus(fboID, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)

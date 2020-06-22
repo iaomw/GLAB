@@ -1,16 +1,16 @@
 #include "MeshPack.h"
-#include "helperFunctions.h"
 
 #include <glm/gtx/intersect.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 
+#include "helperFunctions.h"
 
 MeshPack::MeshPack()
 {
 	model_matrix = glm::mat4(1.0f);
-	vao = nullptr;
 	name = "default";
+	vao = nullptr;
 }
 
 MeshPack::~MeshPack()
@@ -28,48 +28,10 @@ void MeshPack::clear()
 
 	std::vector<glm::vec3> empty_f; 
 	vertices.swap(empty_f);
-	vertex_normals.swap(empty_f);
+	v_normals.swap(empty_f);
 
 	std::vector<glm::ivec3> empty_i; 
 	indices.swap(empty_i);
-}
-
-void MeshPack::readMaterials(const std::string& mtlfilename, std::unordered_map<std::string, Material *> & materials, std::unordered_map<std::string, Texture *> & textures)
-{
-	std::ifstream mtlfin(mtlfilename);
-
-	//if (!mtlfin.is_open()) // very slow in some case
-	if(!mtlfin.good())
-	{
-		std::cout << "Error! Unable to open mtl file.\n";
-		return;
-	}
-
-	std::string v;
-	Material *curr_mat = nullptr;
-
-	while (mtlfin >> v)
-	{
-		if (v == "newmtl")
-		{
-			if (curr_mat != nullptr)
-				materials.emplace(curr_mat->mat_name, curr_mat);
-			curr_mat = new Material();
-			mtlfin >> curr_mat->mat_name;
-		}
-		else if (v == "Ns") mtlfin >> curr_mat->specular_coefficient;
-		else if (v == "Ka") mtlfin >> curr_mat->ka.r >> curr_mat->ka.g >> curr_mat->ka.b;
-		else if (v == "Kd") mtlfin >> curr_mat->kd.r >> curr_mat->kd.g >> curr_mat->kd.b;
-		else if (v == "Ks") mtlfin >> curr_mat->ks.r >> curr_mat->ks.g >> curr_mat->ks.b;
-		else if (v == "map_Kd") 
-		{
-			std::string t;
-			mtlfin >> t;
-			size_t prefix = mtlfilename.find_last_of("/");
-			//textures.emplace(curr_mat->mat_name, new Texture(mtlfilename.substr(0, prefix) + "/" + t) );
-		}
-	}
-	mtlfin.close();
 }
 
 bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, bool tonormalize, bool subgroup)
@@ -108,7 +70,6 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 		{
 			curr_end = indices.size();
 			MeshPart *o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
-			//o->setTexture(curr_texture, Texture_Type::colortex);
 			children.emplace(curr_name, o);
 
 			curr_start = curr_end;
@@ -136,16 +97,16 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 		{
 			myline >> mtlfilename;
 			size_t prefix = filename.find_last_of("/");
-			if (prefix != std::string::npos)
-				mtlfilename = (filename.substr(0, prefix)).c_str() + std::string("/") + mtlfilename;
+			//if (prefix != std::string::npos)
+				//mtlfilename = (filename.substr(0, prefix)).c_str() + std::string("/") + mtlfilename;
 			//readMaterials(mtlfilename, materials, textures);
 		}
 		else if (t == "usemtl")
 		{
 			curr_end = indices.size();
-			MeshPart *o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
+			//MeshPart *o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
 			//o->setTexture(curr_texture, Texture_Type::colortex);
-			children.emplace(curr_name, o);
+			//children.emplace(curr_name, o);
 
 			curr_start = curr_end;
 
@@ -153,9 +114,9 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 			myline >> u;
 			curr_name = u;
 
-			if (materials.count(u) != 0)
-				curr_mat = materials[u];
-			else curr_mat = nullptr;
+			//if (materials.count(u) != 0)
+			//	curr_mat = materials[u];
+			//else curr_mat = nullptr;
 
 			//if (textures.count(u) != 0)
 			//	curr_texture = textures[u];
@@ -181,8 +142,8 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 						vertices.push_back(tmp_vertices[v_idx]);
 
 						if (n_idx < tmp_normals.size())
-							vertex_normals.push_back(tmp_normals[n_idx]);
-						else vertex_normals.emplace_back(glm::vec3(0, 0, 0));
+							v_normals.push_back(tmp_normals[n_idx]);
+						else v_normals.emplace_back(glm::vec3(0, 0, 0));
 
 						if (t_idx < tmp_coords.size())
 							texcoords.push_back(tmp_coords[t_idx]);
@@ -210,7 +171,7 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 
 							if (tmp_normals.size() > 0 && n_idx < tmp_normals.size()) {
 								auto tmp_n = tmp_normals[n_idx];
-								vertex_normals.push_back(tmp_n);
+								v_normals.push_back(tmp_n);
 							}
 
 							if (tmp_coords.size() > 0 && t_idx < tmp_coords.size()) {
@@ -247,15 +208,12 @@ bool MeshPack::readObjects(const std::string& filename, bool allow_duplication, 
 	if (subgroup) {
 
 		MeshPart* o = new MeshPart(curr_mat, curr_start, curr_end, curr_name);
-		//o->setTexture(curr_texture, Texture_Type::colortex);
 		children.emplace(curr_name, o);
 	}
 	else {
 
 		MeshPart* o = new MeshPart(curr_mat, 0, indices.size(), curr_name);
-		//o->setTexture(curr_texture, Texture_Type::colortex);
-			children.clear();
-		children.emplace(curr_name, o);
+		children.clear(); children.emplace(curr_name, o);
 	}
 
 	if (tmp_normals.size() == 0) {
@@ -302,8 +260,8 @@ void MeshPack::normalize()
 
 void MeshPack::computeNormals()
 {
-	face_normals.assign(indices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
-	vertex_normals.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
+	f_normals.assign(indices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
+	v_normals.assign(vertices.size(), glm::vec3(0.0f, 0.0f, 0.0f));
 
 	for (unsigned int i = 0; i < indices.size(); i++)
 	{
@@ -311,18 +269,18 @@ void MeshPack::computeNormals()
 		auto b = vertices[indices[i][2]] - vertices[indices[i][1]];
 
 		glm::vec3 face_normal = glm::cross(a, b);
-		face_normals[i] = face_normal;
+		f_normals[i] = face_normal;
 
-		vertex_normals[indices[i][0]] += face_normal;  
-		vertex_normals[indices[i][1]] += face_normal;  
-		vertex_normals[indices[i][2]] += face_normal;  
+		v_normals[indices[i][0]] += face_normal;  
+		v_normals[indices[i][1]] += face_normal;  
+		v_normals[indices[i][2]] += face_normal;  
 	}
 
 	std::unordered_map<glm::vec3, glm::vec3> cached; 
 
 	for (unsigned int i = 0; i < vertices.size(); i++) {
 		auto& v = vertices[i];
-		auto& n = vertex_normals[i];
+		auto& n = v_normals[i];
 
 		if (cached.count(v) == 0) {
 			cached[v] = n ;
@@ -337,7 +295,7 @@ void MeshPack::computeNormals()
 		auto& v = vertices[i];
 		auto& n = cached[v];
 
-		vertex_normals[i] = glm::normalize(n);
+		v_normals[i] = glm::normalize(n);
 	}
 }
 
@@ -346,78 +304,80 @@ void MeshPack::createVAO()
 	vao = std::make_unique<VAO>();
 
 	if (indices.size()) vao->storeIndices(indices);
+
 	if (vertices.size()) vao->storePositions(vertices, 0);
-	if (vertex_normals.size()) vao->storeNormals(vertex_normals, 1);
-	
+	if (v_normals.size()) vao->storeNormals(v_normals, 1);
 	if (texcoords.size()) vao->storeTexcoords(texcoords, 2);
-	if (tangents.size()) vao->storeTangents(tangents, 3);
 }
 
-glm::mat3 MeshPack::normalMatrix(glm::mat4 view_matrix) {
-	return glm::transpose(glm::inverse(glm::mat3(view_matrix) * glm::mat3(model_matrix)));
+glm::mat4 MeshPack::normalMatrix(glm::mat4& view_matrix, glm::mat4& instance_matrix) {
+	return glm::transpose(glm::inverse(view_matrix * instance_matrix));
+}
+
+void MeshPack::batch() {
+	modelMatrixList.push_back(model_matrix);
 }
 
 void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& view_matrix)
 {
 	myassert(vao != nullptr);
 
+	if (modelMatrixList.size() == 0) {
+		shader->setUniform("model_matrix", model_matrix);
+		shader->setUniform("normal_matrix", normalMatrix(view_matrix, model_matrix));
+		//batch();
+	}
+
+	std::vector<glm::mat4> normalMatrixList;
+	for (auto& matrix : modelMatrixList) {
+		normalMatrixList.emplace_back(normalMatrix(view_matrix, matrix));
+	}
+
 	shader->setUniform("view_matrix", view_matrix);
-	shader->setUniform("model_matrix", model_matrix);
-	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
 
 	for (auto it = children.begin(); it != children.end(); ++it) {
-		it->second->display(vao, shader);
-	}
-}
 
-void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& view_matrix, const std::string& name)
-{
-	if (vao == nullptr)
-	{
-		std::cout << "myVAO is empty. Nothing to draw.\n";
-		return;
-	}
-
-	shader->setUniform("model_matrix", model_matrix);
-	shader->setUniform("normal_matrix", normalMatrix(view_matrix));
-
-	auto st = children.equal_range(name);
-	for (auto it = st.first; it != st.second; ++it)
-		it->second->display(vao, shader);
-}
-
-glm::vec3 MeshPack::closestVertex(glm::vec3 ray, glm::vec3 starting_point)
-{
-	float min = std::numeric_limits<float>::max();
-	unsigned int min_index = 0;
-
-	ray = glm::normalize(ray);
-	for (unsigned int i = 0; i < vertices.size(); i++)
-	{
-		float dotp = glm::dot(ray, vertices[i] - starting_point);
-		if (dotp < 0) continue;
-
-		float oq = glm::distance(starting_point, vertices[i]);
-		float d = oq*oq - dotp*dotp;
-		if (d < min)
-		{
-			min = d;
-			min_index = i;
+		if (modelMatrixList.size() > 0) {
+			it->second->display(vao, shader, modelMatrixList, normalMatrixList);
+		} else {
+			it->second->display(vao, shader);
 		}
 	}
-	return vertices[min_index];
+
+	modelMatrixList.clear();
 }
 
+void MeshPack::translate(glm::vec3& v)
+{
+	glm::mat4 tmp = glm::translate(glm::mat4(1.0f), v);
+	model_matrix = tmp * model_matrix;
+}
 
 void MeshPack::translate(float x, float y, float z)
 {
-	glm::mat4 tmp = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+	translate(glm::vec3(x, y, z));
+}
+
+void MeshPack::scale(glm::vec3& v)
+{
+	glm::mat4 tmp = glm::scale(glm::mat4(1.0f), v);
 	model_matrix = tmp * model_matrix;
 }
 
 void MeshPack::scale(float x, float y, float z)
 {
-	glm::mat4 tmp = glm::scale(glm::mat4(1.0f), glm::vec3(x, y, z));
+	if (x == 0 || y == 0 || z == 0) 
+	{
+		std::cout << "Error: scale is almost zero" << std::endl;
+		return;
+	}
+
+	scale(glm::vec3(x, y, z));
+}
+
+void MeshPack::rotate(glm::vec3& axis, float angle) {
+
+	glm::mat4 tmp = glm::rotate(glm::mat4(1.0f), static_cast<float>(angle), axis);
 	model_matrix = tmp * model_matrix;
 }
 
@@ -429,23 +389,7 @@ void MeshPack::rotate(float axis_x, float axis_y, float axis_z, float angle)
 		return;
 	}
 
-	glm::mat4 tmp = glm::rotate(glm::mat4(1.0f), static_cast<float>(angle), glm::vec3(axis_x, axis_y, axis_z));
-	model_matrix = tmp * model_matrix;
-}
-
-void MeshPack::translate(glm::vec3 v)
-{
-	translate(v.x, v.y, v.z);
-}
-
-void MeshPack::scale(glm::vec3 v)
-{
-	scale(v.x, v.y, v.z);
-}
-
-void MeshPack::rotate(glm::vec3 v, float angle)
-{
-	rotate(v.x, v.y, v.z, angle);
+	rotate(glm::vec3(axis_x, axis_y, axis_z), angle);
 }
 
 void MeshPack::computeTexturecoordinates_plane()
@@ -506,7 +450,6 @@ void MeshPack::computeTangents()
 	for (unsigned int i = 0; i < vertices.size(); i++)  tangents[i] = glm::normalize(tangents[i]);
 }
 
-
 void MeshPack::setTexture(Texture* tex, Texture_Type type)
 {
 	for (auto& sub : children) {
@@ -521,6 +464,27 @@ void MeshPack::clearTexture() {
 	}
 }
 
+glm::vec3 MeshPack::closestVertex(glm::vec3 ray, glm::vec3 starting_point)
+{
+	float min = std::numeric_limits<float>::max();
+	unsigned int min_index = 0;
+
+	ray = glm::normalize(ray);
+	for (unsigned int i = 0; i < vertices.size(); i++)
+	{
+		float dotp = glm::dot(ray, vertices[i] - starting_point);
+		if (dotp < 0) continue;
+
+		float oq = glm::distance(starting_point, vertices[i]);
+		float d = oq * oq - dotp * dotp;
+		if (d < min)
+		{
+			min = d;
+			min_index = i;
+		}
+	}
+	return vertices[min_index];
+}
 
 float MeshPack::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked_triangle)
 {

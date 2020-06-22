@@ -238,27 +238,3 @@ void Shader::setTex(const std::string& name, GLuint texture_id, GLuint texture_o
 	glBindTextureUnit(texture_offset, texture_id);
 	this->setUniform(name, static_cast<int>(texture_offset));
 }
-
-void Shader::setLight(std::unique_ptr<Light> const& light, const std::string& lightvariable_in_shader)
-{
-	auto type_i = magic_enum::enum_integer(light->type);
-	this->setUniform(lightvariable_in_shader + ".type", type_i);
-	this->setUniform(lightvariable_in_shader + ".color", light->color);
-	this->setUniform(lightvariable_in_shader + ".position", light->position);
-	this->setUniform(lightvariable_in_shader + ".direction", light->direction);
-	this->setUniform(lightvariable_in_shader + ".intensity", light->intensity);
-}
-
-void Shader::setLightList(std::unique_ptr<LightList> const& lightList, const std::string& lightvariable_in_shader)
-{
-	auto& list = lightList->list;
-
-	for (unsigned int i = 0; i < list.size(); ++i) {
-
-		auto shaderString = lightvariable_in_shader + "[" + std::to_string(i) + "]";
-
-		this->setLight(list[i], shaderString);
-	}
-
-	this->setUniform("num_lights", static_cast<int>(list.size()));
-}

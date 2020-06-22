@@ -3,9 +3,20 @@
 const float pos_infinity = uintBitsToFloat(0x7F800000);
 const float neg_infinity = uintBitsToFloat(0xFF800000);
 
-uniform float fovY;
-uniform float farZ;
-uniform float nearZ;
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
+
+	float exposure;
+	float gamma;
+};
 
 uniform float range;
 uniform vec2 direction;
@@ -30,14 +41,15 @@ float LinearizeDepth(float depth)
 void main()
 {          
     vec4 result;
-    float depth = textureLod(colortex, texCoords, 0).a;
+    vec4 color = textureLod(colortex, texCoords, 0);
+    float depth = color.a;
    
     if (depth < -farZ) { // background
         //depth = -farZ; //neg_infinity;
         result.rgba = vec4(0, 0, 0, depth);
     } else {
         result.a = depth;
-        result.rgb = 2 * textureLod(colortex, texCoords, 0).rgb * weight[0];
+        result.rgb = 2 * color.rgb * weight[0];
     }
 
     ivec2 imageSize = textureSize(colortex, 0); 

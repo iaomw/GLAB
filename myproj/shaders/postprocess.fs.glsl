@@ -2,19 +2,31 @@
 
 layout (location = 0) out vec4 gColor;
 
-uniform float gamma;
-uniform float exposure;
 uniform float background;
 
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
+
+	float exposure;
+	float gamma;
+};
+
 uniform sampler2D colortex;
-//uniform sampler2D gPosition;
 
 uniform sampler2D gEnv;
 uniform sampler2D gExtra;
 uniform sampler2D gBloom;
 
-uniform bool tonemapping_object;
-uniform bool tonemapping_background;
+uniform bool tone_object;
+uniform bool tone_background;
 
 in vec2 texCoords;
 
@@ -52,8 +64,8 @@ void main()
     float mapped = CEToneMapping(luminance, 1.0);
     mapped = 1.0 - clamp(mapped, 0.0, 0.96);
     // HDR tonemapping
-    env.rgb = tonemapping_background? ACESToneMapping(env.rgb, exposure * mapped) : env.rgb;
-    obj.rgb = tonemapping_object? ACESToneMapping(obj.rgb, exposure * mapped) : obj.rgb;
+    env.rgb = tone_background? ACESToneMapping(env.rgb, exposure * mapped) : env.rgb;
+    obj.rgb = tone_object? ACESToneMapping(obj.rgb, exposure * mapped) : obj.rgb;
     env.rgb *= background;
 
     vec3 result;

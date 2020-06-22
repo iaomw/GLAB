@@ -1,25 +1,33 @@
-#version 330 core
+#version 460 core
 
 const float pos_infinity = uintBitsToFloat(0x7F800000);
 const float neg_infinity = uintBitsToFloat(0xFF800000);
 
 layout (location = 0) out vec4 gColor;
-//layout (location = 1) out vec4 gExtra;
+
+uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
+
+uniform samplerCube cubetex;
 
 in vec4 myvertex;
 in vec3 mynormal;
 in vec3 texCoord;
 
-uniform float fovY;
-uniform float farZ;
-uniform float nearZ;
+layout(std430) buffer SceneComplex
+{
+	mat4 projection_matrix;
+	mat4 view_matrix;
+	mat4 weiv_matrix;
+	
+	float nearZ;
+	float farZ;
+	float fovY;
+	float XdY;
 
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform mat3 normal_matrix;
-uniform mat4 projection_matrix;
-
-uniform samplerCube cubetex;
+	float exposure;
+	float gamma;
+};
 
 void main()
 {    

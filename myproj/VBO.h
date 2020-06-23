@@ -9,16 +9,17 @@ public:
 	~VBO();
 
 	GLuint getID() { return buffer_id; }
+	size_t byteSize() { return  total_byte_size; }
 
 	void bind() const;
 	void unbind() const;
-	void setData(GLvoid *data, size_t size);
-	void setData(GLvoid* data, size_t offset, size_t size_in_bytes);
+	bool setData(GLvoid *data, size_t byte_size);
+	bool setData(GLvoid* data, size_t offset, size_t byte_size);
 
 protected:
 	GLuint buffer_id;
 	GLenum buffer_type;
 
 	GLenum usage;
-	size_t previous_size;
+	size_t total_byte_size;
 };

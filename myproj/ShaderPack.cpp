@@ -26,8 +26,30 @@ void ShaderPack::syncSSBO() {
 
 	pbr_pack_buffer->setData(&pbr_pack, sizeof(PBR_Pack));
 	pbr_pass_buffer->setData(&pbr_pass, sizeof(PBR_Pass));
+}
 
-	light_pack_buffer->setData(&light_pack, sizeof(Light_Pack));
+void ShaderPack::syncLight(std::vector<Light>& lightList) {
+
+	size_t ele_count = lightList.size();
+
+	size_t byte_size = ele_count * sizeof(Light);
+	size_t byte_offset = offsetof(struct Light_Pack, list);
+
+	size_t byte_range = byte_offset + byte_size;
+
+	bool succ = light_pack_buffer->setData(lightList.data(), byte_offset, byte_size);
+
+	if (!succ) {
+
+		light_pack_buffer->setData(&light_pack, byte_range);
+		light_pack_buffer->setData(lightList.data(), byte_offset, byte_size);
+	}
+
+	if (ele_count != light_pack.size) {
+
+		light_pack.size = ele_count;
+		light_pack_buffer->setData(&ele_count, 0, sizeof(GLuint));
+	}
 }
 
 void ShaderPack::add(std::unique_ptr<Shader> shader, ShaderName type)

@@ -175,6 +175,8 @@ int main(int argc, char* argv[])
 	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1)) );
 	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7)) );
 
+	lightList.addLight(Light(LightType::POINTLIGHT, glm::vec3(0, 40, 0), glm::vec3(0.7), glm::vec3(0.7, 0.7, 0.7)));
+
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
 
@@ -207,12 +209,6 @@ int main(int argc, char* argv[])
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 
 	ShaderPack shaderPack;
-
-	for (int i = 0; i < lightList.list.size(); ++i) {
-		shaderPack.light_pack.lightList[i] = lightList.list[i];
-	}
-
-	shaderPack.light_pack.lightCount = lightList.list.size();
 
 	shaderPack.add(std::make_unique<Shader>("geo_buffer"), ShaderName::geo_buffer);
 	shaderPack.add(std::make_unique<Shader>("pbr_buffer"), ShaderName::pbr_buffer);
@@ -596,11 +592,9 @@ int main(int argc, char* argv[])
 		if (windowsize_changed || pipeline_changed)
 		{
 			SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
-			windowsize_changed = false; pipeline_changed = false;
+			windowsize_changed = false; pipeline_changed = false; mainCam->outdate();
 
 			for (auto& fbo : FBOs) { fbo->reset(); }
-
-			shaderPack.complex.XdY = mainCam->window_width / mainCam->window_height;
 
 			environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 			blurFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
@@ -612,6 +606,7 @@ int main(int argc, char* argv[])
 
 		//Computing transformation matrices.
 		glViewport(0, 0, mainCam->window_width, mainCam->window_height);
+
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
 		glm::mat4 weiv_matrix = mainCam->weivMatrix();
@@ -620,16 +615,21 @@ int main(int argc, char* argv[])
 		shaderPack.complex.view_matrix = view_matrix;
 		shaderPack.complex.weiv_matrix = weiv_matrix;
 
+		shaderPack.complex.XdY = mainCam->aspectRatio();
+
 		shaderPack.complex.nearZ = mainCam->nearZ;
 		shaderPack.complex.farZ = mainCam->farZ;
 		shaderPack.complex.fovY = mainCam->fovY;
-
+		
 		shaderPack.complex.exposure = exposure;
 		shaderPack.complex.gamma = gamma;
 
+		shaderPack.syncLight(lightList.list);
 		shaderPack.syncSSBO();
+		glCheckError();
 
 		skycube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
+		glCheckError();
 
 		environmentFBO->multi_render(
 			&std::function<void()>([&] {
@@ -643,7 +643,7 @@ int main(int argc, char* argv[])
 				auto& current_shader = shaderPack[ShaderName::basic];
 				current_shader->start();
 
-				for (auto& light : shaderPack.light_pack.lightList) {
+				for (auto& light : lightList.list) {
 
 					lightball->translate(light.position);
 						lightball->batch();
@@ -700,7 +700,7 @@ int main(int argc, char* argv[])
 				else if (RenderPipeline::SSSS == current_pipeline) {
 
 					for (size_t i = 0; i < lightList.list.size(); ++i) {
-						auto& light = shaderPack.light_pack.lightList[i];
+						auto& light = lightList.list[i];
 						lightList.shadowList[i]->shadowMapping(shadowShader, headObject, light.position, captureProjection);
 					} glCheckError();
 

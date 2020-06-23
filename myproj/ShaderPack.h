@@ -26,7 +26,7 @@ static std::string literial(ShaderName name) {
 }
 
 struct alignas(16) SceneComplex {
-//struct SceneComplex {
+
 	glm::mat4 projection_matrix;
 	glm::mat4 view_matrix;
 	glm::mat4 weiv_matrix;
@@ -41,8 +41,8 @@ struct alignas(16) SceneComplex {
 };
 
 struct Light_Pack {
-	GLuint lightCount = 3;
-	Light lightList[3];
+	GLuint size = 1;
+	Light list[1];
 };
 
 struct PBR_Unit {
@@ -54,7 +54,6 @@ struct PBR_Unit {
 };
 
 struct PBR_Pack {
-	
 	GLuint size = 3; 
 	PBR_Unit list[3];
 };
@@ -83,11 +82,12 @@ private:
 	std::unordered_map<ShaderName, size_t> byname;
 	std::vector<std::unique_ptr<Shader>> all_shaders;
 
+	Light_Pack light_pack;
+
 public:
 
 	SceneComplex complex;
-	Light_Pack light_pack;
-
+	
 	PBR_Pack pbr_pack;
 	PBR_Pass pbr_pass;
 	
@@ -95,6 +95,8 @@ public:
 	~ShaderPack();
 
 	void syncSSBO();
+
+	void syncLight(std::vector<Light> &lightList);
 
 	void add(std::unique_ptr<Shader> shader, ShaderName type);
 	std::unique_ptr<Shader> const& operator[](ShaderName type); //const

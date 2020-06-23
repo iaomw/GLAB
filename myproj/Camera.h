@@ -15,6 +15,10 @@ public:
 	int window_width;
 	int window_height;
 
+	 float aspectRatio() {
+		return window_width / window_height;
+	}
+
 	Camera();
 	~Camera();
 	void reset();
@@ -36,6 +40,8 @@ public:
 	glm::mat4 viewMatrix() const;
 	glm::mat4 weivMatrix() const;
 
+	inline void outdate();
+
 private:
 
 	mutable bool project_outdated = true;
@@ -45,6 +51,4 @@ private:
 	mutable glm::mat4 project_matrix;
 	mutable glm::mat4 view_matrix;
 	mutable glm::mat4 weiv_matrix;
-
-	inline void outdate();
 };

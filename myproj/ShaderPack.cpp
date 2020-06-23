@@ -44,7 +44,7 @@ void ShaderPack::add(std::unique_ptr<Shader> shader, ShaderName type)
 		glShaderStorageBlockBinding(shader->shaderprogram, block_index, ssbo_binding_point_index);
 
 		GLuint binding_point_index = 0;
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, light_pack_buffer->buffer_id);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, light_pack_buffer->getID());
 	}
 
 	block_index = glGetProgramResourceIndex(shader->shaderprogram, GL_SHADER_STORAGE_BLOCK, "SceneComplex");
@@ -56,7 +56,7 @@ void ShaderPack::add(std::unique_ptr<Shader> shader, ShaderName type)
 		glShaderStorageBlockBinding(shader->shaderprogram, block_index, ssbo_binding_point_index);
 
 		GLuint binding_point_index = 1;
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, scene_buffer->buffer_id);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, scene_buffer->getID());
 	}
 
 	block_index = glGetProgramResourceIndex(shader->shaderprogram, GL_SHADER_STORAGE_BLOCK, "PBR_Pack");
@@ -67,7 +67,7 @@ void ShaderPack::add(std::unique_ptr<Shader> shader, ShaderName type)
 		glShaderStorageBlockBinding(shader->shaderprogram, block_index, ssbo_binding_point_index);
 
 		GLuint binding_point_index = 2;
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, pbr_pack_buffer->buffer_id);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, pbr_pack_buffer->getID());
 	}
 
 	block_index = glGetProgramResourceIndex(shader->shaderprogram, GL_SHADER_STORAGE_BLOCK, "PBR_Pass");
@@ -78,7 +78,7 @@ void ShaderPack::add(std::unique_ptr<Shader> shader, ShaderName type)
 		glShaderStorageBlockBinding(shader->shaderprogram, block_index, ssbo_binding_point_index);
 
 		GLuint binding_point_index = 3;
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, pbr_pass_buffer->buffer_id);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point_index, pbr_pass_buffer->getID());
 	}
 	
 	byname[type] = all_shaders.size();

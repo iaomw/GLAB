@@ -169,7 +169,7 @@ void VAO::draw(size_t start, size_t end, std::vector<glm::mat4>& model_matrix_li
 
 		indirect_buffer->setData(drawList.data(), sizeof(DrawCommand) * drawList.size());
 
-		glBindBuffer(GL_ARRAY_BUFFER, indirect_buffer->buffer_id);
+		glBindBuffer(GL_ARRAY_BUFFER, indirect_buffer->getID());
 		glEnableVertexAttribArray(3);
 		glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(DrawCommand), (void*)(offsetof(DrawCommand, baseInstance)));
 		glVertexAttribDivisor(3, 1); //only once per instance

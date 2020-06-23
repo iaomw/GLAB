@@ -6,11 +6,8 @@
 
 enum class LightType { POINTLIGHT, SPOTLIGHT, DIRECTIONALLIGHT };
 
-class alignas(16) Light
-//class Light
+struct alignas(16) Light
 {
-public:
-
 	GLuint64 type;
 	GLuint64 shadow_handle;
 	

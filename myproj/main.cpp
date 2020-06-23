@@ -58,162 +58,9 @@ size_t picked_triangle_index = 0;
 MeshPack* picked_object = nullptr;
 
 // Process the event.  
-void processEvents(SDL_Event current_event)
-{
-	switch (current_event.type)
-	{
-	// window close button is pressed
-	case SDL_QUIT:
-	{
-		quit = true; break;
-	}
-	case SDL_KEYDOWN:
-	{
-		switch (current_event.key.keysym.sym)
-		{
-		case SDLK_ESCAPE: 
-			quit = true; break;
-		case SDLK_r:
-			mainCam->reset(); break;
-		case SDLK_UP: case SDLK_w:
-			mainCam->moveForward(movement_stepsize); break;
-		case SDLK_DOWN: case SDLK_s:
-			mainCam->moveBack(movement_stepsize); break;
-		case SDLK_LEFT: case SDLK_a:
-			mainCam->turnLeft(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
-		case SDLK_RIGHT: case SDLK_d:
-			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
-		case SDLK_v:
-			crystalball_viewing = !crystalball_viewing; break;
-		case SDLK_SPACE:
-			renderloop_paused = !renderloop_paused; break;
-		case SDLK_o:
-			{ 
-				// Open something with NFD
-			}
-		}	break;
-	}
-	case SDL_MOUSEBUTTONDOWN:
-	{
-		mouse_position.x = current_event.button.x;
-		mouse_position.y = current_event.button.y;
-		mouse_pressing = true;
+void processEvents(SDL_Event current_event);
 
-		const Uint8* state = SDL_GetKeyboardState(nullptr);
-		if (state[SDL_SCANCODE_LCTRL])
-		{
-			glm::vec3 ray = mainCam->constructRay(mouse_position.x, mouse_position.y);
-			scene.closestObject(ray, mainCam->camera_eye, picked_object, picked_triangle_index);
-		}
-		break;
-	}
-	case SDL_MOUSEBUTTONUP:
-	{
-		mouse_pressing = false; break;
-	}
-	case SDL_MOUSEMOTION:
-	{
-		int x = current_event.motion.x;
-		int y = current_event.motion.y;
-
-		int dx = x - mouse_position.x;
-		int dy = y - mouse_position.y;
-
-		mouse_position.x = x;
-		mouse_position.y = y;
-
-		if ((dx == 0 && dy == 0) || !mouse_pressing) return;
-
-		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalball_viewing)
-			mainCam->crystalball_rotateView(dx, dy);
-		else if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && !crystalball_viewing)
-			mainCam->firstperson_rotateView(dx, dy);
-		else if (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_RIGHT))
-			mainCam->panView(dx, dy);
-
-		break;
-	}
-	case SDL_WINDOWEVENT:
-	{
-		if (current_event.window.event == SDL_WINDOWEVENT_RESIZED)
-			windowsize_changed = true;
-		break;
-	}
-	case SDL_MOUSEWHEEL:
-	{
-		if (current_event.wheel.y < 0)
-			mainCam->moveBack(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
-		else if (current_event.wheel.y > 0)
-			mainCam->moveForward(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
-		break;
-	}
-	default:
-		break;
-	}
-}
-
-void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
-{
-	auto const src_str = [source]() {
-		switch (source)
-		{
-		case GL_DEBUG_SOURCE_API: return "API";
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
-		case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
-		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
-		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
-		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
-		default: return "UNKNOW";
-		}
-	}();
-
-	auto const type_str = [type]() {
-		switch (type)
-		{
-		case GL_DEBUG_TYPE_ERROR: return "ERROR";
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
-		case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
-		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
-		case GL_DEBUG_TYPE_MARKER: return "MARKER";
-		case GL_DEBUG_TYPE_OTHER: return "OTHER";
-		default: return "UNKNOW";
-		}
-	}();
-
-	auto const severity_str = [severity]() {
-		switch (severity) {
-		case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
-		case GL_DEBUG_SEVERITY_LOW: return "LOW";
-		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
-		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
-		default: return "UNKNOW";
-		}
-	}();
-
-	std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
-}
-
-GLenum glCheckError_(const char* file, int line)
-{
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR)
-	{
-		std::string error;
-		switch (errorCode)
-		{
-		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-		}
-		std::cout << errorCode << ": " << error << " | " << file << " (" << line << ")" << std::endl;
-	}
-	return errorCode;
-}
+GLenum glCheckError_(const char* file, int line);
 
 #ifdef _DEBUG
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
@@ -221,8 +68,10 @@ GLenum glCheckError_(const char* file, int line)
 #define glCheckError()
 #endif // _DEBUG
 
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
+
 enum class RenderPipeline {
-	PBR, SSSS, Debug
+	PBR, SSSS, DEBUG
 };
 
 int main(int argc, char* argv[])
@@ -240,7 +89,6 @@ int main(int argc, char* argv[])
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-	//SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	auto flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// Create window
 	_window = SDL_CreateWindow("GLAB",
@@ -248,7 +96,9 @@ int main(int argc, char* argv[])
 		SDL_WINDOWPOS_CENTERED,
 		DEFAULT_WINDOW_WIDTH,
 		DEFAULT_WINDOW_HEIGHT, flags);
+
 	//SDL_SetWindowBordered(window, SDL_FALSE);
+
 	auto render = SDL_GetRenderer(_window);
 	context = SDL_GL_CreateContext(_window);
 	glewInit(); SDL_GL_MakeCurrent(_window, context);
@@ -257,11 +107,12 @@ int main(int argc, char* argv[])
 	auto errot = SDL_GetError();
 
 #ifdef _DEBUG
-	// During init, enable debug output
+
 	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(message_callback, nullptr);
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+
 #endif // _DEBUG
 
 	float scaledDPI, defaultDPI;
@@ -286,7 +137,6 @@ int main(int argc, char* argv[])
 	// Setup Platform/Renderer bindings
 	ImGui_ImplSDL2_InitForOpenGL(_window, context);
 	ImGui_ImplOpenGL3_Init("#version 330");
-
 
 	ImGui::GetIO().FontDefault->FontSize;
 	ImGui::GetIO().FontAllowUserScaling = true;
@@ -935,4 +785,161 @@ int main(int argc, char* argv[])
 	// Quit SDL subsystems
 	SDL_Quit();
 	return 0;
+}
+
+void processEvents(SDL_Event current_event)
+{
+	switch (current_event.type)
+	{
+		// window close button is pressed
+	case SDL_QUIT:
+	{
+		quit = true; break;
+	}
+	case SDL_KEYDOWN:
+	{
+		switch (current_event.key.keysym.sym)
+		{
+		case SDLK_ESCAPE:
+			quit = true; break;
+		case SDLK_r:
+			mainCam->reset(); break;
+		case SDLK_UP: case SDLK_w:
+			mainCam->moveForward(movement_stepsize); break;
+		case SDLK_DOWN: case SDLK_s:
+			mainCam->moveBack(movement_stepsize); break;
+		case SDLK_LEFT: case SDLK_a:
+			mainCam->turnLeft(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
+		case SDLK_RIGHT: case SDLK_d:
+			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
+		case SDLK_v:
+			crystalball_viewing = !crystalball_viewing; break;
+		case SDLK_SPACE:
+			renderloop_paused = !renderloop_paused; break;
+		case SDLK_o:
+		{
+			// Open something with NFD
+		}
+		}	break;
+	}
+	case SDL_MOUSEBUTTONDOWN:
+	{
+		mouse_position.x = current_event.button.x;
+		mouse_position.y = current_event.button.y;
+		mouse_pressing = true;
+
+		const Uint8* state = SDL_GetKeyboardState(nullptr);
+		if (state[SDL_SCANCODE_LCTRL])
+		{
+			glm::vec3 ray = mainCam->constructRay(mouse_position.x, mouse_position.y);
+			scene.closestObject(ray, mainCam->camera_eye, picked_object, picked_triangle_index);
+		}
+		break;
+	}
+	case SDL_MOUSEBUTTONUP:
+	{
+		mouse_pressing = false; break;
+	}
+	case SDL_MOUSEMOTION:
+	{
+		int x = current_event.motion.x;
+		int y = current_event.motion.y;
+
+		int dx = x - mouse_position.x;
+		int dy = y - mouse_position.y;
+
+		mouse_position.x = x;
+		mouse_position.y = y;
+
+		if ((dx == 0 && dy == 0) || !mouse_pressing) return;
+
+		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalball_viewing)
+			mainCam->crystalball_rotateView(dx, dy);
+		else if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && !crystalball_viewing)
+			mainCam->firstperson_rotateView(dx, dy);
+		else if (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_RIGHT))
+			mainCam->panView(dx, dy);
+
+		break;
+	}
+	case SDL_WINDOWEVENT:
+	{
+		if (current_event.window.event == SDL_WINDOWEVENT_RESIZED)
+			windowsize_changed = true;
+		break;
+	}
+	case SDL_MOUSEWHEEL:
+	{
+		if (current_event.wheel.y < 0)
+			mainCam->moveBack(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
+		else if (current_event.wheel.y > 0)
+			mainCam->moveForward(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+GLenum glCheckError_(const char* file, int line)
+{
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << errorCode << ": " << error << " | " << file << " (" << line << ")" << std::endl;
+	}
+	return errorCode;
+}
+
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
+{
+	auto const src_str = [source]() {
+		switch (source)
+		{
+		case GL_DEBUG_SOURCE_API: return "API";
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
+		case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
+		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
+		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
+		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+		default: return "UNKNOW";
+		}
+	}();
+
+	auto const type_str = [type]() {
+		switch (type)
+		{
+		case GL_DEBUG_TYPE_ERROR: return "ERROR";
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
+		case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
+		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
+		case GL_DEBUG_TYPE_MARKER: return "MARKER";
+		case GL_DEBUG_TYPE_OTHER: return "OTHER";
+		default: return "UNKNOW";
+		}
+	}();
+
+	auto const severity_str = [severity]() {
+		switch (severity) {
+		case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
+		case GL_DEBUG_SEVERITY_LOW: return "LOW";
+		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
+		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+		default: return "UNKNOW";
+		}
+	}();
+
+	std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
 }

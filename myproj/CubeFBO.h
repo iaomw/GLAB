@@ -1,6 +1,5 @@
 #pragma once
 #include "FBO.h"
-
 #include <iostream>
 
 #define GLM_FORCE_AVX

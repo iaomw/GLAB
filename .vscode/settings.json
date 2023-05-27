@@ -1,0 +1,9 @@
+{
+   "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json", 
+   "cmake.generator": "Ninja",
+   "cmake.configureArgs": [
+       "-DCMAKE_BUILD_TYPE=Debug",
+       "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+       "-DCMAKE_TOOLCHAIN_FILE=${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+   ]
+ }

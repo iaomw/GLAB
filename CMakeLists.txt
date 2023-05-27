@@ -15,8 +15,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/myproj)
 
 # file(GLOB sources CONFIGURE_DEPENDS *.h *.c *.cpp)
-AUX_SOURCE_DIRECTORY(myproj sources) 
-add_executable(${P_NAME} ${sources})
+AUX_SOURCE_DIRECTORY(myproj SOURCE) 
+add_executable(${P_NAME} ${SOURCE})
 
 # Main Executable
 # add_definitions("-Wall -O0 -g")

@@ -15,9 +15,9 @@
 #include <SDL2/SDL_main.h>
 #include <SDL2/SDL_opengl.h>
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_sdl.h>
-#include <imgui/imgui_impl_opengl3.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_opengl3.h"
 
 #include "helperFunctions.h"
 #include "default_constants.h"
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 
 	// Using OpenGL 4.6 core
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	// https://github.com/ocornut/imgui/issues/2956
-	io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Arial.ttf", sacledRatio * 15.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Arial.ttf", sacledRatio * 15.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -135,9 +135,9 @@ int main(int argc, char* argv[])
 	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer bindings
-	ImGui_ImplSDL2_InitForOpenGL(_window, context);
 	ImGui_ImplOpenGL3_Init("#version 330");
-
+	ImGui_ImplSDL2_InitForOpenGL(_window, context);
+	
 	ImGui::GetIO().FontDefault->FontSize;
 	ImGui::GetIO().FontAllowUserScaling = true;
 	ImGui::GetIO().FontGlobalScale = 1.0;// sacledRatio;
@@ -156,11 +156,11 @@ int main(int argc, char* argv[])
 
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+	//glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	//glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
-	checkOpenGLInfo(true);
+	//checkOpenGLInfo(true);
 
 	mainCam = std::make_unique<Camera>(); mainCam->camera_eye = glm::vec3(0, 0, 32);
 	SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
@@ -182,29 +182,37 @@ int main(int argc, char* argv[])
 
 	auto geometryFBO = std::make_shared<GeoFBO>();
 	geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	glCheckError();
 
 	auto lightingFBO = std::make_shared<FBO>(false, false);
 	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
-	 
+	glCheckError();
+
 	auto environmentFBO = std::make_shared<FBO>(false, true);
 	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	glCheckError();
 
 	auto blurFBO = std::make_shared<FBO>();
 	blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
 	auto rulbFBO = std::make_shared<FBO>();
 	rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	glCheckError();
 
 	auto bFBO = std::make_unique<FBO>();
 	bFBO->initFBO(512, 512);
+	glCheckError();
 
 	auto cFBO = std::make_unique<CubeFBO>();
 	cFBO->initFBO(2048, 2048);
+	glCheckError();
 
 	auto pFBO = std::make_unique<CubeFBO>();
 	pFBO->initFBO(1024, 1024);
+	glCheckError();
 
 	auto iFBO = std::make_unique<CubeFBO>();
 	iFBO->initFBO(256, 256);
+	glCheckError();
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 
@@ -225,15 +233,18 @@ int main(int argc, char* argv[])
 	shaderPack.add(std::make_unique<Shader>("blur"), ShaderName::blur);
 
 	auto shadowShader = std::make_unique<Shader>("point_shadow");
+	glCheckError();
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
 	auto cube = std::make_unique<MeshPack>(); // for capture only
 	cube->readObjects("models/skycube.obj", true, false);
 	cube->createVAO();
+	glCheckError();
 
 	auto hdrTexture = std::make_unique<Texture>();
 	hdrTexture->readTextureHDR("textures/envirment/vulture_hide_4k.hdr");
+	glCheckError();
 
 	// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
 	// ----------------------------------------------------------------------------------------------
@@ -470,8 +481,9 @@ int main(int argc, char* argv[])
 		if (show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
 		static int counter = 0;
-		ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
-		ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
+
+		ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+		ImGui::Begin("Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		// Display some text (you can use a format strings too)
 		//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 		//ImGui::Checkbox("Another Window", &show_another_window);
@@ -570,7 +582,7 @@ int main(int argc, char* argv[])
 
 		while (SDL_PollEvent(&current_event) != 0) {
 
-			if (ImGui::IsMouseHoveringAnyWindow()) {
+			if (ImGui::IsAnyItemHovered()) {
 				ImGui_ImplSDL2_ProcessEvent(&current_event);
 			}
 			else {

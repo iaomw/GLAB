@@ -511,17 +511,17 @@ float MeshPack::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked
 				verts[j] = glm::vec3(t.x / t.w, t.y / t.w, t.z / t.w);
 			}
 
-			bool intersect = glm::intersectRayTriangle(origin, ray, verts[0], verts[1], verts[2], intersection_point);
-			if (intersect)
-			{
-				float t = intersection_point.z;
-				if (t >= 0 && t < min_t)
-				{
-					min_t = t;
-					picked_triangle = i;
-					picked_object = obj;
-				}
-			}
+			// bool intersect = glm::intersectRayTriangle(origin, ray, verts[0], verts[1], verts[2], intersection_point);
+			// if (intersect)
+			// {
+			// 	float t = intersection_point.z;
+			// 	if (t >= 0 && t < min_t)
+			// 	{
+			// 		min_t = t;
+			// 		picked_triangle = i;
+			// 		picked_object = obj;
+			// 	}
+			// }
 		}
 	}
 

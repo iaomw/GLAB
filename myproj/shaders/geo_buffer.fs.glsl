@@ -52,7 +52,7 @@ layout(std430) buffer Light_Pack
 // 	uvec2 roughness;
 // };
 
-layout(binding = 2, bindless_sampler) buffer PBR_Pack 
+layout(binding = 2, std430) buffer PBR_Pack 
 {
     sampler2D pbr_pack[];
     //uint64_t pbr_pack[];

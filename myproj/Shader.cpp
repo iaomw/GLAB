@@ -191,7 +191,7 @@ void Shader::setUniform(const std::string& name, int val)
 	glUniform1i(location, val);
 }
 
-void Shader::setUniform(const std::string& name, glm::vec2& vec)
+void Shader::setUniform(const std::string& name, glm::vec2 vec)
 {
 	auto location = getUniformLocation(name);
 	if (-1 == location) { return; }

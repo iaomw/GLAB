@@ -1,5 +1,4 @@
 #pragma once
-
 #include <functional>
 
 #include "Shader.h"
@@ -9,12 +8,10 @@
 class FBO
 {
 public:
+
 	std::unique_ptr<Texture> colorTexture;
 	std::unique_ptr<Texture> extraTexture;
 	std::unique_ptr<Texture> depthTexture;
-
-	GLuint fboID;
-	int width, height;
 
 	void monoDraw(std::unique_ptr<Shader> const& shader, 
 		std::unique_ptr<MeshPack> const &object, glm::mat4 view_matrix,
@@ -44,15 +41,13 @@ public:
 		}
 	}
 
-	void multi_render(std::function<void()>* work = nullptr) {
+	void multi_render(std::function<void()> work) {
 
 		bind();
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (work != nullptr) {
-			(*work)();
-		}
+		work();
 
 		unbind();
 
@@ -75,9 +70,13 @@ public:
 	int getWidth() { return width; }
 	int getHeight() { return height; }
 
-private:
+protected:
+
+	GLuint fboID;
 	bool needExtra;
 	bool needMipmap;
+
+	uint32_t width, height;
 
 public:
 	virtual inline void bind() const

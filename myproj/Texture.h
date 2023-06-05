@@ -30,7 +30,7 @@ public:
 
 	Texture();
 	Texture(GLenum type);
-	Texture(const std::string& filename);
+	Texture(const std::string& filename, const int channel);
 	Texture(std::vector<std::string>& filenames);
 	~Texture();
 
@@ -40,7 +40,7 @@ public:
 	inline void unbind();
 
 	void empty();
-	bool readTexture2D(const std::string& filename);
+	bool readTexture2D(const std::string& filename, const int channel);
 	bool readTextureHDR(const std::string& filename);
 	void readTextureCube(const std::vector<std::string>& filenames);
 

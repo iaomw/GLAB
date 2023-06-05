@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GL/GLU.h>
-#define GLM_FORCE_AVX
+
 #include <glm/glm.hpp>
 
 #define SDL_MAIN_HANDLED
@@ -15,9 +15,9 @@
 #include <SDL2/SDL_main.h>
 #include <SDL2/SDL_opengl.h>
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_sdl.h>
-#include <imgui/imgui_impl_opengl3.h>
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_opengl3.h"
 
 #include "helperFunctions.h"
 #include "default_constants.h"
@@ -58,162 +58,9 @@ size_t picked_triangle_index = 0;
 MeshPack* picked_object = nullptr;
 
 // Process the event.  
-void processEvents(SDL_Event current_event)
-{
-	switch (current_event.type)
-	{
-	// window close button is pressed
-	case SDL_QUIT:
-	{
-		quit = true; break;
-	}
-	case SDL_KEYDOWN:
-	{
-		switch (current_event.key.keysym.sym)
-		{
-		case SDLK_ESCAPE: 
-			quit = true; break;
-		case SDLK_r:
-			mainCam->reset(); break;
-		case SDLK_UP: case SDLK_w:
-			mainCam->moveForward(movement_stepsize); break;
-		case SDLK_DOWN: case SDLK_s:
-			mainCam->moveBack(movement_stepsize); break;
-		case SDLK_LEFT: case SDLK_a:
-			mainCam->turnLeft(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
-		case SDLK_RIGHT: case SDLK_d:
-			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
-		case SDLK_v:
-			crystalball_viewing = !crystalball_viewing; break;
-		case SDLK_SPACE:
-			renderloop_paused = !renderloop_paused; break;
-		case SDLK_o:
-			{ 
-				// Open something with NFD
-			}
-		}	break;
-	}
-	case SDL_MOUSEBUTTONDOWN:
-	{
-		mouse_position.x = current_event.button.x;
-		mouse_position.y = current_event.button.y;
-		mouse_pressing = true;
+void processEvents(SDL_Event current_event);
 
-		const Uint8* state = SDL_GetKeyboardState(nullptr);
-		if (state[SDL_SCANCODE_LCTRL])
-		{
-			glm::vec3 ray = mainCam->constructRay(mouse_position.x, mouse_position.y);
-			scene.closestObject(ray, mainCam->camera_eye, picked_object, picked_triangle_index);
-		}
-		break;
-	}
-	case SDL_MOUSEBUTTONUP:
-	{
-		mouse_pressing = false; break;
-	}
-	case SDL_MOUSEMOTION:
-	{
-		int x = current_event.motion.x;
-		int y = current_event.motion.y;
-
-		int dx = x - mouse_position.x;
-		int dy = y - mouse_position.y;
-
-		mouse_position.x = x;
-		mouse_position.y = y;
-
-		if ((dx == 0 && dy == 0) || !mouse_pressing) return;
-
-		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalball_viewing)
-			mainCam->crystalball_rotateView(dx, dy);
-		else if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && !crystalball_viewing)
-			mainCam->firstperson_rotateView(dx, dy);
-		else if (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_RIGHT))
-			mainCam->panView(dx, dy);
-
-		break;
-	}
-	case SDL_WINDOWEVENT:
-	{
-		if (current_event.window.event == SDL_WINDOWEVENT_RESIZED)
-			windowsize_changed = true;
-		break;
-	}
-	case SDL_MOUSEWHEEL:
-	{
-		if (current_event.wheel.y < 0)
-			mainCam->moveBack(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
-		else if (current_event.wheel.y > 0)
-			mainCam->moveForward(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
-		break;
-	}
-	default:
-		break;
-	}
-}
-
-void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
-{
-	auto const src_str = [source]() {
-		switch (source)
-		{
-		case GL_DEBUG_SOURCE_API: return "API";
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
-		case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
-		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
-		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
-		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
-		default: return "UNKNOW";
-		}
-	}();
-
-	auto const type_str = [type]() {
-		switch (type)
-		{
-		case GL_DEBUG_TYPE_ERROR: return "ERROR";
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
-		case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
-		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
-		case GL_DEBUG_TYPE_MARKER: return "MARKER";
-		case GL_DEBUG_TYPE_OTHER: return "OTHER";
-		default: return "UNKNOW";
-		}
-	}();
-
-	auto const severity_str = [severity]() {
-		switch (severity) {
-		case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
-		case GL_DEBUG_SEVERITY_LOW: return "LOW";
-		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
-		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
-		default: return "UNKNOW";
-		}
-	}();
-
-	std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
-}
-
-GLenum glCheckError_(const char* file, int line)
-{
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR)
-	{
-		std::string error;
-		switch (errorCode)
-		{
-		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-		}
-		std::cout << errorCode << ": " << error << " | " << file << " (" << line << ")" << std::endl;
-	}
-	return errorCode;
-}
+GLenum glCheckError_(const char* file, int line);
 
 #ifdef _DEBUG
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
@@ -221,18 +68,25 @@ GLenum glCheckError_(const char* file, int line)
 #define glCheckError()
 #endif // _DEBUG
 
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
+
 enum class RenderPipeline {
-	PBR, SSSS, Debug
+	PBR, SSSS, DEBUG
 };
 
 int main(int argc, char* argv[])
 {
 	// Initialize video subsystem
-	SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO);
+	if(SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO) != 0) {
+		printf("Error: %s\n", SDL_GetError());
+        return -1;
+	}
 
 	// Using OpenGL 4.6 core
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -240,7 +94,9 @@ int main(int argc, char* argv[])
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
-	//SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	
 	auto flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// Create window
 	_window = SDL_CreateWindow("GLAB",
@@ -248,21 +104,28 @@ int main(int argc, char* argv[])
 		SDL_WINDOWPOS_CENTERED,
 		DEFAULT_WINDOW_WIDTH,
 		DEFAULT_WINDOW_HEIGHT, flags);
+
 	//SDL_SetWindowBordered(window, SDL_FALSE);
+
 	auto render = SDL_GetRenderer(_window);
 	context = SDL_GL_CreateContext(_window);
 	glewInit(); SDL_GL_MakeCurrent(_window, context);
 
+#ifdef _DEBUG
+
+	int debugcontext{}; glGetIntegerv(GL_CONTEXT_FLAGS, &debugcontext);
+	if (debugcontext & GL_CONTEXT_FLAG_DEBUG_BIT)
+	{
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); 
+		glDebugMessageCallback(message_callback, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	}
+
+#endif // _DEBUG
+
 	auto vsync = SDL_GL_SetSwapInterval(0);
 	auto errot = SDL_GetError();
-
-#ifdef _DEBUG
-	// During init, enable debug output
-	glEnable(GL_DEBUG_OUTPUT);
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	glDebugMessageCallback(message_callback, nullptr);
-	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-#endif // _DEBUG
 
 	float scaledDPI, defaultDPI;
 	auto displayIndex = SDL_GetWindowDisplayIndex(_window);
@@ -276,23 +139,24 @@ int main(int argc, char* argv[])
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	// https://github.com/ocornut/imgui/issues/2956
-	io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Arial.ttf", sacledRatio * 15.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-
+	//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\Arial.ttf", sacledRatio * 15.0f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+	
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
 	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer bindings
-	ImGui_ImplSDL2_InitForOpenGL(_window, context);
 	ImGui_ImplOpenGL3_Init("#version 330");
-
-
-	ImGui::GetIO().FontDefault->FontSize;
+	ImGui_ImplSDL2_InitForOpenGL(_window, context);
+	glCheckError();
+	
+	//ImGui::GetIO().FontDefault->FontSize;
 	ImGui::GetIO().FontAllowUserScaling = true;
 	ImGui::GetIO().FontGlobalScale = 1.0;// sacledRatio;
 	ImGui::GetStyle().ScaleAllSizes(sacledRatio);
 	ImGui::GetStyle().Colors[ImGuiCol_WindowBg].w = 0.75;
+	glCheckError();
 
 	bool show_demo_window = false;
 	bool show_another_window = false;
@@ -303,12 +167,14 @@ int main(int argc, char* argv[])
 	glFrontFace(GL_CCW);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+	glCheckError();
 
-	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+	glEnable(GL_MULTISAMPLE); glCheckError();
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); glCheckError();
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST); glCheckError();
+	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST); glCheckError();
+	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST); glCheckError();
+	glCheckError();
 
 	checkOpenGLInfo(true);
 
@@ -316,6 +182,7 @@ int main(int argc, char* argv[])
 	SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
 
 	mainCam->farZ = 5000; mainCam->nearZ = 0.5; mainCam->fovY = 45;
+	glCheckError();
 
 	/**************************INITIALIZING LIGHTS ***************************/
 
@@ -323,46 +190,51 @@ int main(int argc, char* argv[])
 
 	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(-20, 20, 0), glm::vec3(0.5, 0.5, 0.5), glm::vec3(0.7, 0.1, 0.1)) );
 	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(20, -20, 0), glm::vec3(0.3, 0.5, 0.7), glm::vec3(0.1, 0.7, 0.1)) );
-	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7), glm::vec3(0.1, 0.1, 0.7)) );
+	lightList.addLight( Light(LightType::POINTLIGHT, glm::vec3(0, 0, 40), glm::vec3(0.7f), glm::vec3(0.1f, 0.1f, 0.7f)) );
+
+	lightList.addLight(Light(LightType::POINTLIGHT, glm::vec3(0, 40, 0), glm::vec3(0.7f), glm::vec3(0.7f, 0.7f, 0.7f)));
+	glCheckError();
 
 	/**************************INITIALIZING FBO ***************************/
 	//plane will draw the color_texture of the framebufferobject fbo.
 
 	auto geometryFBO = std::make_shared<GeoFBO>();
 	geometryFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	glCheckError();
 
 	auto lightingFBO = std::make_shared<FBO>(false, false);
 	lightingFBO->initFBO(mainCam->window_width, mainCam->window_height);
-	 
+	glCheckError();
+
 	auto environmentFBO = std::make_shared<FBO>(false, true);
 	environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	glCheckError();
 
 	auto blurFBO = std::make_shared<FBO>();
 	blurFBO->initFBO(mainCam->window_width, mainCam->window_height);
 	auto rulbFBO = std::make_shared<FBO>();
 	rulbFBO->initFBO(mainCam->window_width, mainCam->window_height);
+	glCheckError();
 
-	auto bFBO = std::make_unique<FBO>();
-	bFBO->initFBO(512, 512);
+	auto brdFBO = std::make_unique<FBO>();
+	brdFBO->initFBO(512, 512);
+	glCheckError();
 
-	auto cFBO = std::make_unique<CubeFBO>();
-	cFBO->initFBO(2048, 2048);
+	auto captureFBO = std::make_unique<CubeFBO>();
+	captureFBO->initFBO(2048, 2048);
+	glCheckError();
 
-	auto pFBO = std::make_unique<CubeFBO>();
-	pFBO->initFBO(1024, 1024);
+	auto prefilterFBO = std::make_unique<CubeFBO>();
+	prefilterFBO->initFBO(1024, 1024);
+	glCheckError();
 
-	auto iFBO = std::make_unique<CubeFBO>();
-	iFBO->initFBO(256, 256);
+	auto irradianceFBO = std::make_unique<CubeFBO>();
+	irradianceFBO->initFBO(256, 256);
+	glCheckError();
 
 	/**************************SETTING UP OPENGL SHADERS ***************************/
 
 	ShaderPack shaderPack;
-
-	for (int i = 0; i < lightList.list.size(); ++i) {
-		shaderPack.light_pack.lightList[i] = lightList.list[i];
-	}
-
-	shaderPack.light_pack.lightCount = lightList.list.size();
 
 	shaderPack.add(std::make_unique<Shader>("geo_buffer"), ShaderName::geo_buffer);
 	shaderPack.add(std::make_unique<Shader>("pbr_buffer"), ShaderName::pbr_buffer);
@@ -379,15 +251,18 @@ int main(int argc, char* argv[])
 	shaderPack.add(std::make_unique<Shader>("blur"), ShaderName::blur);
 
 	auto shadowShader = std::make_unique<Shader>("point_shadow");
+	glCheckError();
 
 	/**************************INITIALIZING OBJECTS THAT WILL BE DRAWN ***************************/
 
 	auto cube = std::make_unique<MeshPack>(); // for capture only
 	cube->readObjects("models/skycube.obj", true, false);
 	cube->createVAO();
+	glCheckError();
 
 	auto hdrTexture = std::make_unique<Texture>();
 	hdrTexture->readTextureHDR("textures/envirment/vulture_hide_4k.hdr");
+	glCheckError();
 
 	// pbr: set up projection and view matrices for capturing data onto the 6 cubemap face directions
 	// ----------------------------------------------------------------------------------------------
@@ -405,33 +280,33 @@ int main(int argc, char* argv[])
 	// pbr: convert HDR equirectangular environment map to cubemap equivalent
 	// -------------------------------------------w-------------------------
 	cube->setTexture(hdrTexture.get(), Texture_Type::colortex);
-	cFBO->render(shaderCapture, cube, glm::vec3(0.0f), captureProjection);
+	captureFBO->render(shaderCapture, cube, glm::vec3(0.0f), captureProjection);
 	glCheckError();
 
-	cube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
-	iFBO->render(shaderIrradiance, cube, glm::vec3(0.0f), captureProjection);
+	cube->setTexture(captureFBO->envTexture.get(), Texture_Type::cubetex);
+	irradianceFBO->render(shaderIrradiance, cube, glm::vec3(0.0f), captureProjection);
 	glCheckError();
 
-	cube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
-	pFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, true);
+	cube->setTexture(captureFBO->envTexture.get(), Texture_Type::cubetex);
+	prefilterFBO->render(shaderPrefilter, cube, glm::vec3(0.0f), captureProjection, true);
 	glCheckError();
 
 	auto the_canvas = std::make_unique<MeshPack>();
 	the_canvas->readObjects("models/plane.obj", true, false);
 	the_canvas->createVAO();
 
-	bFBO->monoDraw(shaderBRDF, the_canvas, captureViews[0]);
+	brdFBO->monoDraw(shaderBRDF, the_canvas, captureViews[0]);
 	glCheckError();
 
-	shaderPack.pbr_pass.irradiance = iFBO->envTexture->texture_handle;
-	shaderPack.pbr_pass.prefilter = pFBO->envTexture->texture_handle;
-	shaderPack.pbr_pass.brdf = bFBO->colorTexture->texture_handle;
+	shaderPack.pbr_pass.irradiance = irradianceFBO->envTexture->texture_handle;
+	shaderPack.pbr_pass.prefilter = prefilterFBO->envTexture->texture_handle;
+	shaderPack.pbr_pass.brdf = brdFBO->colorTexture->texture_handle;
 
 	//enviornment mapped object
 	auto skycube = std::make_unique<MeshPack>();
 	skycube->readObjects("models/skycube.obj", true, false);
 	skycube->createVAO();
-	skycube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
+	skycube->setTexture(captureFBO->envTexture.get(), Texture_Type::cubetex);
 	skycube->scale(glm::vec3(2048));
 	glCheckError();
 
@@ -449,49 +324,49 @@ int main(int argc, char* argv[])
 	shaderball->readObjects("models/shaderball.obj", true, false);
 	shaderball->createVAO();
 	glCheckError();
-
-	auto texAlbedo_A = std::make_unique<Texture>("textures/rustediron/albedo.png");
-	auto texAO_A = std::make_unique<Texture>("textures/rustediron/ao.png");
-	auto texMetallic_A = std::make_unique<Texture>("textures/rustediron/metalness.png");
-	auto texNormal_A = std::make_unique<Texture>("textures/rustediron/normal.png");
-	auto texRoughness_A = std::make_unique<Texture>("textures/rustediron/roughness.png");
+	
+	auto texAO_A = std::make_unique<Texture>("textures/rustediron/ao.png", 3);
+	auto texAlbedo_A = std::make_unique<Texture>("textures/rustediron/albedo.png", 4);
+	auto texNormal_A = std::make_unique<Texture>("textures/rustediron/normal.png", 3);
+	auto texMetallic_A = std::make_unique<Texture>("textures/rustediron/metalness.png", 1);
+	auto texRoughness_A = std::make_unique<Texture>("textures/rustediron/roughness.png", 1);
 	glCheckError();
 
-	auto texAlbedo_B = std::make_unique<Texture>("textures/aluminum/basecolor.png");
-	auto texAO_B = std::make_unique<Texture>("textures/aluminum/ao.png");
-	auto texMetallic_B = std::make_unique<Texture>("textures/aluminum/metallic.png");
-	auto texNormal_B = std::make_unique<Texture>("textures/aluminum/normal.png");
-	auto texRoughness_B = std::make_unique<Texture>("textures/aluminum/roughness.png");
+	auto texAO_B = std::make_unique<Texture>("textures/aluminum/ao.png", 3);
+	auto texAlbedo_B = std::make_unique<Texture>("textures/aluminum/basecolor.png", 3);
+	auto texNormal_B = std::make_unique<Texture>("textures/aluminum/normal.png", 3);
+	auto texMetallic_B = std::make_unique<Texture>("textures/aluminum/metallic.png", 1);
+	auto texRoughness_B = std::make_unique<Texture>("textures/aluminum/roughness.png", 1);
 	glCheckError();
 
-	auto texAlbedo_X = std::make_unique<Texture>("textures/coatedball/albedo.png");
-	auto texAO_X = std::make_unique<Texture>("textures/coatedball/ao.png");
-	auto texMetallic_X = std::make_unique<Texture>("textures/coatedball/metalness.png");
-	auto texNormal_X = std::make_unique<Texture>("textures/coatedball/normal.png");
-	auto texRoughness_X = std::make_unique<Texture>("textures/coatedball/roughness.png");
+	auto texAO_X = std::make_unique<Texture>("textures/coatedball/ao.png", 3);
+	auto texAlbedo_X = std::make_unique<Texture>("textures/coatedball/albedo.png", 3);
+	auto texNormal_X = std::make_unique<Texture>("textures/coatedball/normal.png", 3);
+	auto texMetallic_X = std::make_unique<Texture>("textures/coatedball/metalness.png", 1);
+	auto texRoughness_X = std::make_unique<Texture>("textures/coatedball/roughness.png", 3);
 	glCheckError();
 
 	shaderPack.pbr_pack.list[0] = {
 		texAO_A->texture_handle,
 		texAlbedo_A->texture_handle,
-		texMetallic_A->texture_handle,
 		texNormal_A->texture_handle,
+		texMetallic_A->texture_handle,
 		texRoughness_A->texture_handle
 	};
 
 	shaderPack.pbr_pack.list[1] = {
 		texAO_B->texture_handle,
 		texAlbedo_B->texture_handle,
-		texMetallic_B->texture_handle,
 		texNormal_B->texture_handle,
+		texMetallic_B->texture_handle,
 		texRoughness_B->texture_handle
 	};
 
 	shaderPack.pbr_pack.list[2] = {
 		texAO_X->texture_handle,
 		texAlbedo_X->texture_handle,
-		texMetallic_X->texture_handle,
 		texNormal_X->texture_handle,
+		texMetallic_X->texture_handle,
 		texRoughness_X->texture_handle
 	};
 	
@@ -517,11 +392,11 @@ int main(int argc, char* argv[])
 	headObject->createVAO();
 	glCheckError();
 
-	auto skinTexture = std::make_unique<Texture>("lpshead/albedo.png");
+	auto skinTexture = std::make_unique<Texture>("lpshead/albedo.png", 4);
 	headObject->setTexture(skinTexture.get(), Texture_Type::colortex);
 	glCheckError();
 
-	auto skinNormal = std::make_unique<Texture>("lpshead/normal.png");
+	auto skinNormal = std::make_unique<Texture>("lpshead/normal.png", 3);
 	headObject->setTexture(skinNormal.get(), Texture_Type::normaltex);
 	glCheckError();
 
@@ -581,6 +456,7 @@ int main(int argc, char* argv[])
 
 		geometryFBO->initFBO(WIDTH, HEIGHT);
 		lightingFBO->initFBO(WIDTH, HEIGHT);
+		glCheckError();
 
 		shaderPack.pbr_pass.albedo = geometryFBO->texAlbedo->texture_handle;
 		shaderPack.pbr_pass.complex = geometryFBO->texNormal->texture_handle;
@@ -603,7 +479,7 @@ int main(int argc, char* argv[])
 	current_pipeline = RenderPipeline::PBR;
 
 	std::function<void(int, int)>* pipeline_init;
-	pipeline_init = &ssss_pipeline_init;
+	//pipeline_init = &ssss_pipeline_init;
 	pipeline_init = &pbr_pipeline_init;
 	bool pipeline_changed = true;
 
@@ -624,8 +500,9 @@ int main(int argc, char* argv[])
 		if (show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
 		static int counter = 0;
-		ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Once);
-		ImGui::Begin("Configuration", NULL, ImVec2(0, 0), -1.0, ImGuiWindowFlags_AlwaysAutoResize);
+
+		ImGui::SetNextWindowCollapsed(true, ImGuiCond_Once);
+		ImGui::Begin("Configuration", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 		// Display some text (you can use a format strings too)
 		//ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 		//ImGui::Checkbox("Another Window", &show_another_window);
@@ -703,6 +580,46 @@ int main(int argc, char* argv[])
 				ImGui::Text("counter = %d", counter);
 				ImGui::EndTabItem();
 			}
+
+			ImGui::Image((void*)(intptr_t) hdrTexture->texture_id, ImVec2(512, 512));
+			ImGui::Image((void*)(intptr_t) brdFBO->colorTexture->texture_id, ImVec2(512, 512));
+
+			ImGui::Image((void*)(intptr_t) geometryFBO->texAlbedo->texture_id, ImVec2(512, 512));
+			ImGui::Image((void*)(intptr_t) geometryFBO->texNormal->texture_id, ImVec2(512, 512));
+
+			ImGui::Text("AO");
+			ImGui::Image((void*)(intptr_t) texAO_X->texture_id, ImVec2(512, 512));
+			ImGui::Text("Albedo");
+			ImGui::Image((void*)(intptr_t) texAlbedo_X->texture_id, ImVec2(512, 512));
+			ImGui::Text("Metallic");
+			ImGui::Image((void*)(intptr_t) texMetallic_X->texture_id, ImVec2(512, 512));
+			ImGui::Text("Normal");
+			ImGui::Image((void*)(intptr_t) texNormal_X->texture_id, ImVec2(512, 512));
+			ImGui::Text("Roughness");
+			ImGui::Image((void*)(intptr_t) texRoughness_X->texture_id, ImVec2(512, 512));
+
+			ImGui::Text("AO");
+			ImGui::Image((void*)(intptr_t) texAO_A->texture_id, ImVec2(512, 512));
+			ImGui::Text("Albedo");
+			ImGui::Image((void*)(intptr_t) texAlbedo_A->texture_id, ImVec2(512, 512));
+			ImGui::Text("Metallic");
+			ImGui::Image((void*)(intptr_t) texMetallic_A->texture_id, ImVec2(512, 512));
+			ImGui::Text("Normal");
+			ImGui::Image((void*)(intptr_t) texNormal_A->texture_id, ImVec2(512, 512));
+			ImGui::Text("Roughness");
+			ImGui::Image((void*)(intptr_t) texRoughness_A->texture_id, ImVec2(512, 512));
+
+			ImGui::Text("AO");
+			ImGui::Image((void*)(intptr_t) texAO_B->texture_id, ImVec2(512, 512));
+			ImGui::Text("Albedo");
+			ImGui::Image((void*)(intptr_t) texAlbedo_B->texture_id, ImVec2(512, 512));
+			ImGui::Text("Metallic");
+			ImGui::Image((void*)(intptr_t) texMetallic_B->texture_id, ImVec2(512, 512));
+			ImGui::Text("Normal");
+			ImGui::Image((void*)(intptr_t) texNormal_B->texture_id, ImVec2(512, 512));
+			ImGui::Text("Roughness");
+			ImGui::Image((void*)(intptr_t) texRoughness_B->texture_id, ImVec2(512, 512));
+			
 			ImGui::EndTabBar();
 		} glCheckError();
 
@@ -720,11 +637,11 @@ int main(int argc, char* argv[])
 
 		SDL_Event current_event; glCheckError();
 		if (!paused) { SDL_GL_SwapWindow(_window); }
-		glCheckError(); auto error = SDL_GetError();
+		glCheckError(); //auto error = SDL_GetError();
 
 		while (SDL_PollEvent(&current_event) != 0) {
 
-			if (ImGui::IsMouseHoveringAnyWindow()) {
+			if (ImGui::IsAnyItemHovered()) {
 				ImGui_ImplSDL2_ProcessEvent(&current_event);
 			}
 			else {
@@ -746,11 +663,9 @@ int main(int argc, char* argv[])
 		if (windowsize_changed || pipeline_changed)
 		{
 			SDL_GetWindowSize(_window, &mainCam->window_width, &mainCam->window_height);
-			windowsize_changed = false; pipeline_changed = false;
+			windowsize_changed = false; pipeline_changed = false; mainCam->outdate();
 
-			for (auto& fbo : FBOs) { fbo->reset(); }
-
-			shaderPack.complex.XdY = mainCam->window_width / mainCam->window_height;
+			//for (auto& fbo : FBOs) { fbo->reset(); }
 
 			environmentFBO->initFBO(mainCam->window_width, mainCam->window_height);
 			blurFBO->initFBO(mainCam->window_width/2, mainCam->window_height/2);
@@ -762,6 +677,7 @@ int main(int argc, char* argv[])
 
 		//Computing transformation matrices.
 		glViewport(0, 0, mainCam->window_width, mainCam->window_height);
+
 		glm::mat4 projection_matrix = mainCam->projectionMatrix();
 		glm::mat4 view_matrix = mainCam->viewMatrix();
 		glm::mat4 weiv_matrix = mainCam->weivMatrix();
@@ -770,19 +686,25 @@ int main(int argc, char* argv[])
 		shaderPack.complex.view_matrix = view_matrix;
 		shaderPack.complex.weiv_matrix = weiv_matrix;
 
+		shaderPack.complex.XdY = mainCam->aspectRatio();
+
 		shaderPack.complex.nearZ = mainCam->nearZ;
 		shaderPack.complex.farZ = mainCam->farZ;
 		shaderPack.complex.fovY = mainCam->fovY;
-
+		
 		shaderPack.complex.exposure = exposure;
 		shaderPack.complex.gamma = gamma;
 
+		shaderPack.syncLight(lightList.list);
 		shaderPack.syncSSBO();
+		glCheckError();
 
-		skycube->setTexture(cFBO->envTexture.get(), Texture_Type::cubetex);
+		skycube->setTexture(captureFBO->envTexture.get(), Texture_Type::cubetex);
+		//skycube->setTexture(prefilterFBO->envTexture.get(), Texture_Type::cubetex);
+		//skycube->setTexture(irradianceFBO->envTexture.get(), Texture_Type::cubetex);
+		glCheckError();
 
-		environmentFBO->multi_render(
-			&std::function<void()>([&] {
+		environmentFBO->multi_render(std::function<void()>([&] {
 
 				auto& the_shader = shaderPack[ShaderName::skycube];
 				the_shader->start();
@@ -793,7 +715,7 @@ int main(int argc, char* argv[])
 				auto& current_shader = shaderPack[ShaderName::basic];
 				current_shader->start();
 
-				for (auto& light : shaderPack.light_pack.lightList) {
+				for (auto& light : lightList.list) {
 
 					lightball->translate(light.position);
 						lightball->batch();
@@ -845,12 +767,14 @@ int main(int argc, char* argv[])
 					glm::vec3 axis(0, 1, 0);
 					shaderball->rotate(axis, delta);
 					geometryFBO->multiDraw(shaderPack[ShaderName::geo_buffer], shaderball, view_matrix, pos_list);
+					glCheckError();
 					lightingFBO->monoDraw(shaderPack[ShaderName::pbr_buffer], pbr_canvas, view_matrix);
+					glCheckError();
 				}
 				else if (RenderPipeline::SSSS == current_pipeline) {
 
 					for (size_t i = 0; i < lightList.list.size(); ++i) {
-						auto& light = shaderPack.light_pack.lightList[i];
+						auto& light = lightList.list[i];
 						lightList.shadowList[i]->shadowMapping(shadowShader, headObject, light.position, captureProjection);
 					} glCheckError();
 
@@ -935,4 +859,161 @@ int main(int argc, char* argv[])
 	// Quit SDL subsystems
 	SDL_Quit();
 	return 0;
+}
+
+void processEvents(SDL_Event current_event)
+{
+	switch (current_event.type)
+	{
+		// window close button is pressed
+	case SDL_QUIT:
+	{
+		quit = true; break;
+	}
+	case SDL_KEYDOWN:
+	{
+		switch (current_event.key.keysym.sym)
+		{
+		case SDLK_ESCAPE:
+			quit = true; break;
+		case SDLK_r:
+			mainCam->reset(); break;
+		case SDLK_UP: case SDLK_w:
+			mainCam->moveForward(movement_stepsize); break;
+		case SDLK_DOWN: case SDLK_s:
+			mainCam->moveBack(movement_stepsize); break;
+		case SDLK_LEFT: case SDLK_a:
+			mainCam->turnLeft(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
+		case SDLK_RIGHT: case SDLK_d:
+			mainCam->turnRight(DEFAULT_LEFTRIGHTTURN_MOVEMENT_STEPSIZE); break;
+		case SDLK_v:
+			crystalball_viewing = !crystalball_viewing; break;
+		case SDLK_SPACE:
+			renderloop_paused = !renderloop_paused; break;
+		case SDLK_o:
+		{
+			// Open something with NFD
+		}
+		}	break;
+	}
+	case SDL_MOUSEBUTTONDOWN:
+	{
+		mouse_position.x = current_event.button.x;
+		mouse_position.y = current_event.button.y;
+		mouse_pressing = true;
+
+		const Uint8* state = SDL_GetKeyboardState(nullptr);
+		if (state[SDL_SCANCODE_LCTRL])
+		{
+			glm::vec3 ray = mainCam->constructRay(mouse_position.x, mouse_position.y);
+			scene.closestObject(ray, mainCam->camera_eye, picked_object, picked_triangle_index);
+		}
+		break;
+	}
+	case SDL_MOUSEBUTTONUP:
+	{
+		mouse_pressing = false; break;
+	}
+	case SDL_MOUSEMOTION:
+	{
+		int x = current_event.motion.x;
+		int y = current_event.motion.y;
+
+		int dx = x - mouse_position.x;
+		int dy = y - mouse_position.y;
+
+		mouse_position.x = x;
+		mouse_position.y = y;
+
+		if ((dx == 0 && dy == 0) || !mouse_pressing) return;
+
+		if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && crystalball_viewing)
+			mainCam->crystalball_rotateView(dx, dy);
+		else if ((SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT)) && !crystalball_viewing)
+			mainCam->firstperson_rotateView(dx, dy);
+		else if (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_RIGHT))
+			mainCam->panView(dx, dy);
+
+		break;
+	}
+	case SDL_WINDOWEVENT:
+	{
+		if (current_event.window.event == SDL_WINDOWEVENT_RESIZED)
+			windowsize_changed = true;
+		break;
+	}
+	case SDL_MOUSEWHEEL:
+	{
+		if (current_event.wheel.y < 0)
+			mainCam->moveBack(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
+		else if (current_event.wheel.y > 0)
+			mainCam->moveForward(DEFAULT_MOUSEWHEEL_MOVEMENT_STEPSIZE);
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+GLenum glCheckError_(const char* file, int line)
+{
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << errorCode << ": " << error << " | " << file << " (" << line << ")" << std::endl;
+	}
+	return errorCode;
+}
+
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
+{
+	auto const src_str = [source]() {
+		switch (source)
+		{
+		case GL_DEBUG_SOURCE_API: return "API";
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
+		case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
+		case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
+		case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
+		case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+		default: return "UNKNOW";
+		}
+	}();
+
+	auto const type_str = [type]() {
+		switch (type)
+		{
+		case GL_DEBUG_TYPE_ERROR: return "ERROR";
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
+		case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
+		case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
+		case GL_DEBUG_TYPE_MARKER: return "MARKER";
+		case GL_DEBUG_TYPE_OTHER: return "OTHER";
+		default: return "UNKNOW";
+		}
+	}();
+
+	auto const severity_str = [severity]() {
+		switch (severity) {
+		case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
+		case GL_DEBUG_SEVERITY_LOW: return "LOW";
+		case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
+		case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+		default: return "UNKNOW";
+		}
+	}();
+
+	std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
 }

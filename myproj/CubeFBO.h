@@ -1,9 +1,8 @@
 #pragma once
 #include "FBO.h"
-
 #include <iostream>
+#include <stdint.h>
 
-#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -48,7 +47,7 @@ public:
 	void render(std::unique_ptr<Shader> const& shader, std::unique_ptr<MeshPack> const &object,
 				glm::vec3 lookFrom, glm::mat4 projection_matrix, const bool custom_mipmap=false) {
 
-		auto& captureViews = configCamera(lookFrom);
+		auto captureViews = configCamera(lookFrom);
 
 		this->bind();
 		shader->start();
@@ -59,12 +58,12 @@ public:
 		shader->setUniform("lookFrom", lookFrom);
 		shader->setUniform("projection_matrix", projection_matrix);
 
-		unsigned int max_level = custom_mipmap? mipmap_level:1;
-		for (unsigned int mip = 0; mip < max_level; ++mip)
+		uint32_t max_level = custom_mipmap? mipmap_level:1;
+		for (uint32_t mip = 0; mip < max_level; ++mip)
 		{
 			// reisze framebuffer according to mip-level size.
-			GLsizei mipWidth = width * std::pow(0.5, mip);
-			GLsizei mipHeight = height * std::pow(0.5, mip);
+			GLsizei mipWidth = width * std::pow(0.5f, mip);
+			GLsizei mipHeight = height * std::pow(0.5f, mip);
 			glViewport(0, 0, mipWidth, mipHeight);
 
 			if (max_level > 1) {
@@ -96,7 +95,7 @@ public:
 
 	void shadowMapping(std::unique_ptr<Shader> const &shader, std::unique_ptr<MeshPack> const &object, glm::vec3 &lookFrom, glm::mat4 &projection_matrix) {
 
-		auto& captureViews = configCamera(lookFrom);		
+		auto captureViews = configCamera(lookFrom);		
 
 		this->bind();
 		shader->start();
@@ -107,7 +106,8 @@ public:
 		shader->setUniform("lookFrom", lookFrom);
 		
 		for (size_t i = 0; i < 6; ++i) {
-			shader->setUniform("shadowMatrices[" + std::to_string(i) + "]", captureProjection * captureViews[i]);
+			auto matrix = captureProjection * captureViews[i];
+			shader->setUniform("shadowMatrices[" + std::to_string(i) + "]", matrix);
 		}
 
 		object->displayObjects(shader, captureViews[0]);

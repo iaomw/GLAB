@@ -9,7 +9,7 @@ LightList::~LightList()
 {
 }
 
-void LightList::addLight(Light& light)
+void LightList::addLight(Light light)
 {
 	auto shadowFBO = std::make_unique<CubeFBO>(true);
 

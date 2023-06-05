@@ -1,7 +1,11 @@
-#define STB_IMAGE_IMPLEMENTATION
-#include "STB/stb_image.h"
-
 #include "Texture.h"
+#include <gl/gl.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#include <sstream>
+#include <iostream>
 
 Texture::Texture() : Texture(GL_TEXTURE_2D) {}
 
@@ -11,11 +15,11 @@ Texture::Texture(GLenum type)
 	texture_type = type;
 }
 
-Texture::Texture(const std::string& filename)
+Texture::Texture(const std::string& filename, const int channel)
 {
 	texture_id = 0;
 	texture_type = GL_TEXTURE_2D;
-	readTexture2D(filename);
+	readTexture2D(filename, channel);
 }
 
 Texture::Texture(std::vector<std::string>& filenames)
@@ -29,9 +33,13 @@ Texture::~Texture()
 {
 	if (texture_handle) {
 		glMakeTextureHandleNonResidentARB(texture_handle);
+		texture_handle = 0;
 	}
 
+	printf("Texture %u has been destoryed \n", texture_id);
+
 	glDeleteTextures(1, &texture_id);
+	texture_id = 0;
 }
 
 GLuint64 Texture::getHandle() {
@@ -52,6 +60,14 @@ inline void Texture::unbind() {
 	glBindTexture(texture_type, 0);
 }
 
+GLuint getNumMipMapLevels2D(GLuint w, GLuint h)
+{
+	GLuint levels = 1;
+	while ((w | h) >> levels)
+		levels += 1;
+	return levels;
+}
+
 void Texture::empty() {
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
 
@@ -66,27 +82,40 @@ void Texture::empty() {
 	//configTexture(texture_id);
 }
 
-bool Texture::readTexture2D(const std::string& filename)
+bool Texture::readTexture2D(const std::string& filename, const int channel)
 {
-	int size; GLubyte* theTexture;
-
+	int comp=0; GLubyte* theTexture;
 	glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
-	theTexture = stbi_load(filename.c_str(), &width, &height, &size, 0);
 
-	std::map<int, std::tuple<GLenum, GLenum>> map;
+	if (channel > 1) { comp = 4;}
 
-	map[1] = std::make_tuple(GL_RED, GL_R16F);
-	map[2] = std::make_tuple(GL_RG, GL_RG16F); // Will lead to crash in some case
-	map[3] = std::make_tuple(GL_RGB, GL_RGB16F);
-	map[4] = std::make_tuple(GL_RGBA, GL_RGBA16F);
+	theTexture = stbi_load(filename.c_str(), &width, &height, &comp, comp);
 
-	std::tie(textureFormat, internalFormat) = map[size];
+	std::cout << filename << std::endl;
+	std::cout << "This image width: " << width << " height " << height << " channels " << comp << std::endl;
 
-	glTextureStorage2D(texture_id, 5, internalFormat, width, height);
+	if (channel > 1) {
+		comp = 4;
+	} else {
+		comp = 1;
+	}
+
+	static const std::map<int, std::tuple<GLenum, GLenum>> map {
+		{1, {GL_RED,     GL_R8}},
+		{2, {GL_RG,     GL_RG8}}, // Will lead to crash in some case
+		{3, {GL_RGB,   GL_RGB8}},
+		{4, {GL_RGBA, GL_RGBA8}}
+	};
+
+	std::tie(textureFormat, internalFormat) = map.at(comp);
+	auto mip = getNumMipMapLevels2D(width, height);
+
+	glTextureStorage2D(texture_id, mip, internalFormat, width, height);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_UNSIGNED_BYTE, theTexture);
-	
-	configTexture(texture_id);
+		//glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
+	configTexture(texture_id);
 	stbi_image_free(theTexture);
 	return true;
 }
@@ -110,7 +139,6 @@ bool Texture::readTextureHDR(const std::string& filename) {
 	glTextureSubImage2D(texture_id, 0, 0, 0, width, height, textureFormat, GL_FLOAT, textureData);
 
 	configTexture(texture_id);
-
 	stbi_image_free(textureData);
 	return true;
 }
@@ -126,10 +154,20 @@ void Texture::configTexture(GLuint theTexture) {
 	glTextureParameteri(theTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(theTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
+	glGenerateTextureMipmap(theTexture);
+
+	// GLuint sampler;
+	// glGenSamplers(1, &sampler);
+
+	// glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	// glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	// glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	// texture_handle = glGetTextureSamplerHandleARB(texture_id, sampler);
+
 	texture_handle = glGetTextureHandleARB(texture_id);
 	glMakeTextureHandleResidentARB(texture_handle);
-
-	glGenerateTextureMipmap(theTexture);
+	
 }
 
 void Texture::readTextureCube(const std::vector<std::string>& filenames)

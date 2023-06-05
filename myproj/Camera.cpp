@@ -1,6 +1,3 @@
-#define GLM_FORCE_AVX
-#include <glm/glm.hpp>
-
 #include "Camera.h"
 #include "helperFunctions.h"
 #include "default_constants.h"

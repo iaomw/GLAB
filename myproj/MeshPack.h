@@ -3,7 +3,6 @@
 #include <fstream>
 #include <unordered_map>
 
-#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 #include "VAO.h"
@@ -42,9 +41,9 @@ public:
 
 	void batch();
 
-	void scale(glm::vec3&);
-	void translate(glm::vec3&);
-	void rotate(glm::vec3& axis, float angle);
+	void scale(glm::vec3);
+	void translate(glm::vec3);
+	void rotate(glm::vec3 axis, float angle);
 
 	void computeTexturecoordinates_plane();
 	void computeTexturecoordinates_sphere();

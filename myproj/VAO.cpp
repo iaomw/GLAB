@@ -1,8 +1,5 @@
 #include "VAO.h"
 
-#define GLM_FORCE_AVX
-#include <glm/glm.hpp>
-
 VAO::VAO()
 {
 	glGenVertexArrays(1, &id);
@@ -146,11 +143,12 @@ void VAO::draw(size_t start, size_t end, std::vector<glm::mat4>& model_matrix_li
 	
 	indirect_buffer->bind();
 
-	{	std::vector<DrawCommand> drawList;
+	{	std::vector<DrawCommand> drawList(model_matrix_list.size());
+		//drawList.reserve(model_matrix_list.size());
 
 		for (int i = 0; i < model_matrix_list.size(); ++i) {
 
-			DrawCommand command;
+			DrawCommand& command = drawList[i];
 
 			command.vertexCount = num_triangles * 3; // indice count?
 			command.instanceCount = 1;
@@ -163,13 +161,11 @@ void VAO::draw(size_t start, size_t end, std::vector<glm::mat4>& model_matrix_li
 			//command.baseVertex = num_triangles * i; // point count?
 			//command.baseVertex = num_vertices * i * 3;
 			//command.baseVertex = num_triangles * i * 3; // point count?
-
-			drawList.emplace_back(command);
 		}
 
 		indirect_buffer->setData(drawList.data(), sizeof(DrawCommand) * drawList.size());
 
-		glBindBuffer(GL_ARRAY_BUFFER, indirect_buffer->buffer_id);
+		glBindBuffer(GL_ARRAY_BUFFER, indirect_buffer->getID());
 		glEnableVertexAttribArray(3);
 		glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, sizeof(DrawCommand), (void*)(offsetof(DrawCommand, baseInstance)));
 		glVertexAttribDivisor(3, 1); //only once per instance

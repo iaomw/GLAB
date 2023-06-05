@@ -1,10 +1,8 @@
 #include "MeshPack.h"
-
-#include <glm/gtx/intersect.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/hash.hpp>
-
 #include "helperFunctions.h"
+
+#include <glm/gtx/hash.hpp>
+#include <glm/gtx/intersect.hpp>
 
 MeshPack::MeshPack()
 {
@@ -324,7 +322,8 @@ void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& 
 
 	if (modelMatrixList.size() == 0) {
 		shader->setUniform("model_matrix", model_matrix);
-		shader->setUniform("normal_matrix", normalMatrix(view_matrix, model_matrix));
+		auto matrix = normalMatrix(view_matrix, model_matrix);
+		shader->setUniform("normal_matrix", matrix);
 		//batch();
 	}
 
@@ -347,7 +346,7 @@ void MeshPack::displayObjects(std::unique_ptr<Shader> const& shader, glm::mat4& 
 	modelMatrixList.clear();
 }
 
-void MeshPack::translate(glm::vec3& v)
+void MeshPack::translate(glm::vec3 v)
 {
 	glm::mat4 tmp = glm::translate(glm::mat4(1.0f), v);
 	model_matrix = tmp * model_matrix;
@@ -358,7 +357,7 @@ void MeshPack::translate(float x, float y, float z)
 	translate(glm::vec3(x, y, z));
 }
 
-void MeshPack::scale(glm::vec3& v)
+void MeshPack::scale(glm::vec3 v)
 {
 	glm::mat4 tmp = glm::scale(glm::mat4(1.0f), v);
 	model_matrix = tmp * model_matrix;
@@ -375,7 +374,7 @@ void MeshPack::scale(float x, float y, float z)
 	scale(glm::vec3(x, y, z));
 }
 
-void MeshPack::rotate(glm::vec3& axis, float angle) {
+void MeshPack::rotate(glm::vec3 axis, float angle) {
 
 	glm::mat4 tmp = glm::rotate(glm::mat4(1.0f), static_cast<float>(angle), axis);
 	model_matrix = tmp * model_matrix;
@@ -511,17 +510,17 @@ float MeshPack::closestTriangle(glm::vec3 ray, glm::vec3 origin, size_t & picked
 				verts[j] = glm::vec3(t.x / t.w, t.y / t.w, t.z / t.w);
 			}
 
-			bool intersect = glm::intersectRayTriangle(origin, ray, verts[0], verts[1], verts[2], intersection_point);
-			if (intersect)
-			{
-				float t = intersection_point.z;
-				if (t >= 0 && t < min_t)
-				{
-					min_t = t;
-					picked_triangle = i;
-					picked_object = obj;
-				}
-			}
+			// bool intersect = glm::intersectRayTriangle(origin, ray, verts[0], verts[1], verts[2], intersection_point);
+			// if (intersect)
+			// {
+			// 	float t = intersection_point.z;
+			// 	if (t >= 0 && t < min_t)
+			// 	{
+			// 		min_t = t;
+			// 		picked_triangle = i;
+			// 		picked_object = obj;
+			// 	}
+			// }
 		}
 	}
 

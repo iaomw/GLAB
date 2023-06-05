@@ -45,20 +45,20 @@ struct Light_Pack {
 	Light list[1];
 };
 
-struct PBR_Unit {
+struct alignas(8) PBR_Unit {
 	GLuint64 ao;
 	GLuint64 base;
-	GLuint64 metalness;
 	GLuint64 normal;
+	GLuint64 metalness;
 	GLuint64 roughness;
 };
 
-struct PBR_Pack {
-	GLuint size = 3; 
+struct alignas(8) PBR_Pack {
 	PBR_Unit list[3];
 };
 
-struct alignas(16) PBR_Pass {
+// alignas(16)
+struct PBR_Pass {
 	
 	GLuint64 irradiance;
 	GLuint64 prefilter;

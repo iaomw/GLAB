@@ -1,9 +1,6 @@
 #pragma once
 #include "FBO.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/hash.hpp>
-
 class GeoFBO: public FBO
 {
 public:
@@ -18,10 +15,10 @@ public:
 
 	void multiDraw(std::unique_ptr<Shader> const& shader, std::unique_ptr<MeshPack> &object, glm::mat4 view_matrix, std::vector<glm::vec3>& pos_list) {
 
-		bind();
+		this->bind();
 		shader->start();
 		glViewport(0, 0, width, height);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
 		object->modelMatrixList.clear();
 		
@@ -35,7 +32,7 @@ public:
 		object->displayObjects(shader, view_matrix);
 
 		shader->stop();
-		unbind();
+		this->unbind();
 	}
 
 	void initFBO(int WIDTH, int HEIGHT);

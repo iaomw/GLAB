@@ -3,8 +3,9 @@
 #include "Shader.h"
 #include "LightList.h"
 
-#include "MeshPack.h"
 #include "Camera.h"
+#include "MeshPack.h"
+
 #include <unordered_map>
 
 class Scene

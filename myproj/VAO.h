@@ -7,7 +7,6 @@
 #include <memory>
 
 #include <GL/glew.h>
-#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 class VAO

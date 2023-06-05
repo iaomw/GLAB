@@ -1,5 +1,7 @@
 #version 460 core
+
 #extension GL_ARB_bindless_texture: require
+#extension GL_ARB_gpu_shader_int64: enable
 
 const float PI  = 3.14159265358979323846264338327950288419716939937510f;
 
@@ -109,19 +111,21 @@ vec3 decode (vec2 enc)
 
 void main()
 {             
-    vec4 texAlbedo = texture(sampler2D(albedo), texcoord).rgba;
-    vec4 texNormal = texture(sampler2D(complex), texcoord).rgba;
+    const vec4 texAlbedo = texture(sampler2D(albedo),  texcoord).rgba; 
+    memoryBarrier();
+    const vec4 texNormal = texture(sampler2D(complex), texcoord).rgba;
+    memoryBarrier();
 
-    float mark = texAlbedo.a;
-    float texDepth = texNormal.z;
+    float mark      = texAlbedo.a;  
+    float texDepth  = texNormal.z;  
 
     if (1.0 == mark && 0 == texDepth) { 
-        gColor.a = 1.0;
+        gColor = vec4(vec3(0.0), 1.0);
         return; //discard; 
     }
 
-    float roughness = texAlbedo.a;
-    float metalness = texNormal.a;
+    float roughness = texAlbedo.a;  
+    float metalness = texNormal.a;   
 
     vec4 tPosition = vec4(1.0);
 
@@ -130,7 +134,7 @@ void main()
 
     offset.x = offset.x * unit * XdY;
     offset.y = offset.y * unit;
-    
+
     tPosition.xy = offset.xy; 
     tPosition.z = texDepth;
 
@@ -184,24 +188,27 @@ void main()
 
         specular = (D * FS * G) / (4.0f * NdotL * NdotV + 0.0001f);
         color += (diffuse * kD + specular) * lightColor * atten * NdotL; 
-     }
+    }
 
     vec4 world_N = weiv_matrix * vec4(N, 0);
     vec4 world_R = weiv_matrix * vec4(R, 0);
 
     vec3 irradiance = texture(samplerCube(texIrradiance), world_N.xyz).rgb;
-    vec3 value_diffuse = irradiance * texAlbedo.rgb;
-
+    memoryBarrier();
+   
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const float MAX_REFLECTION_LOD = 5.0;
     float mip_level = roughness * MAX_REFLECTION_LOD;
-    vec2 value_BRDF = texture(sampler2D(texBRDF), vec2(NdotV, roughness)).rg;
-    vec3 value_prefilter = textureLod(samplerCube(texPrefilter), world_R.xyz, mip_level).rgb; 
-    vec3 value_specular = value_prefilter * (F * value_BRDF.x + value_BRDF.y);
-       
-    vec3 ambient = (kD * value_diffuse + value_specular) * ao;
 
-    //gColor.rgb = value_prefilter; 
+    vec3 value_prefilter = textureLod(samplerCube(texPrefilter), world_R.xyz, mip_level).rgb;
+    memoryBarrier(); 
+    vec2 value_BRDF = texture(sampler2D(texBRDF), vec2(NdotV, roughness)).rg;
+    memoryBarrier();
+
+    vec3 value_specular = value_prefilter * (F * value_BRDF.x + value_BRDF.y);
+    vec3 value_diffuse = irradiance * texAlbedo.rgb;
+
+    vec3 ambient = (kD * value_diffuse + value_specular) * ao;
     gColor.rgb = color + ambient;
     gColor.a = tPosition.z;
 }

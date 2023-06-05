@@ -7,7 +7,7 @@
 #include <Functional>
 
 #include <GL/glew.h>
-#define GLM_FORCE_AVX
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>  
 
@@ -33,7 +33,7 @@ public:
 	void setUniform(const std::string& name, float);
 	void setUniform(const std::string& name, glm::mat3&);
 	void setUniform(const std::string& name, glm::mat4&);
-	void setUniform(const std::string& name, glm::vec2&);
+	void setUniform(const std::string& name, glm::vec2);
 	void setUniform(const std::string& name, glm::vec3&);
 	void setUniform(const std::string& name, glm::vec4&);
 	void setUniform(const std::string& name, std::vector<glm::vec3>& input_array);

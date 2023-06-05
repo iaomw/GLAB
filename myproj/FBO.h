@@ -41,15 +41,13 @@ public:
 		}
 	}
 
-	void multi_render(std::function<void()>* work = nullptr) {
+	void multi_render(std::function<void()> work) {
 
 		bind();
 		glViewport(0, 0, width, height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (work != nullptr) {
-			(*work)();
-		}
+		work();
 
 		unbind();
 
@@ -78,7 +76,7 @@ protected:
 	bool needExtra;
 	bool needMipmap;
 
-	int width, height;
+	uint32_t width, height;
 
 public:
 	virtual inline void bind() const

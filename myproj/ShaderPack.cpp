@@ -26,6 +26,11 @@ void ShaderPack::syncSSBO() {
 
 	pbr_pack_buffer->setData(&pbr_pack, sizeof(PBR_Pack));
 	pbr_pass_buffer->setData(&pbr_pass, sizeof(PBR_Pass));
+
+	// GLuint buffer = pbr_pass_buffer->getID();
+	// std::vector<uint64_t> storage(10); // n is the size  
+	// glGetNamedBufferSubData(buffer, 0, sizeof(PBR_Pass), storage.data());
+
 }
 
 void ShaderPack::syncLight(std::vector<Light>& lightList) {

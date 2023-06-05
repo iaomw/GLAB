@@ -34,6 +34,8 @@ bool VBO::setData(GLvoid * data, size_t byte_size)
 	else {
 		glNamedBufferSubData(buffer_id, 0, byte_size, data);
 	}
+
+	//glNamedBufferStorage();
 	return true;
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/glm.hpp>
 
 class Camera
 {
@@ -16,7 +17,7 @@ public:
 	int window_height;
 
 	 float aspectRatio() {
-		return window_width / window_height;
+		return (float)window_width / (float)window_height;
 	}
 
 	Camera();

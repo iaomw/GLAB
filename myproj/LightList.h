@@ -11,7 +11,7 @@ public:
 	std::vector<Light> list;
 	std::vector<std::unique_ptr<CubeFBO>> shadowList;
 
-	void addLight(Light& light);
+	void addLight(Light light);
 
 	LightList();
 	~LightList();

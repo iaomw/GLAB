@@ -1,5 +1,7 @@
 #version 460 core
+
 #extension GL_ARB_bindless_texture: require
+#extension GL_ARB_gpu_shader_int64: enable
 
 layout (location = 0) out vec4 outAlbedo;
 layout (location = 1) out vec4 outNormal;
@@ -42,18 +44,18 @@ layout(std430) buffer Light_Pack
 	Light lightList[];
 };
 
-struct PBR_Unit {
-	uvec2 ao;
-	uvec2 base;
-	uvec2 metalness;
-	uvec2 normal;
-	uvec2 roughness;
-};
+// struct PBR_Unit {
+// 	uvec2 ao;
+// 	uvec2 base;
+// 	uvec2 metalness;
+// 	uvec2 normal;
+// 	uvec2 roughness;
+// };
 
-layout(std430) buffer PBR_Pack 
+layout(binding = 2, bindless_sampler) buffer PBR_Pack 
 {
-    uint pbr_pack_size;
-    PBR_Unit pbr_pack[];
+    sampler2D pbr_pack[];
+    //uint64_t pbr_pack[];
 };
 
 // Calculation in view space
@@ -61,8 +63,8 @@ vec3 detailedTexNormal(vec3 normal_vspace, vec3 tNormal, vec3 position)
 { 
     vec3 dPosX  = dFdx(position.xyz);
     vec3 dPosY  = dFdy(position.xyz);
-    vec2 dTexX = dFdx(texcoord);
-    vec2 dTexY = dFdy(texcoord);
+    vec2 dTexX  = dFdx(texcoord);
+    vec2 dTexY  = dFdy(texcoord);
 
     vec3 normal = normalize(normal_vspace);
     vec3 tangent = normalize(dPosX * dTexY.t - dPosY * dTexX.t);
@@ -95,21 +97,36 @@ vec3 decode (vec2 enc)
     return n;
 }
 
-void main (void)
+void main()
 {   
-    //sampler2D texAO = sampler2D(pbr_pack[drawID].ao);
-    sampler2D texBase = sampler2D(pbr_pack[drawID].base);
-    sampler2D texMetal = sampler2D(pbr_pack[drawID].metalness);
-    sampler2D texNormal = sampler2D(pbr_pack[drawID].normal);
-    sampler2D texRough = sampler2D(pbr_pack[drawID].roughness);
+    // sampler2D texAO     = pbr_pack[drawID*5+0]; 
 
-	outAlbedo.rgb = pow(texture(texBase, texcoord.st).rgb, vec3(gamma));
-	outAlbedo.a = texture(texRough, texcoord.st).r;
+    // sampler2D texAO     = sampler2D( unpackUint2x32(pbr_pack[drawID*5+0]) );
+    // sampler2D texBase   = sampler2D( unpackUint2x32(pbr_pack[drawID*5+1]) );
+    // sampler2D texNormal = sampler2D( unpackUint2x32(pbr_pack[drawID*5+2]) );
+    
+    // sampler2D texMetal  = sampler2D( unpackUint2x32(pbr_pack[drawID*5+3]) );
+    // sampler2D texRough  = sampler2D( unpackUint2x32(pbr_pack[drawID*5+4]) );
 
-	vec3 tNormal = normalize(texture(texNormal, texcoord.st).xyz * 2.0f - 1.0f);
-	outNormal.rgb = detailedTexNormal(normal_vs.xyz, tNormal, vertex_vs.xyz);
-	outNormal.a = texture(texMetal, texcoord.st).r;
+    sampler2D texNormal = pbr_pack[drawID*5+2]; 
+    vec3 tNormal = normalize(texture(texNormal, texcoord).xyz * 2.0f - 1.0f);
+	     tNormal = detailedTexNormal(normal_vs.xyz, tNormal, vertex_vs.xyz);
 
-	outNormal.rg = encode(outNormal.rgb);
-	outNormal.b = vertex_vs.z;
+	outNormal.rg = encode(tNormal.xyz);
+	outNormal.b  = vertex_vs.z;
+    //memoryBarrier();
+
+    sampler2D texMetal  = pbr_pack[drawID*5+3]; 
+    float metal = texture(texMetal, texcoord).r;
+    outNormal.a  = clamp(metal, 0.0f, 1.0f);
+
+    memoryBarrier();
+
+    sampler2D texBase   = pbr_pack[drawID*5+1]; 
+	outAlbedo.rgb = pow(texture(texBase, texcoord).rgb, vec3(gamma));
+    //memoryBarrier();
+
+    sampler2D texRough  = pbr_pack[drawID*5+4];
+    float rough = texture(texRough, texcoord).r;
+	outAlbedo.a = rough;
 }

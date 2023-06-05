@@ -1,10 +1,6 @@
 #pragma once
-
-#include <string>
-#define GLM_FORCE_AVX
-#include <glm/glm.hpp>
-
 #include "Shader.h"
+#include <glm/glm.hpp>
 
 class Material
 {

@@ -1,5 +1,4 @@
 cmake_minimum_required (VERSION 3.2)
-# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 set(P_NAME GLAB)
 project(${P_NAME} C CXX)
@@ -18,11 +17,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/myproj)
 AUX_SOURCE_DIRECTORY(myproj SOURCE) 
 add_executable(${P_NAME} ${SOURCE})
 
-# Main Executable
-# add_definitions("-Wall -O0 -g")
-# add_executable(${P_NAME} main.c)
-# target_include_directories(${P_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src)
-
 # SDL2
 # find_package(SDL2 REQUIRED)
 # target_link_libraries(sdl_app ${SDL2_LIBRARY})
@@ -33,11 +27,6 @@ target_link_libraries(${P_NAME}
     PRIVATE $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
-
-# OpenGL
-find_package(OpenGL REQUIRED)
-target_link_libraries(${P_NAME} PRIVATE ${OPENGL_gl_LIBRARY})
-target_include_directories(${P_NAME} PUBLIC ${OPENGL_INCLUDE_DIR})
 
 find_package(GLEW REQUIRED)
 target_link_libraries(${P_NAME} PRIVATE GLEW::GLEW)

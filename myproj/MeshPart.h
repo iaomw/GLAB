@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 
-#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 #include "magic_enum.hpp"
 

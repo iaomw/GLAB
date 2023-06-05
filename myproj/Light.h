@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GL/glew.h>
-#define GLM_FORCE_AVX
 #include <glm/glm.hpp>
 
 enum class LightType { POINTLIGHT, SPOTLIGHT, DIRECTIONALLIGHT };
